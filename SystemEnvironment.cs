@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // 動作環境を取得する
-// Copyright (C) 2014-2016 by SHINTA
+// Copyright (C) 2014-2017 by SHINTA
 // 
 // ============================================================================
 
@@ -11,10 +11,11 @@
 //  -.--  | 2014/12/06 (Sat) | 作成開始。
 //  1.00  | 2014/12/06 (Sat) | オリジナルバージョン。
 //  1.10  | 2014/12/28 (Sun) | GetOSVersion() を作成した。
-//  1.11  | 2015/05/19 (Tue) | 外部で別項目のログができるよう、LOG_PREFIX_SYSTEM_ENV を public にした。
-//  1.12  | 2015/09/12 (Sat) | .NET CLR の情報も記録するようにした。
-//  1.13  | 2016/09/17 (Sat) | .NET CLR 4.6 に対応。
-//  1.14  | 2016/09/24 (Sat) | LogWriter を使うように変更。
+// (1.11) | 2015/05/19 (Tue) | 外部で別項目のログができるよう、LOG_PREFIX_SYSTEM_ENV を public にした。
+// (1.12) | 2015/09/12 (Sat) | .NET CLR の情報も記録するようにした。
+// (1.13) | 2016/09/17 (Sat) | .NET CLR 4.6 に対応。
+// (1.14) | 2016/09/24 (Sat) | LogWriter を使うように変更。
+// (1.15) | 2017/11/18 (Sat) | StatusT の使用を廃止。
 // ============================================================================
 
 using System;
@@ -47,29 +48,29 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// CPU 名の取得
 		// --------------------------------------------------------------------
-		public StatusT GetCpuBrandName(out String oVendorIDString, out String oBrandName)
+		public Boolean GetCpuBrandName(out String oVendorIDString, out String oBrandName)
 		{
 			oVendorIDString = ManagementValue(WMI_CLASS_PROCESSOR, "Manufacturer");
 			oBrandName = ManagementValue(WMI_CLASS_PROCESSOR, "Name");
-			return StatusT.Ok;
+			return true;
 		}
 
 		// --------------------------------------------------------------------
 		// 論理プロセッサ数（スレッド数）の取得
 		// --------------------------------------------------------------------
-		public StatusT GetNumLogicalProcessors(out Int32 oNumProcessors)
+		public Boolean GetNumLogicalProcessors(out Int32 oNumProcessors)
 		{
 			if (!Int32.TryParse(ManagementValue(WMI_CLASS_PROCESSOR, "NumberOfLogicalProcessors"), out oNumProcessors))
 			{
-				return StatusT.Error;
+				return false;
 			}
-			return StatusT.Ok;
+			return true;
 		}
 
 		// --------------------------------------------------------------------
 		// OS 名の取得
 		// --------------------------------------------------------------------
-		public StatusT GetOSName(out String oOSName, out Int32 oOSBit)
+		public Boolean GetOSName(out String oOSName, out Int32 oOSBit)
 		{
 			oOSName = ManagementValue(WMI_CLASS_OS, "Caption");
 			if (Environment.Is64BitOperatingSystem)
@@ -80,31 +81,31 @@ namespace Shinta
 			{
 				oOSBit = 32;
 			}
-			return StatusT.Ok;
+			return true;
 		}
 
 		// --------------------------------------------------------------------
 		// OS バージョン番号の取得
 		// --------------------------------------------------------------------
-		public StatusT GetOSVersion(out Double oOSVersion)
+		public Boolean GetOSVersion(out Double oOSVersion)
 		{
 			String aVerAndBuild = ManagementValue(WMI_CLASS_OS, "Version");
 
 			if (!Double.TryParse(aVerAndBuild.Substring(0, aVerAndBuild.LastIndexOf(".")), out oOSVersion))
 			{
-				return StatusT.Error;
+				return false;
 			}
-			return StatusT.Ok;
+			return true;
 		}
 
 		// --------------------------------------------------------------------
 		// 環境をログに記録
 		// --------------------------------------------------------------------
-		public StatusT LogEnvironment(LogWriter oLogWriter)
+		public Boolean LogEnvironment(LogWriter oLogWriter)
 		{
 			if (oLogWriter == null)
 			{
-				return StatusT.Error;
+				return false;
 			}
 
 			// CPU 情報
@@ -197,7 +198,7 @@ namespace Shinta
 			{
 			}
 
-			return StatusT.Ok;
+			return true;
 		}
 
 		// ====================================================================

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // メッセージおよび付加情報を CSV 形式でログファイルに保存
-// Copyright (C) 2014-2015 by SHINTA
+// Copyright (C) 2014-2017 by SHINTA
 // 
 // ============================================================================
 
@@ -24,6 +24,7 @@
 // (1.14) | 2015/05/13 (Wed) |   Dispose() から using に変更。
 // (1.15) | 2015/11/08 (Sun) |   メッセージを "" で括るようにした。
 //  1.20  | 2015/11/22 (Sun) | 複数世代を残せるようにした。
+// (1.21) | 2018/01/07 (Sun) |   MaxOldGenerations のデフォルト値を 3 にした。
 // ============================================================================
 
 using System;
@@ -72,7 +73,7 @@ namespace Shinta
 			LogFileName = Path.GetDirectoryName(Application.UserAppDataPath) + "\\"
 					+ Path.ChangeExtension(Path.GetFileName(System.Windows.Forms.Application.ExecutablePath), Common.FILE_EXT_LOG);
 			MaxSize = MAX_LOG_SIZE_DEFAULT;
-			MaxOldGenerations = 2;
+			MaxOldGenerations = 3;
 			ThreadSafe = false;
 		}
 
@@ -172,6 +173,74 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// ファイルサイズが一定値を越えたらローテーション
+		// ＜返値＞ 正常終了なら true（ローテーションしたかしないかは関係ない）
+		// --------------------------------------------------------------------
+		private Boolean LotateLogFile()
+		{
+			// ローテーション設定確認（設定サイズが 0 ならローテーション不要）
+			if (MaxSize <= 0)
+			{
+				return true;
+			}
+
+			// ファイル名の確認
+			if (String.IsNullOrEmpty(LogFileName))
+			{
+				return false;
+			}
+
+			try
+			{
+				// ファイルサイズの調査
+				FileInfo aFI = new FileInfo(LogFileName);
+				if (aFI.Length <= MaxSize)
+				{
+					// ローテーション不要
+					return true;
+				}
+
+				try
+				{
+					// ローテーション：まずは最古のファイルを削除
+					File.Delete(OldLogFileName(MaxOldGenerations));
+				}
+				catch (Exception)
+				{
+				}
+
+				// 順に移動
+				for (Int32 i = MaxOldGenerations; i > 1; i--)
+				{
+					try
+					{
+						File.Move(OldLogFileName(i - 1), OldLogFileName(i));
+					}
+					catch (Exception)
+					{
+					}
+				}
+
+				if (MaxOldGenerations <= 0)
+				{
+					File.Delete(LogFileName);
+				}
+				else
+				{
+					// 最新を旧へ
+					File.Move(LogFileName, OldLogFileName(1));
+				}
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+#if USE_STATUS_T
+		// --------------------------------------------------------------------
+		// ファイルサイズが一定値を越えたらローテーション
 		// --------------------------------------------------------------------
 		private StatusT LotateLogFile()
 		{
@@ -235,7 +304,7 @@ namespace Shinta
 
 			return StatusT.Ok;
 		}
-
+#endif
 
 	}
 }

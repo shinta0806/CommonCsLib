@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ログをファイル・メッセージボックス・テキストボックスに出力する
-// Copyright (C) 2016 by SHINTA
+// Copyright (C) 2016-2017 by SHINTA
 // 
 // ============================================================================
 
@@ -11,6 +11,8 @@
 //  -.--  | 2016/09/22 (Thu) | 作成開始。
 //  1.00  | 2016/09/22 (Thu) | オリジナルバージョン。
 //  1.10  | 2016/09/24 (Sat) | LogMessage() を作成。
+// (1.11) | 2017/11/20 (Mon) | LogMessage() がリリース時にデバッグ情報をテキストボックスに表示していたのを修正。
+// (1.12) | 2017/12/24 (Sun) | フォームを前面に出す動作の改善。
 // ============================================================================
 
 using System;
@@ -86,7 +88,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// ログ書き込み＆表示
 		// --------------------------------------------------------------------
-		public DialogResult ShowLogMessage(TraceEventType oEventType, String oMessage)
+		public DialogResult ShowLogMessage(TraceEventType oEventType, String oMessage, Boolean oSuppressMessageBox = false)
 		{
 			// メッセージが空の場合は何もしない
 			if (String.IsNullOrEmpty(oMessage))
@@ -109,8 +111,21 @@ namespace Shinta
 			{
 				TextBoxDisplay.Invoke(new Action(() =>
 				{
+#if DEBUG
 					TextBoxDisplay.AppendText(oMessage + "\r\n");
+#else
+					if (oEventType != TraceEventType.Verbose)
+					{
+						TextBoxDisplay.AppendText(oMessage + "\r\n");
+					}
+#endif
 				}));
+			}
+
+			// メッセージボックスに表示しない場合
+			if (oSuppressMessageBox)
+			{
+				return DialogResult.None;
 			}
 
 			// メッセージボックス表示
@@ -131,15 +146,24 @@ namespace Shinta
 					return DialogResult.None;
 			}
 
+			DialogResult aResult = DialogResult.None;
 			if (FrontForm != null)
 			{
 				FrontForm.Invoke(new Action(() =>
 				{
 					FrontForm.Activate();
+					aResult = MessageBox.Show(FrontForm, oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButtons.OK, aIcon);
 				}));
+				return aResult;
 			}
 
-			return MessageBox.Show(oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButtons.OK, aIcon);
+			using (Form aFrontForm = new Form())
+			{
+				aFrontForm.TopMost = true;
+				aResult = MessageBox.Show(aFrontForm, oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButtons.OK, aIcon);
+				aFrontForm.TopMost = false;
+				return aResult;
+			}
 		}
 
 		// --------------------------------------------------------------------

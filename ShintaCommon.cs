@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // よく使う一般的な定数や関数
-// Copyright (C) 2014-2016 by SHINTA
+// Copyright (C) 2014-2018 by SHINTA
 // 
 // ============================================================================
 
@@ -29,6 +29,9 @@
 // (2.21) | 2016/04/17 (Sun) | 精度が悪いため DetectEncoding() を廃止。
 //  2.30  | 2016/05/03 (Tue) | MakeRelativePath() を作成。
 //  2.40  | 2016/05/03 (Tue) | MakeAbsolutePath() を作成。
+// (2.41) | 2017/11/17 (Fri) | StatusT の使用を廃止。
+//  2.50  | 2017/11/18 (Sat) | Serialize()、Deserialize() を作成。
+//  2.60  | 2018/01/18 (Thu) | CompareVersionString() を作成。
 // ============================================================================
 
 using Microsoft.Win32;
@@ -40,7 +43,9 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 
 namespace Shinta
 {
@@ -86,14 +91,27 @@ namespace Shinta
 		public const String FILE_EXT_CSV = ".csv";
 		public const String FILE_EXT_DLL = ".dll";
 		public const String FILE_EXT_EXE = ".exe";
+		public const String FILE_EXT_FLV = ".flv";
+		public const String FILE_EXT_HTML = ".html";
 		public const String FILE_EXT_KRA = ".kra";
 		public const String FILE_EXT_LOCK = ".lock";
 		public const String FILE_EXT_LOG = ".log";
 		public const String FILE_EXT_LRC = ".lrc";
+		public const String FILE_EXT_M4A = ".m4a";
+		public const String FILE_EXT_MKV = ".mkv";
+		public const String FILE_EXT_MOV = ".mov";
+		public const String FILE_EXT_MP3 = ".mp3";
+		public const String FILE_EXT_MP4 = ".mp4";
+		public const String FILE_EXT_MPG = ".mpg";
+		public const String FILE_EXT_PHP = ".php";
 		public const String FILE_EXT_PNG = ".png";
 		public const String FILE_EXT_REG = ".reg";
 		public const String FILE_EXT_SQLITE3 = ".sqlite3";
+		public const String FILE_EXT_TPL = ".tpl";
 		public const String FILE_EXT_TXT = ".txt";
+		public const String FILE_EXT_WAV = ".wav";
+		public const String FILE_EXT_WMA = ".wma";
+		public const String FILE_EXT_WMV = ".wmv";
 
 		// --------------------------------------------------------------------
 		// Encoding 用コードページ
@@ -129,6 +147,75 @@ namespace Shinta
 					oForm.Close();
 				}
 			}
+		}
+
+		// --------------------------------------------------------------------
+		// バージョン文字列を比較（大文字小文字は区別しない）
+		// --------------------------------------------------------------------
+		public static Int32 CompareVersionString(String oVerA, String oVerB)
+		{
+			// 最初に同じ文字列かどうか確認
+			if (String.Compare(oVerA, oVerB, true) == 0)
+			{
+				return 0;
+			}
+			if (String.IsNullOrEmpty(oVerA) && String.IsNullOrEmpty(oVerB))
+			{
+				return 0;
+			}
+
+			// いずれかが IsNullOrEmpty() ならそちらが小さいとする
+			if (String.IsNullOrEmpty(oVerA))
+			{
+				return -1;
+			}
+			if (String.IsNullOrEmpty(oVerB))
+			{
+				return 1;
+			}
+
+			// 解析
+			Match aMatchA = Regex.Match(oVerA, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
+			Match aMatchB = Regex.Match(oVerB, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
+
+			if (!aMatchA.Success || !aMatchB.Success)
+			{
+				// バージョン文字列ではない場合は、通常の文字列比較
+				return String.Compare(oVerA, oVerB, true);
+			}
+
+			// バージョン番号部分の比較
+			Double aVerNumA = Double.Parse(aMatchA.Groups[1].Value);
+			Double aVerNumB = Double.Parse(aMatchB.Groups[1].Value);
+			if (aVerNumA < aVerNumB)
+			{
+				return -1;
+			}
+			if (aVerNumA > aVerNumB)
+			{
+				return 1;
+			}
+
+			// 後続文字列（α, β）の比較
+			String aSuffixA = aMatchA.Groups[2].Value.Trim();
+			String aSuffixB = aMatchB.Groups[2].Value.Trim();
+			if (String.IsNullOrEmpty(aSuffixA) && String.IsNullOrEmpty(aSuffixB))
+			{
+				return 0;
+			}
+
+			// 片方に後続文字列がある場合は、後続文字列の無い方（正式版）が大きい
+			if (String.IsNullOrEmpty(aSuffixA))
+			{
+				return 1;
+			}
+			if (String.IsNullOrEmpty(aSuffixB))
+			{
+				return -1;
+			}
+
+			// 後続文字列同士を比較
+			return String.Compare(aSuffixA, aSuffixB, true);
 		}
 
 		// --------------------------------------------------------------------
@@ -196,6 +283,37 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// ZoneID を削除
+		// ＜返値＞削除できたら true
+		// --------------------------------------------------------------------
+		public static Boolean DeleteZoneID(String oPath)
+		{
+			return WindowsApi.DeleteFile(oPath + STREAM_NAME_ZONE_ID);
+		}
+
+		// --------------------------------------------------------------------
+		// ZoneID を削除（フォルダ配下のすべてのファイル）
+		// ＜返値＞ファイル列挙で何らかのエラーが発生したら Error、削除できなくても Ok は返る
+		// --------------------------------------------------------------------
+		public static Boolean DeleteZoneID(String oFolder, SearchOption oOption)
+		{
+			try
+			{
+				String[] aFiles = Directory.GetFiles(oFolder, "*", oOption);
+				foreach (String aFile in aFiles)
+				{
+					DeleteZoneID(aFile);
+				}
+			}
+			catch
+			{
+				return false;
+			}
+			return true;
+		}
+
+#if USE_STATUS_T
+		// --------------------------------------------------------------------
+		// ZoneID を削除
 		// ＜返値＞削除できたら Ok
 		// --------------------------------------------------------------------
 		public static StatusT DeleteZoneID(String oPath)
@@ -229,6 +347,21 @@ namespace Shinta
 				return StatusT.Error;
 			}
 			return StatusT.Ok;
+		}
+#endif
+
+		// --------------------------------------------------------------------
+		// オブジェクトをデシリアライズして読み出し
+		// クラスコンストラクタで List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
+		// ＜例外＞ Exception
+		// --------------------------------------------------------------------
+		public static T Deserialize<T>(String oPath)
+		{
+			XmlSerializer aSerializer = new XmlSerializer(typeof(T));
+			using (StreamReader aSR = new StreamReader(oPath, new UTF8Encoding(false)))
+			{
+				return (T)aSerializer.Deserialize(aSR);
+			}
 		}
 
 		// --------------------------------------------------------------------
@@ -439,6 +572,19 @@ namespace Shinta
 #endif
 
 		// --------------------------------------------------------------------
+		// オブジェクトをシリアライズして保存
+		// ＜例外＞ Exception
+		// --------------------------------------------------------------------
+		public static void Serialize(String oPath, Object oObject)
+		{
+			XmlSerializer aSerializer = new XmlSerializer(oObject.GetType());
+			using (StreamWriter aSW = new StreamWriter(oPath, false, new UTF8Encoding(false)))
+			{
+				aSerializer.Serialize(aSW, oObject);
+			}
+		}
+
+		// --------------------------------------------------------------------
 		// 全メンバを浅くコピーする
 		// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
 		// ApplicationSettingsBase 派生のクラスに対してはうまく動かない模様
@@ -540,6 +686,7 @@ namespace Shinta
 		// private 定数
 		// ====================================================================
 
+		private const String COMPARE_VERSION_STRING_REGEX = @"Ver ([0-9]+\.[0-9]+)(.*)";
 		private const String REG_KEY_DOT_NET_45_VERSION = "SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\";
 		private const String STREAM_NAME_ZONE_ID = ":Zone.Identifier";
 

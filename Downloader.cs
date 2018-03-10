@@ -92,7 +92,7 @@ namespace Shinta
 			String aUA = "Mozilla/5.0 (Windows NT";
 			SystemEnvironment aSE = new SystemEnvironment();
 			Double aOSVersion;
-			if (aSE.GetOSVersion(out aOSVersion) == StatusT.Ok)
+			if (aSE.GetOSVersion(out aOSVersion))
 			{
 				aUA += " " + aOSVersion.ToString();
 			}

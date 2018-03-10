@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ちょちょいと自動更新を起動する
-// Copyright (C) 2014-2016 by SHINTA
+// Copyright (C) 2014-2017 by SHINTA
 // 
 // ============================================================================
 
@@ -13,12 +13,12 @@
 // (1.01) | 2014/12/22 (Mon) | String 型のメンバー変数は Empty で初期化するようにした。
 // (1.02) | 2015/05/23 (Sat) | エラーメッセージをユーザーに表示できるようにした。
 // (1.03) | 2016/09/24 (Sat) | LogWriter を使用するように変更。
+// (1.04) | 2017/11/18 (Sat) | StatusT を廃止。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Shinta
@@ -166,13 +166,13 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// ちょちょいと自動更新を起動
 		// --------------------------------------------------------------------
-		public StatusT Launch(Boolean oShowError = false)
+		public Boolean Launch(Boolean oShowError = false)
 		{
 			String aParam = String.Empty;
 
 			if (!IsRequiredValid())
 			{
-				return StatusT.Error;
+				return false;
 			}
 
 			LogMessage(TraceEventType.Information, "ちょちょいと自動更新を起動しています...");
@@ -276,12 +276,10 @@ namespace Shinta
 					}
 				}
 
-				return StatusT.Error;
+				return false;
 			}
 
-			return StatusT.Ok;
-
-
+			return true;
 		}
 
 		// ====================================================================
