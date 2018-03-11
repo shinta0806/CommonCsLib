@@ -274,12 +274,16 @@ __pycache__/
 # Add needed C# files
 !ApplicationNameSettingsProvider.cs
 !ApplicationSettingsProviderBase.cs
+!CsvManager.cs
 !Downloader.cs
 !Haiku.cs
+!JulianDay.cs
+!LinqUtils.cs
 !LogWriter.cs
 !ShintaCommon.cs
 !SimpleTraceListener.cs
 !SystemEnvironment.cs
 !UpdaterLauncher.cs
+!VariableNameSettingsProvider.cs
 !WindowsApi.cs
 
