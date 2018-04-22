@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ログをファイル・メッセージボックス・テキストボックスに出力する
-// Copyright (C) 2016-2017 by SHINTA
+// Copyright (C) 2016-2018 by SHINTA
 // 
 // ============================================================================
 
@@ -12,7 +12,8 @@
 //  1.00  | 2016/09/22 (Thu) | オリジナルバージョン。
 //  1.10  | 2016/09/24 (Sat) | LogMessage() を作成。
 // (1.11) | 2017/11/20 (Mon) | LogMessage() がリリース時にデバッグ情報をテキストボックスに表示していたのを修正。
-// (1.12) | 2017/12/24 (Sun) | フォームを前面に出す動作の改善。
+// (1.12) | 2017/12/24 (Sun) | ShowLogMessage() のフォームを前面に出す動作の改善。
+// (1.13) | 2018/03/18 (Sun) | ShowLogMessage() のフォームを前面に出す動作をさらに改善。
 // ============================================================================
 
 using System;
@@ -146,6 +147,7 @@ namespace Shinta
 					return DialogResult.None;
 			}
 
+			// FrontForm が指定されている場合はその子フォームにする
 			DialogResult aResult = DialogResult.None;
 			if (FrontForm != null)
 			{
@@ -157,6 +159,18 @@ namespace Shinta
 				return aResult;
 			}
 
+			// 自アプリでアクティブなフォームがある場合はその子フォームにする
+			Form aActiveForm = Form.ActiveForm;
+			if (aActiveForm != null)
+			{
+				aActiveForm.Invoke(new Action(() =>
+				{
+					aResult = MessageBox.Show(aActiveForm, oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButtons.OK, aIcon);
+				}));
+				return aResult;
+			}
+
+			// ダミーフォームを前面に表示してその子フォームにする
 			using (Form aFrontForm = new Form())
 			{
 				aFrontForm.TopMost = true;

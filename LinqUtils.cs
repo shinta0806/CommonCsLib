@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // Linq ユーティリティクラス
-// Copyright (C) 2015-2017 by SHINTA
+// Copyright (C) 2015-2018 by SHINTA
 // 
 // ============================================================================
 
@@ -20,6 +20,7 @@
 //  1.30  | 2017/12/02 (Sat) | DropTable() を作成。
 //  1.40  | 2017/12/02 (Sat) | DropAllTables() を作成。
 //  1.50  | 2017/12/02 (Sat) | Vacuum() を作成。
+// (1.51) | 2018/04/07 (Sat) | AUTOINCREMENT エラー対策の手法を変更。
 // ============================================================================
 
 using System;
@@ -30,6 +31,7 @@ using System.Data.Linq.Mapping;
 using System.Text;
 using System.Data.SQLite;
 using System.Data.Linq;
+using System.Diagnostics;
 
 namespace Shinta
 {
@@ -46,7 +48,9 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// データベースの型
 		// --------------------------------------------------------------------
-		public const String DB_TYPE_INTEGER = "INT";
+		public const String DB_TYPE_BOOLEAN = "BIT";
+		public const String DB_TYPE_INT32 = "INT";
+		public const String DB_TYPE_INT64 = "BIGINT";
 		public const String DB_TYPE_DOUBLE = "REAL";
 		public const String DB_TYPE_STRING = "NVARCHAR";
 
@@ -55,10 +59,48 @@ namespace Shinta
 		// ====================================================================
 
 		// --------------------------------------------------------------------
+		// データベースファイル内のテーブルにインデックスを作成
+		// --------------------------------------------------------------------
+		public static void CreateIndex(DbCommand oCmd, String oTableName, List<String> oIndices)
+		{
+			if (oIndices == null)
+			{
+				return;
+			}
+			foreach (String aIndex in oIndices)
+			{
+				Int32 aIndexNumber = 0;
+				String aIndexName = null;
+				for (; ; )
+				{
+					aIndexName = "index_" + aIndex + (aIndexNumber == 0 ? String.Empty : "_" + aIndexNumber.ToString());
+					if (!IndexExists(oCmd, aIndexName))
+					{
+						break;
+					}
+					aIndexNumber++;
+				}
+				oCmd.CommandText = "CREATE INDEX IF NOT EXISTS " + aIndexName + " ON " + oTableName + "(" + aIndex + ");";
+				oCmd.ExecuteNonQuery();
+			}
+		}
+
+#if USE_OBSOLETE_CREATE_INDEX
+		// --------------------------------------------------------------------
+		// データベースファイル内のテーブルにインデックスを作成
+		// --------------------------------------------------------------------
+		public static void CreateIndex(DbCommand oCmd, Type oTypeOfTable, List<String> oIndices)
+		{
+			CreateIndex(oCmd, TableName(oTypeOfTable), oIndices);
+		}
+#endif
+
+		// --------------------------------------------------------------------
 		// データベースファイル内に、oTable で示される型に対応したテーブルを作成する
 		// ＜引数＞ oCmd: 対象となるデータベースファイルに接続された状態の DbCommand
-		//          oTable: テーブルの型を定義したクラスのインスタンス
+		//          oTypeOfTable: テーブルの型を定義したクラス。typeof(THoge) で与える
 		//          oUniques: ユニーク制約を付けるフィールド名（複数キーで 1 つのユニークにする場合はカンマ区切りで 1 つの String とする）
+		//          oAutoIncrement: AUTOINCREMENT を付けるフィールド名
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
 		public static void CreateTable(DbCommand oCmd, Type oTypeOfTable, List<String> oUniques = null, String oAutoIncrement = null)
@@ -83,10 +125,12 @@ namespace Shinta
 				// フィールド名
 				aCmdText.Append(aFieldAttr.Name);
 
+				Boolean aIsAutoIncrement = (!String.IsNullOrEmpty(oAutoIncrement) && aFieldAttr.Name == oAutoIncrement);
+
 				// 型
-				if (aFieldAttr.DbType == "INT")
+				if (aIsAutoIncrement)
 				{
-					// INT は INTEGER にする（SQLite の AUTOINCREMENT でのエラー回避）
+					// AUTOINCREMENT は "INTEGER" のみ許容される
 					aCmdText.Append(" INTEGER");
 				}
 				else
@@ -107,7 +151,7 @@ namespace Shinta
 				}
 
 				// オートインクリメント
-				if (!String.IsNullOrEmpty(oAutoIncrement) && aFieldAttr.Name == oAutoIncrement)
+				if (aIsAutoIncrement)
 				{
 					aCmdText.Append(" AUTOINCREMENT");
 				}
@@ -135,36 +179,11 @@ namespace Shinta
 			aCmdText.Append(");");
 
 			// テーブル作成
+			Debug.WriteLine("CreateTable() SQL: " + aCmdText.ToString());
 			oCmd.CommandText = aCmdText.ToString();
 			oCmd.ExecuteNonQuery();
 
 		}
-
-		// --------------------------------------------------------------------
-		// データベースファイル内のテーブルにインデックスを作成
-		// --------------------------------------------------------------------
-		public static void CreateIndex(DbCommand oCmd, String oTableName, List<String> oIndices)
-		{
-			if (oIndices == null)
-			{
-				return;
-			}
-			foreach (String aIndex in oIndices)
-			{
-				oCmd.CommandText = "CREATE INDEX IF NOT EXISTS index_" + aIndex + " ON " + oTableName + "(" + aIndex + ");";
-				oCmd.ExecuteNonQuery();
-			}
-		}
-
-#if USE_OBSOLETE_CREATE_INDEX
-		// --------------------------------------------------------------------
-		// データベースファイル内のテーブルにインデックスを作成
-		// --------------------------------------------------------------------
-		public static void CreateIndex(DbCommand oCmd, Type oTypeOfTable, List<String> oIndices)
-		{
-			CreateIndex(oCmd, TableName(oTypeOfTable), oIndices);
-		}
-#endif
 
 		// --------------------------------------------------------------------
 		// データベース内のすべてのテーブルを削除（ドロップ）
@@ -243,6 +262,30 @@ namespace Shinta
 			oCmd.ExecuteNonQuery();
 		}
 
+		// ====================================================================
+		// private メンバー関数
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// 指定された名前のインデックスが存在するかどうか
+		// --------------------------------------------------------------------
+		private static Boolean IndexExists(DbCommand oCmd, String oIndexName)
+		{
+			using (DataContext aContext = new DataContext(oCmd.Connection))
+			{
+				Table<SqliteMaster> aSqliteMaster = aContext.GetTable<SqliteMaster>();
+				IQueryable<SqliteMaster> aQueryResult =
+						from x in aSqliteMaster
+						where x.Type == "index" && x.Name == oIndexName
+						select x;
+				foreach (SqliteMaster aRecord in aQueryResult)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+
 	}
 	// public class LinqUtils ___END___
 
@@ -280,7 +323,7 @@ namespace Shinta
 		public String TblName { get; set; }
 
 		// ルートページ
-		[Column(Name = FIELD_NAME_SQLITE_MASTER_ROOTPAGE, DbType = LinqUtils.DB_TYPE_INTEGER)]
+		[Column(Name = FIELD_NAME_SQLITE_MASTER_ROOTPAGE, DbType = LinqUtils.DB_TYPE_INT32)]
 		public Int32 Rootpage { get; set; }
 
 		// SQL

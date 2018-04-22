@@ -38,6 +38,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -93,6 +94,7 @@ namespace Shinta
 		public const String FILE_EXT_EXE = ".exe";
 		public const String FILE_EXT_FLV = ".flv";
 		public const String FILE_EXT_HTML = ".html";
+		public const String FILE_EXT_INI = ".ini";
 		public const String FILE_EXT_KRA = ".kra";
 		public const String FILE_EXT_LOCK = ".lock";
 		public const String FILE_EXT_LOG = ".log";
@@ -112,6 +114,7 @@ namespace Shinta
 		public const String FILE_EXT_WAV = ".wav";
 		public const String FILE_EXT_WMA = ".wma";
 		public const String FILE_EXT_WMV = ".wmv";
+		public const String FILE_EXT_ZIP = ".zip";
 
 		// --------------------------------------------------------------------
 		// Encoding 用コードページ
@@ -132,6 +135,44 @@ namespace Shinta
 		// ====================================================================
 		// public メンバー関数
 		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// フォームの位置を親フォームに対してカスケードする
+		// --------------------------------------------------------------------
+		public static void CascadeForm(Form oForm)
+		{
+			if (oForm.Owner == null)
+			{
+				return;
+			}
+
+			// 位置をずらす
+			Point aLocation = oForm.Owner.DesktopLocation;
+			Int32 aDelta = SystemInformation.CaptionHeight + SystemInformation.FrameBorderSize.Height;
+			aLocation.Offset(aDelta, aDelta);
+
+			// 親フォームのディスプレイからはみ出さないように調整
+			Int32 aOwnderScreen = 0;
+			for (Int32 i = 0; i < Screen.AllScreens.Length; i++)
+			{
+				if (Screen.AllScreens[i].Bounds.IntersectsWith(oForm.Owner.DesktopBounds))
+				{
+					aOwnderScreen = i;
+					break;
+				}
+			}
+			Rectangle aOwnerScreenBounds = Screen.AllScreens[aOwnderScreen].Bounds;
+			if (aLocation.X + oForm.Width > aOwnerScreenBounds.Width)
+			{
+				aLocation.X = aOwnerScreenBounds.Left;
+			}
+			if (aLocation.Y + oForm.Height > aOwnerScreenBounds.Height)
+			{
+				aLocation.Y = aOwnerScreenBounds.Top;
+			}
+
+			oForm.DesktopLocation = aLocation;
+		}
 
 		// --------------------------------------------------------------------
 		// .NET Framework 4.5 以降がインストールされていないなら終了する

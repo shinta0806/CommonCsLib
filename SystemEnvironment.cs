@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // 動作環境を取得する
-// Copyright (C) 2014-2017 by SHINTA
+// Copyright (C) 2014-2018 by SHINTA
 // 
 // ============================================================================
 
@@ -16,8 +16,11 @@
 // (1.13) | 2016/09/17 (Sat) | .NET CLR 4.6 に対応。
 // (1.14) | 2016/09/24 (Sat) | LogWriter を使うように変更。
 // (1.15) | 2017/11/18 (Sat) | StatusT の使用を廃止。
+//  1.20  | 2018/04/02 (Mon) | GetClrVersionRegistryNumber() を作成した。
+//  1.30  | 2018/04/02 (Mon) | GetClrVersionName() を作成した。
 // ============================================================================
 
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -43,6 +46,81 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public SystemEnvironment()
 		{
+		}
+
+		// --------------------------------------------------------------------
+		// CLR バージョン名の取得（4.5 以降のみ対応）
+		// https://docs.microsoft.com/ja-jp/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed#net_d
+		// --------------------------------------------------------------------
+		public Boolean GetClrVersionName(out String oClrVersion)
+		{
+			Int32 aRegistry;
+			if (!GetClrVersionRegistryNumber(out aRegistry))
+			{
+				oClrVersion = "4.5 or ealier";
+				return false;
+			}
+
+			if (aRegistry >= 461308)
+			{
+				oClrVersion = "4.7.1 or later";
+			}
+			else if (aRegistry >= 460798)
+			{
+				oClrVersion = "4.7";
+			}
+			else if (aRegistry >= 394802)
+			{
+				oClrVersion = "4.6.2";
+			}
+			else if (aRegistry >= 394254)
+			{
+				oClrVersion = "4.6.1";
+			}
+			else if (aRegistry >= 393295)
+			{
+				oClrVersion = "4.6";
+			}
+			else if (aRegistry >= 379893)
+			{
+				oClrVersion = "4.5.2";
+			}
+			else if (aRegistry >= 378675)
+			{
+				oClrVersion = "4.5.1";
+			}
+			else if (aRegistry >= 378389)
+			{
+				oClrVersion = "4.5";
+			}
+			else
+			{
+				// 仕様上はここに到達することはない
+				oClrVersion = "Unknown";
+				return false;
+			}
+			return true;
+		}
+
+		// --------------------------------------------------------------------
+		// CLR バージョンレジストリ番号の取得（4.5 以降のみ対応）
+		// https://docs.microsoft.com/ja-jp/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed#net_d
+		// --------------------------------------------------------------------
+		public Boolean GetClrVersionRegistryNumber(out Int32 oClrVersion)
+		{
+			using (RegistryKey aKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\"))
+			{
+				if (aKey != null && aKey.GetValue("Release") != null)
+				{
+					oClrVersion = (Int32)aKey.GetValue("Release");
+					return true;
+				}
+				else
+				{
+					oClrVersion = 0;
+					return false;
+				}
+			}
 		}
 
 		// --------------------------------------------------------------------
@@ -125,45 +203,12 @@ namespace Shinta
 					+ "（" + aOSBit.ToString() + " ビット）");
 
 			// .NET CLR 情報
-			// http://stackoverflow.com/questions/12971881/how-to-reliably-detect-the-actual-net-4-5-version-installed
-			String aNetVer = Environment.Version.ToString();
-			Int32 aNetRev;
-			Int32.TryParse(aNetVer.Substring(aNetVer.LastIndexOf('.') + 1), out aNetRev);
-			if (aNetVer.IndexOf("4.0.30319.") == 0)
-			{
-				// .NET 4.x
-				if (aNetRev == 0)
-				{
-					// 詳細不明
-					aNetVer += " (Unknown 4.x)";
-				}
-				else if (aNetRev <= 2034)
-				{
-					aNetVer += " (4.0)";
-				}
-				else if (aNetRev <= 18063)
-				{
-					aNetVer += " (4.5)";
-				}
-				else if (aNetRev <= 34014)
-				{
-					aNetVer += " (4.5.1)";
-				}
-				else if (aNetRev <= 34209)
-				{
-					aNetVer += " (4.5.2)";
-				}
-				else if (aNetRev <= 42000)
-				{
-					aNetVer += " (4.6)";
-				}
-				else
-				{
-					// 詳細不明
-					aNetVer += " (Unknown 4.x)";
-				}
-			}
-			oLogWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CLR: " + aNetVer);
+			Int32 aClrVerNum;
+			GetClrVersionRegistryNumber(out aClrVerNum);
+			String aClrVerName;
+			GetClrVersionName(out aClrVerName);
+			oLogWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CLR: " + Environment.Version.ToString()
+					+ " / " + aClrVerNum.ToString() + " (" + aClrVerName + ")");
 
 			// 自身のパス
 			oLogWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Path: " + Application.ExecutablePath);
