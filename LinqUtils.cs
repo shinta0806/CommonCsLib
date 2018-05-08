@@ -21,6 +21,8 @@
 //  1.40  | 2017/12/02 (Sat) | DropAllTables() を作成。
 //  1.50  | 2017/12/02 (Sat) | Vacuum() を作成。
 // (1.51) | 2018/04/07 (Sat) | AUTOINCREMENT エラー対策の手法を変更。
+// (1.52) | 2018/04/30 (Mon) | DB_TYPE_DOUBLE を "REAL" から "FLOAT" に変更（"REAL" だと Single 精度に落ちるため）。
+// (1.53) | 2018/05/06 (Sun) | 複数カラムの組み合わせ主キーに対応した。
 // ============================================================================
 
 using System;
@@ -51,7 +53,7 @@ namespace Shinta
 		public const String DB_TYPE_BOOLEAN = "BIT";
 		public const String DB_TYPE_INT32 = "INT";
 		public const String DB_TYPE_INT64 = "BIGINT";
-		public const String DB_TYPE_DOUBLE = "REAL";
+		public const String DB_TYPE_DOUBLE = "FLOAT";
 		public const String DB_TYPE_STRING = "NVARCHAR";
 
 		// ====================================================================
@@ -114,6 +116,7 @@ namespace Shinta
 			}
 
 			// フィールド
+			List<String> aPrimaryKeys = new List<String>();
 			foreach (ColumnAttribute aFieldAttr in aAttrs)
 			{
 				// Name 属性の無いプロパティーは非保存とみなす
@@ -147,7 +150,7 @@ namespace Shinta
 				// 主キー
 				if (aFieldAttr.IsPrimaryKey)
 				{
-					aCmdText.Append(" PRIMARY KEY");
+					aPrimaryKeys.Add(aFieldAttr.Name);
 				}
 
 				// オートインクリメント
@@ -159,11 +162,20 @@ namespace Shinta
 				aCmdText.Append(",");
 			}
 
+			// 主キー
+			if (aPrimaryKeys.Count > 0)
+			{
+				aCmdText.Append(" PRIMARY KEY(" + String.Join(",", aPrimaryKeys) + "),");
+			}
+
 			// ユニーク制約
 			if (oUniques != null)
 			{
 				foreach (String aUnique in oUniques)
 				{
+					aCmdText.Append(" UNIQUE(" + aUnique + "),");
+#if false
+					// 旧コード
 					aCmdText.Append("UNIQUE(");
 					String[] aUniqueSplit = aUnique.Split(',');
 					foreach (String aElement in aUniqueSplit)
@@ -172,6 +184,7 @@ namespace Shinta
 					}
 					aCmdText.Remove(aCmdText.Length - 1, 1);
 					aCmdText.Append("),");
+#endif
 				}
 			}
 
@@ -179,7 +192,6 @@ namespace Shinta
 			aCmdText.Append(");");
 
 			// テーブル作成
-			Debug.WriteLine("CreateTable() SQL: " + aCmdText.ToString());
 			oCmd.CommandText = aCmdText.ToString();
 			oCmd.ExecuteNonQuery();
 
