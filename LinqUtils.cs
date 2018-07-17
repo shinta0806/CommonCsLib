@@ -193,6 +193,7 @@ namespace Shinta
 
 			// テーブル作成
 			oCmd.CommandText = aCmdText.ToString();
+			Debug.WriteLine("CreateTable() cmd: " + oCmd.CommandText);
 			oCmd.ExecuteNonQuery();
 
 		}

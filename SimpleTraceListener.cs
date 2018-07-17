@@ -44,7 +44,7 @@ namespace Shinta
 		// ログファイル名
 		public String LogFileName { get; set; }
 
-		// ログファイルの最大サイズ（目安）
+		// ログファイルの最大サイズ（バイト：目安）
 		public Int64 MaxSize { get; set; }
 
 		// ログファイルの旧版を何世代保存するか

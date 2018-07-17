@@ -32,6 +32,7 @@
 // (2.41) | 2017/11/17 (Fri) | StatusT の使用を廃止。
 //  2.50  | 2017/11/18 (Sat) | Serialize()、Deserialize() を作成。
 //  2.60  | 2018/01/18 (Thu) | CompareVersionString() を作成。
+//  2.70  | 2018/07/07 (Sat) | StringToInt32() を作成。
 // ============================================================================
 
 using Microsoft.Win32;
@@ -628,7 +629,8 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 全メンバを浅くコピーする
 		// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
-		// ApplicationSettingsBase 派生のクラスに対してはうまく動かない模様
+		// ApplicationSettingsBase 派生のクラスに対してはフィールドが取得できないためコピーできない
+		// （this[] は取得できないのか？）
 		// --------------------------------------------------------------------
 		public static void ShallowCopy<T>(T oSrc, T oDest)
 		{
@@ -691,6 +693,24 @@ namespace Shinta
 			return ShowLogMessage(oLogInfo.EventType, oLogInfo.Message, oTraceSource, oForm);
 		}
 #endif
+
+		// --------------------------------------------------------------------
+		// 文字列のうち、数値に見える部分を数値に変換
+		// --------------------------------------------------------------------
+		public static Int32 StringToInt32(String oString)
+		{
+			if (String.IsNullOrEmpty(oString))
+			{
+				return 0;
+			}
+
+			Match aMatch = Regex.Match(oString, "-?[0-9]+");
+			if (String.IsNullOrEmpty(aMatch.Value))
+			{
+				return 0;
+			}
+			return Int32.Parse(aMatch.Value);
+		}
 
 		// --------------------------------------------------------------------
 		// 参照の入替

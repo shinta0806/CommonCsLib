@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ファイルをダウンロードするクラス（ログイン用に POST 機能あり）
-// Copyright (C) 2014-2015 by SHINTA
+// Copyright (C) 2014-2018 by SHINTA
 // 
 // ============================================================================
 
@@ -29,6 +29,7 @@
 //  1.30  | 2015/10/04 (Sun) | Download() を HttpClient で行うように変更した。
 //  1.40  | 2015/10/04 (Sun) | Post() を作成した。
 //  1.50  | 2015/11/07 (Sat) | ITerminatableThread の代わりに CancellationToken を使うようにした。
+// (1.51) | 2018/05/21 (Mon) | Post() をファイル送信にも対応させた。
 // ============================================================================
 
 using System;
@@ -38,6 +39,7 @@ using System.IO;
 using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -168,12 +170,46 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// Post
+		// ＜引数＞ oPost: Name=Value, oFiles: Name=Path
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		public void Post(String oUrl, Dictionary<String, String> oPost)
+		public void Post(String oUrl, Dictionary<String, String> oPost, Dictionary<String, String> oFiles = null)
 		{
-			// POST で送信
-			HttpMethod(oUrl, CoreHttpPost, new FormUrlEncodedContent(oPost));
+			if (oFiles == null || oFiles.Count == 0)
+			{
+				// oPost のみを送信
+				HttpMethod(oUrl, CoreHttpPost, new FormUrlEncodedContent(oPost));
+				return;
+			}
+
+			using (MultipartFormDataContent aMultipart = new MultipartFormDataContent())
+			{
+				// 文字列
+				foreach (KeyValuePair<String, String> aKVP in oPost)
+				{
+					StringContent aStringContent = new StringContent(aKVP.Value);
+					aStringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+					{
+						Name = aKVP.Key,
+					};
+					aMultipart.Add(aStringContent);
+				}
+
+				// ファイル
+				foreach (KeyValuePair<String, String> aKVP in oFiles)
+				{
+					StreamContent aFileContent = new StreamContent(File.OpenRead(aKVP.Value));
+					aFileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue(/*"attachment"*/"form-data")
+					{
+						Name = aKVP.Key,
+						FileName = Path.GetFileName(aKVP.Value),
+					};
+					aMultipart.Add(aFileContent);
+				}
+
+				// POST で送信
+				HttpMethod(oUrl, CoreHttpPostWithFile, aMultipart);
+			}
 		}
 
 		// ====================================================================
@@ -223,6 +259,14 @@ namespace Shinta
 		}
 
 		// --------------------------------------------------------------------
+		// httpMethod() で使うデリゲート関数：POST（ファイル送信）用
+		// --------------------------------------------------------------------
+		private Task<HttpResponseMessage> CoreHttpPostWithFile(String oUrl, Object oOption)
+		{
+			return mClient.PostAsync(oUrl, (MultipartFormDataContent)oOption);
+		}
+
+		// --------------------------------------------------------------------
 		// http リクエストを処理する汎用関数
 		// ＜例外＞
 		// --------------------------------------------------------------------
@@ -265,7 +309,7 @@ namespace Shinta
 				if (aRes != null && aRes.Result.StatusCode == HttpStatusCode.RequestTimeout)
 				{
 					// タイムアウトなら、一定時間後にリトライする
-#if DEBUG
+#if DEBUGz
 					MessageBox.Show("[DEBUG] Downloader::HttpMethod()\nデリゲート：" + oCoreDg.ToString() + "\nHTTP ステータスエラー：リトライします");
 #endif
 					Wait(GET_RETRY_INTERVAL);
