@@ -19,6 +19,9 @@
 //  1.07  | 2016/06/11 (Sat) | SUCCEEDED() を追加。
 //  1.08  | 2017/06/28 (Wed) | GetWindowText() を追加。
 //  1.09  | 2018/03/23 (Fri) | SHChangeNotifyRegister() を追加。
+//  1.10  | 2018/08/10 (Fri) | IsIconic() を追加。
+//  1.11  | 2018/08/10 (Fri) | ShowWindowAsync() を追加。
+//  1.12  | 2018/08/10 (Fri) | SetForegroundWindow() を追加。
 // ============================================================================
 
 using System;
@@ -127,6 +130,25 @@ namespace Shinta
 		SHCNRF_ShellLevel = 0x0002,
 		SHCNRF_RecursiveInterrupt = 0x1000,
 		SHCNRF_NewDelivery = 0x8000,
+	}
+
+	// --------------------------------------------------------------------
+	// ShowWindow()::nCmdShow
+	// --------------------------------------------------------------------
+	public enum ShowWindowCommands : Int32
+	{
+		SW_HIDE = 0,
+		SW_SHOWNORMAL = 1,
+		SW_NORMAL = 1,
+		SW_SHOWMINIMIZED = 2,
+		SW_SHOWMAXIMIZED = 3,
+		SW_MAXIMIZE = 3,
+		SW_SHOWNOACTIVATE = 4,
+		SW_SHOW = 5,
+		SW_MINIMIZE = 6,
+		SW_SHOWMINNOACTIVE = 7,
+		SW_SHOWNA = 8,
+		SW_RESTORE = 9
 	}
 
 	// ====================================================================
@@ -328,6 +350,13 @@ namespace Shinta
 		public static extern Int32 GetWindowTextLength(IntPtr oWnd);
 
 		// --------------------------------------------------------------------
+		// IsIconic
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern Boolean IsIconic(IntPtr oHWnd);
+
+		// --------------------------------------------------------------------
 		// PostMessage
 		// 非同期通信
 		// --------------------------------------------------------------------
@@ -356,6 +385,13 @@ namespace Shinta
 		public static extern IntPtr SendMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, ref COPYDATASTRUCT_String oLParam);
 
 		// --------------------------------------------------------------------
+		// SetForegroundWindow
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern Boolean SetForegroundWindow(IntPtr oWnd);
+
+		// --------------------------------------------------------------------
 		// SHChangeNotifyRegister
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_SHELL32_DLL, SetLastError = true, EntryPoint = "#2", CharSet = CharSet.Auto)]
@@ -368,6 +404,12 @@ namespace Shinta
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern Boolean SHGetPathFromIDList(IntPtr oIdl, [MarshalAs(UnmanagedType.LPTStr)] StringBuilder oPath);
 
+		// --------------------------------------------------------------------
+		// ShowWindowAsync
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern Boolean ShowWindowAsync(IntPtr oHWnd, Int32 oCmdShow);
 	}
 	// public class WindowsApi ___END___
 

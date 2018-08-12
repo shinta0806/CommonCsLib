@@ -33,6 +33,8 @@
 //  2.50  | 2017/11/18 (Sat) | Serialize()、Deserialize() を作成。
 //  2.60  | 2018/01/18 (Thu) | CompareVersionString() を作成。
 //  2.70  | 2018/07/07 (Sat) | StringToInt32() を作成。
+//  2.80  | 2018/08/07 (Tue) | SameNameProcesses() を作成。
+//  2.90  | 2018/08/11 (Sat) | ActivateExternalWindow() を作成。
 // ============================================================================
 
 using Microsoft.Win32;
@@ -46,6 +48,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Forms;
 using System.Xml.Serialization;
 
@@ -136,6 +139,60 @@ namespace Shinta
 		// ====================================================================
 		// public メンバー関数
 		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// ミューテックスを取得できない場合は、同名のプロセスのウィンドウをアクティベートする
+		// 無ければ oOwnedMutex を作成する
+		// oOwnedMutex は使い終わった後で呼び出し元にて解放する必要がある
+		// ＜返値＞ アクティベートした
+		// --------------------------------------------------------------------
+		public static Boolean ActivateAnotherProcessWindowIfNeeded(String oMutexName, out Mutex oOwnedMutex)
+		{
+			// ミューテックスを取得する
+			oOwnedMutex = new Mutex(false, oMutexName);
+			try
+			{
+				if (oOwnedMutex.WaitOne(0))
+				{
+					// ミューテックスを取得できた
+					return false;
+				}
+			}
+			catch (AbandonedMutexException)
+			{
+				// ミューテックスが放棄されていた場合にこの例外となるが、取得自体はできている
+				return false;
+			}
+
+			// ミューテックスが取得できなかったため、同名プロセスを探し、そのウィンドウをアクティベートする
+			oOwnedMutex = null;
+			List<Process> aSameNameProcesses = SameNameProcesses();
+			if (aSameNameProcesses.Count > 0)
+			{
+				ActivateExternalWindow(aSameNameProcesses[0].MainWindowHandle);
+			}
+			return true;
+		}
+
+		// --------------------------------------------------------------------
+		// 外部プロセスのウィンドウをアクティベートする
+		// --------------------------------------------------------------------
+		public static void ActivateExternalWindow(IntPtr oHWnd)
+		{
+			if (oHWnd == IntPtr.Zero)
+			{
+				return;
+			}
+
+			// ウィンドウが最小化されていれば元に戻す
+			if (WindowsApi.IsIconic(oHWnd))
+			{
+				WindowsApi.ShowWindowAsync(oHWnd, (Int32)ShowWindowCommands.SW_RESTORE);
+			}
+
+			// アクティベート
+			WindowsApi.SetForegroundWindow(oHWnd);
+		}
 
 		// --------------------------------------------------------------------
 		// フォームの位置を親フォームに対してカスケードする
@@ -612,6 +669,32 @@ namespace Shinta
 			return -1;
 		}
 #endif
+
+		// --------------------------------------------------------------------
+		// 指定されたプロセスと同じ名前のプロセス（指定されたプロセスを除く）を列挙する
+		// ＜返値＞ プロセス群（見つからない場合は空のリスト
+		// --------------------------------------------------------------------
+		public static List<Process> SameNameProcesses(Process oSpecifyProcess = null)
+		{
+			// プロセスが指定されていない場合は実行中のプロセスが指定されたものとする
+			if (oSpecifyProcess == null)
+			{
+				oSpecifyProcess = Process.GetCurrentProcess();
+			}
+
+			Process[] aAllProcesses = Process.GetProcessesByName(oSpecifyProcess.ProcessName);
+			List<Process> aSameNameProcesses = new List<Process>();
+
+			foreach (Process aProcess in aAllProcesses)
+			{
+				if (aProcess.Id != oSpecifyProcess.Id)
+				{
+					aSameNameProcesses.Add(aProcess);
+				}
+			}
+
+			return aSameNameProcesses;
+		}
 
 		// --------------------------------------------------------------------
 		// オブジェクトをシリアライズして保存
