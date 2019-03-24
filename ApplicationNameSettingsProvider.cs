@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // アプリケーション設定をアプリの設定保存用パスに保存する
-// Copyright (C) 2014 by SHINTA
+// Copyright (C) 2014-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -15,12 +15,12 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2014/12/22 (Mon) | 作成開始。
 //  1.00  | 2014/12/22 (Mon) | オリジナルバージョン。
+// (1.01) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
 // ============================================================================
 
 using System;
 using System.Collections.Specialized;
 using System.IO;
-using System.Windows.Forms;
 
 namespace Shinta
 {
@@ -35,7 +35,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public ApplicationNameSettingsProvider()
 		{
-			FileName = Path.GetDirectoryName(Application.UserAppDataPath) + "\\" + FILE_NAME_USER_CONFIG;
+			FileName = Common.UserAppDataFolderPath() + FILE_NAME_USER_CONFIG;
 		}
 
 		// --------------------------------------------------------------------

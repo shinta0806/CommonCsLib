@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // Windows API を C# で使えるようにするための記述
-// Copyright (C) 2015-2018 by SHINTA
+// Copyright (C) 2015-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -22,6 +22,8 @@
 //  1.10  | 2018/08/10 (Fri) | IsIconic() を追加。
 //  1.11  | 2018/08/10 (Fri) | ShowWindowAsync() を追加。
 //  1.12  | 2018/08/10 (Fri) | SetForegroundWindow() を追加。
+//  1.13  | 2019/02/09 (Sat) | GetWindowLong() を追加。
+//  1.14  | 2019/02/09 (Sat) | SetWindowLong() を追加。
 // ============================================================================
 
 using System;
@@ -64,6 +66,20 @@ namespace Shinta
 		DBT_DEVTYP_OEM = 0x00000000,
 		DBT_DEVTYP_PORT = 0x00000003,
 		DBT_DEVTYP_VOLUME = 0x00000002,
+	}
+
+	// --------------------------------------------------------------------
+	// GWL (GetWindowLong)
+	// --------------------------------------------------------------------
+	public enum GWL : Int32
+	{
+		GWL_WNDPROC = -4,
+		GWL_HINSTANCE = -6,
+		GWL_HWNDPARENT = -8,
+		GWL_STYLE = -16,
+		GWL_EXSTYLE = -20,
+		GWL_USERDATA = -21,
+		GWL_ID = -12,
 	}
 
 	// --------------------------------------------------------------------
@@ -149,6 +165,36 @@ namespace Shinta
 		SW_SHOWMINNOACTIVE = 7,
 		SW_SHOWNA = 8,
 		SW_RESTORE = 9
+	}
+
+	// --------------------------------------------------------------------
+	// WS (Window Style)
+	// --------------------------------------------------------------------
+	[Flags]
+	public enum WS : UInt32
+	{
+		WS_BORDER = 0x800000,
+		WS_CAPTION = 0xc00000,
+		WS_CHILD = 0x40000000,
+		WS_CLIPCHILDREN = 0x2000000,
+		WS_CLIPSIBLINGS = 0x4000000,
+		WS_DISABLED = 0x8000000,
+		WS_DLGFRAME = 0x400000,
+		WS_GROUP = 0x20000,
+		WS_HSCROLL = 0x100000,
+		WS_MAXIMIZE = 0x1000000,
+		WS_MAXIMIZEBOX = 0x10000,
+		WS_MINIMIZE = 0x20000000,
+		WS_MINIMIZEBOX = 0x20000,
+		WS_OVERLAPPED = 0x0,
+		WS_OVERLAPPEDWINDOW = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_SIZEFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+		WS_POPUP = 0x80000000u,
+		WS_POPUPWINDOW = WS_POPUP | WS_BORDER | WS_SYSMENU,
+		WS_SIZEFRAME = 0x40000,
+		WS_SYSMENU = 0x80000,
+		WS_TABSTOP = 0x10000,
+		WS_VISIBLE = 0x10000000,
+		WS_VSCROLL = 0x200000,
 	}
 
 	// ====================================================================
@@ -338,16 +384,22 @@ namespace Shinta
 		public static extern Int32 GetRunningObjectTable(UInt32 oReserved, out IRunningObjectTable oPprot);
 
 		// --------------------------------------------------------------------
+		// GetWindowLong
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL)]
+		public static extern IntPtr GetWindowLong(IntPtr oHWnd, Int32 oIndex);
+
+		// --------------------------------------------------------------------
 		// GetWindowText
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Auto)]
-		public static extern Int32 GetWindowText(IntPtr oWnd, StringBuilder oString, Int32 oMaxCount);
+		public static extern Int32 GetWindowText(IntPtr oHWnd, StringBuilder oString, Int32 oMaxCount);
 
 		// --------------------------------------------------------------------
 		// GetWindowTextLength
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Auto)]
-		public static extern Int32 GetWindowTextLength(IntPtr oWnd);
+		public static extern Int32 GetWindowTextLength(IntPtr oHWnd);
 
 		// --------------------------------------------------------------------
 		// IsIconic
@@ -390,6 +442,12 @@ namespace Shinta
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern Boolean SetForegroundWindow(IntPtr oWnd);
+
+		// --------------------------------------------------------------------
+		// SetWindowLong
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL)]
+		public static extern IntPtr SetWindowLong(IntPtr oHWnd, Int32 oIndex, IntPtr oNewLong);
 
 		// --------------------------------------------------------------------
 		// SHChangeNotifyRegister

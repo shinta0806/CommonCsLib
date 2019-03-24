@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // よく使う一般的な定数や関数
-// Copyright (C) 2014-2018 by SHINTA
+// Copyright (C) 2014-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -35,6 +35,11 @@
 //  2.70  | 2018/07/07 (Sat) | StringToInt32() を作成。
 //  2.80  | 2018/08/07 (Tue) | SameNameProcesses() を作成。
 //  2.90  | 2018/08/11 (Sat) | ActivateExternalWindow() を作成。
+//  3.00  | 2018/09/09 (Sun) | ContainFormIfNeeded() を作成。
+// (3.01) | 2019/01/14 (Mon) | Windows フォームアプリケーション用の関数を #if で隔離。
+//  3.10  | 2019/01/14 (Mon) | ActivateSameNameProcessWindow() を作成。
+//  3.20  | 2019/01/19 (Sat) | UserAppDataFolderPath() を作成。
+//  3.30  | 2019/02/10 (Sun) | SelectDataGridCell() を作成。
 // ============================================================================
 
 using Microsoft.Win32;
@@ -49,8 +54,18 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Windows.Forms;
 using System.Xml.Serialization;
+
+#if USE_FORM
+using System.Windows.Forms;
+#endif
+
+#if USE_WPF
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Controls;
+using System.Windows.Media;
+#endif
 
 namespace Shinta
 {
@@ -85,7 +100,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// よく使うフォルダ
 		// --------------------------------------------------------------------
-		public const String FOLDER_NAME_SHINTA = "SHINTA\\";
+		public const String FOLDER_NAME_SHINTA = SHINTA + "\\";
 
 		// --------------------------------------------------------------------
 		// よく使う拡張子
@@ -108,6 +123,7 @@ namespace Shinta
 		public const String FILE_EXT_MOV = ".mov";
 		public const String FILE_EXT_MP3 = ".mp3";
 		public const String FILE_EXT_MP4 = ".mp4";
+		public const String FILE_EXT_MPEG = ".mpeg";
 		public const String FILE_EXT_MPG = ".mpg";
 		public const String FILE_EXT_PHP = ".php";
 		public const String FILE_EXT_PNG = ".png";
@@ -131,8 +147,13 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// その他
 		// --------------------------------------------------------------------
+
 		// 一般的なスレッドスリープ時間 [ms]
 		public const Int32 GENERAL_SLEEP_TIME = 20;
+
+		// SHINTA
+		public const String SHINTA = "SHINTA";
+
 		// TraceSource のデフォルトリスナー
 		public const String TRACE_SOURCE_DEFAULT_LISTENER_NAME = "Default";
 
@@ -166,11 +187,7 @@ namespace Shinta
 
 			// ミューテックスが取得できなかったため、同名プロセスを探し、そのウィンドウをアクティベートする
 			oOwnedMutex = null;
-			List<Process> aSameNameProcesses = SameNameProcesses();
-			if (aSameNameProcesses.Count > 0)
-			{
-				ActivateExternalWindow(aSameNameProcesses[0].MainWindowHandle);
-			}
+			ActivateSameNameProcessWindow();
 			return true;
 		}
 
@@ -194,6 +211,19 @@ namespace Shinta
 			WindowsApi.SetForegroundWindow(oHWnd);
 		}
 
+		// --------------------------------------------------------------------
+		// 指定プロセスと同名プロセスのウィンドウをアクティベートする
+		// --------------------------------------------------------------------
+		public static void ActivateSameNameProcessWindow(Process oSpecifyProcess = null)
+		{
+			List<Process> aSameNameProcesses = SameNameProcesses(oSpecifyProcess);
+			if (aSameNameProcesses.Count > 0)
+			{
+				ActivateExternalWindow(aSameNameProcesses[0].MainWindowHandle);
+			}
+		}
+
+#if USE_FORM
 		// --------------------------------------------------------------------
 		// フォームの位置を親フォームに対してカスケードする
 		// --------------------------------------------------------------------
@@ -231,7 +261,41 @@ namespace Shinta
 
 			oForm.DesktopLocation = aLocation;
 		}
+#endif
 
+#if USE_WPF
+		// --------------------------------------------------------------------
+		// ウィンドウの位置を親ウィンドウに対してカスケードする
+		// --------------------------------------------------------------------
+		public static void CascadeWindow(Window oWindow)
+		{
+			if (oWindow.Owner == null)
+			{
+				return;
+			}
+
+			// 位置をずらす
+			Double aDelta = SystemParameters.CaptionHeight + SystemParameters.WindowResizeBorderThickness.Top;
+			Double aNewLeft = oWindow.Owner.Left + aDelta;
+			Double aNewTop = oWindow.Owner.Top + aDelta;
+
+			// ディスプレイからはみ出さないように調整
+			// ToDo: 親ウィンドウと同じディスプレイからはみ出さないように調整
+			if (aNewLeft + oWindow.ActualWidth > SystemParameters.VirtualScreenWidth)
+			{
+				aNewLeft = oWindow.Owner.Left;
+			}
+			if (aNewTop + oWindow.ActualHeight > SystemParameters.VirtualScreenHeight)
+			{
+				aNewTop = oWindow.Owner.Top;
+			}
+
+			oWindow.Left = aNewLeft;
+			oWindow.Top = aNewTop;
+		}
+#endif
+
+#if USE_FORM
 		// --------------------------------------------------------------------
 		// .NET Framework 4.5 以降がインストールされていないなら終了する
 		// --------------------------------------------------------------------
@@ -247,6 +311,25 @@ namespace Shinta
 				}
 			}
 		}
+#endif
+
+#if USE_WPF
+		// --------------------------------------------------------------------
+		// .NET Framework 4.5 以降がインストールされていないなら終了する
+		// --------------------------------------------------------------------
+		public static void CloseIfNet45IsnotInstalled(String oAppName, LogWriter oLogWriter)
+		{
+			using (RegistryKey aRegKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(REG_KEY_DOT_NET_45_VERSION))
+			{
+				if (aRegKey == null || aRegKey.GetValue("Release") == null)
+				{
+					oLogWriter.ShowLogMessage(TraceEventType.Error, ".NET Framework 4.5 以降がインストールされていないため、" + oAppName
+							+ "は動作しません。\n.NET Framework 4.5 以降をインストールして下さい。");
+					Application.Current.Shutdown();
+				}
+			}
+		}
+#endif
 
 		// --------------------------------------------------------------------
 		// バージョン文字列を比較（大文字小文字は区別しない）
@@ -317,6 +400,36 @@ namespace Shinta
 			return String.Compare(aSuffixA, aSuffixB, true);
 		}
 
+#if USE_FORM
+		// --------------------------------------------------------------------
+		// フォームがスクリーンから完全にはみ出している場合はスクリーン内に移動する
+		// --------------------------------------------------------------------
+		public static void ContainFormIfNeeded(Form oForm)
+		{
+			// 移動の必要があるか調査
+			for (Int32 i = 0; i < Screen.AllScreens.Length; i++)
+			{
+				// フォームとスクリーンがぴったりの場合は移動不要
+				if (Screen.AllScreens[i].Bounds == oForm.DesktopBounds)
+				{
+					return;
+				}
+
+				Rectangle aIntersect = Rectangle.Intersect(Screen.AllScreens[i].Bounds, oForm.DesktopBounds);
+				if (!aIntersect.IsEmpty && aIntersect != Screen.AllScreens[i].Bounds)
+				{
+					// フォームとスクリーンが一部重なっている場合は移動不要
+					// ※フォームがスクリーンより完全に大きい場合を除く
+					return;
+				}
+			}
+
+			// 移動の必要がある
+			oForm.DesktopLocation = new Point(0, 0);
+		}
+#endif
+
+#if USE_FORM
 		// --------------------------------------------------------------------
 		// oParent が oTarget を子として持っているか再帰的に確認
 		// --------------------------------------------------------------------
@@ -336,6 +449,35 @@ namespace Shinta
 			}
 			return false;
 		}
+#endif
+
+#if USE_WPF
+		// --------------------------------------------------------------------
+		// ウィンドウがスクリーンから完全にはみ出している場合はスクリーン内に移動する
+		// --------------------------------------------------------------------
+		public static void ContainWindowIfNeeded(Window oWindow)
+		{
+			Rect aScreenRect = new Rect(0, 0, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
+
+			// ウィンドウとスクリーンがぴったりの場合は移動不要
+			if (aScreenRect == oWindow.RestoreBounds)
+			{
+				return;
+			}
+
+			// フォームとスクリーンが一部重なっている場合は移動不要
+			// ※フォームがスクリーンより完全に大きい場合を除く
+			Rect aIntersect = Rect.Intersect(aScreenRect, oWindow.RestoreBounds);
+			if (!aIntersect.IsEmpty && aIntersect != aScreenRect)
+			{
+				return;
+			}
+
+			// 移動の必要がある
+			oWindow.Left = 0;
+			oWindow.Top = 0;
+		}
+#endif
 
 		// --------------------------------------------------------------------
 		// Base64 エンコード済みの暗号化データを復号し、元の文字列を返す
@@ -463,6 +605,20 @@ namespace Shinta
 			}
 		}
 
+#if USE_WPF
+		// --------------------------------------------------------------------
+		// ウィンドウの最小化ボタンを無効化する
+		// フォームは MinimizeBox プロパティーで設定できるが WPF ではできないため
+		// --------------------------------------------------------------------
+		public static void DisableMinimizeBox(Window oWindow)
+		{
+			WindowInteropHelper aHelper = new WindowInteropHelper(oWindow);
+
+			Int64 aStyle = (Int64)WindowsApi.GetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE);
+			WindowsApi.SetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(aStyle & ~((Int64)WS.WS_MINIMIZEBOX)));
+		}
+#endif
+
 		// --------------------------------------------------------------------
 		// 文字列を暗号化し、文字列（Base64）で返す
 		// ＜例外＞ Exception
@@ -487,6 +643,54 @@ namespace Shinta
 			// Base64 エンコード
 			return Convert.ToBase64String(aEncBytes);
 		}
+
+#if USE_WPF
+		// --------------------------------------------------------------------
+		// 対象セルの表示上の位置を取得する
+		// --------------------------------------------------------------------
+		public static void GetDataGridCellPosition(DataGrid oDataGrid, DependencyObject oTarget, out Int32 oRowIndex, out Int32 oColumnIndex)
+		{
+			oRowIndex = -1;
+			oColumnIndex = -1;
+
+			// 対象セルを取得する
+			// oTarget が MouseButtonEventArgs e から e.MouseDevice.DirectlyOver as DependencyObject で取得されている場合、
+			// oTarget は DataGridCell、Border、TextBlock のいずれか
+			DataGridCell aCell = null;
+			while (oTarget != null)
+			{
+				aCell = oTarget as DataGridCell;
+				if (aCell != null)
+				{
+					break;
+				}
+				oTarget = VisualTreeHelper.GetParent(oTarget);
+			}
+			if (aCell == null)
+			{
+				return;
+			}
+
+			// 対象行を取得する
+			DataGridRow aRow = null;
+			while (oTarget != null)
+			{
+				aRow = oTarget as DataGridRow;
+				if (aRow != null)
+				{
+					break;
+				}
+				oTarget = VisualTreeHelper.GetParent(oTarget);
+			}
+			if (aRow == null)
+			{
+				return;
+			}
+
+			oRowIndex = aRow.GetIndex();
+			oColumnIndex = aCell.Column.DisplayIndex;
+		}
+#endif
 
 		// --------------------------------------------------------------------
 		// セクションのない ini ファイルからペアを読み取る
@@ -696,6 +900,30 @@ namespace Shinta
 			return aSameNameProcesses;
 		}
 
+#if USE_WPF
+		// --------------------------------------------------------------------
+		// データグリッドのセルを選択状態にする
+		// --------------------------------------------------------------------
+		public static Boolean SelectDataGridCell(DataGrid oDataGrid, Int32 oRowIndex, Int32 oColumnIndex)
+		{
+			if (oRowIndex < 0 || oRowIndex >= oDataGrid.Items.Count || oColumnIndex < 0 || oColumnIndex >= oDataGrid.Columns.Count)
+			{
+				return false;
+			}
+
+			// 先にフォーカスを当てないと選択状態にならない
+			oDataGrid.Focus();
+			if (oDataGrid.SelectionUnit == DataGridSelectionUnit.FullRow)
+			{
+				oDataGrid.SelectedIndex = oRowIndex;
+			}
+
+			// セル選択
+			oDataGrid.CurrentCell = new DataGridCellInfo(oDataGrid.Items[oRowIndex], oDataGrid.Columns[oColumnIndex]);
+			return true;
+		}
+#endif
+
 		// --------------------------------------------------------------------
 		// オブジェクトをシリアライズして保存
 		// ＜例外＞ Exception
@@ -825,6 +1053,24 @@ namespace Shinta
 			return String.Empty;
 		}
 #endif
+
+		// --------------------------------------------------------------------
+		// 設定保存用フォルダーのパス（末尾 '\\'）
+		// フォルダーが存在しない場合は作成する
+		// --------------------------------------------------------------------
+		public static String UserAppDataFolderPath()
+		{
+			String aPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)
+					+ "\\" + Common.FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location) + "\\";
+			try
+			{
+				Directory.CreateDirectory(aPath);
+			}
+			catch (Exception)
+			{
+			}
+			return aPath;
+		}
 
 		// ====================================================================
 		// private 定数

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ちょちょいと自動更新を起動する
-// Copyright (C) 2014-2017 by SHINTA
+// Copyright (C) 2014-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -14,12 +14,13 @@
 // (1.02) | 2015/05/23 (Sat) | エラーメッセージをユーザーに表示できるようにした。
 // (1.03) | 2016/09/24 (Sat) | LogWriter を使用するように変更。
 // (1.04) | 2017/11/18 (Sat) | StatusT を廃止。
+// (1.05) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Windows.Forms;
+using System.Reflection;
 
 namespace Shinta
 {
@@ -231,7 +232,7 @@ namespace Shinta
 					aParam += " " + PARAM_STR_RELAUNCH + " \"";
 					if (String.IsNullOrEmpty(Relaunch))
 					{
-						aParam += Application.ExecutablePath;
+						aParam += Assembly.GetEntryAssembly().Location;
 
 					}
 					else
@@ -256,7 +257,7 @@ namespace Shinta
 			try
 			{
 				ProcessStartInfo aPSInfo = new ProcessStartInfo();
-				aPSInfo.FileName = Path.GetDirectoryName(Application.ExecutablePath) + "\\" + FILE_NAME_CUPDATER;
+				aPSInfo.FileName = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) + "\\" + FILE_NAME_CUPDATER;
 				aPSInfo.Arguments = aParam;
 				Process.Start(aPSInfo);
 				LogMessage(TraceEventType.Information, "ちょちょいと自動更新を起動しました。");

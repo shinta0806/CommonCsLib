@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // メッセージおよび付加情報を CSV 形式でログファイルに保存
-// Copyright (C) 2014-2017 by SHINTA
+// Copyright (C) 2014-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -25,13 +25,14 @@
 // (1.15) | 2015/11/08 (Sun) |   メッセージを "" で括るようにした。
 //  1.20  | 2015/11/22 (Sun) | 複数世代を残せるようにした。
 // (1.21) | 2018/01/07 (Sun) |   MaxOldGenerations のデフォルト値を 3 にした。
+// (1.22) | 2019/01/19 (Sat) |   System.Windows.Forms を使用しないようにした。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading;
-using System.Windows.Forms;
 
 namespace Shinta
 {
@@ -70,8 +71,8 @@ namespace Shinta
 		public SimpleTraceListener()
 		{
 			// プロパティのデフォルト値
-			LogFileName = Path.GetDirectoryName(Application.UserAppDataPath) + "\\"
-					+ Path.ChangeExtension(Path.GetFileName(System.Windows.Forms.Application.ExecutablePath), Common.FILE_EXT_LOG);
+			LogFileName = Common.UserAppDataFolderPath()
+					+ Path.ChangeExtension(Path.GetFileName(Assembly.GetEntryAssembly().Location), Common.FILE_EXT_LOG);
 			MaxSize = MAX_LOG_SIZE_DEFAULT;
 			MaxOldGenerations = 3;
 			ThreadSafe = false;

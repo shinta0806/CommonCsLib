@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // Linq ユーティリティクラス
-// Copyright (C) 2015-2018 by SHINTA
+// Copyright (C) 2015-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -23,6 +23,8 @@
 // (1.51) | 2018/04/07 (Sat) | AUTOINCREMENT エラー対策の手法を変更。
 // (1.52) | 2018/04/30 (Mon) | DB_TYPE_DOUBLE を "REAL" から "FLOAT" に変更（"REAL" だと Single 精度に落ちるため）。
 // (1.53) | 2018/05/06 (Sun) | 複数カラムの組み合わせ主キーに対応した。
+// (1.54) | 2018/12/30 (Sun) | 主キーが単一カラムか複数カラムかで記述方を分けるようにした。
+// (1.55) | 2019/03/21 (Thu) | DB_TYPE_BLOB を作成。
 // ============================================================================
 
 using System;
@@ -55,6 +57,7 @@ namespace Shinta
 		public const String DB_TYPE_INT64 = "BIGINT";
 		public const String DB_TYPE_DOUBLE = "FLOAT";
 		public const String DB_TYPE_STRING = "NVARCHAR";
+		public const String DB_TYPE_BLOB = "BINARY";
 
 		// ====================================================================
 		// public メンバー関数
@@ -142,7 +145,7 @@ namespace Shinta
 				}
 
 				// NOT NULL
-				if (!aFieldAttr.CanBeNull)
+				if (!aFieldAttr.CanBeNull && !aFieldAttr.IsPrimaryKey)
 				{
 					aCmdText.Append(" NOT NULL");
 				}
@@ -150,6 +153,7 @@ namespace Shinta
 				// 主キー
 				if (aFieldAttr.IsPrimaryKey)
 				{
+					aCmdText.Append(EACH_PRIMARY_KEY_SPECIFIER);
 					aPrimaryKeys.Add(aFieldAttr.Name);
 				}
 
@@ -163,7 +167,7 @@ namespace Shinta
 			}
 
 			// 主キー
-			if (aPrimaryKeys.Count > 0)
+			if (aPrimaryKeys.Count > 1)
 			{
 				aCmdText.Append(" PRIMARY KEY(" + String.Join(",", aPrimaryKeys) + "),");
 			}
@@ -174,28 +178,32 @@ namespace Shinta
 				foreach (String aUnique in oUniques)
 				{
 					aCmdText.Append(" UNIQUE(" + aUnique + "),");
-#if false
-					// 旧コード
-					aCmdText.Append("UNIQUE(");
-					String[] aUniqueSplit = aUnique.Split(',');
-					foreach (String aElement in aUniqueSplit)
-					{
-						aCmdText.Append(aElement + ",");
-					}
-					aCmdText.Remove(aCmdText.Length - 1, 1);
-					aCmdText.Append("),");
-#endif
 				}
 			}
 
 			aCmdText.Remove(aCmdText.Length - 1, 1);
 			aCmdText.Append(");");
 
-			// テーブル作成
-			oCmd.CommandText = aCmdText.ToString();
-			Debug.WriteLine("CreateTable() cmd: " + oCmd.CommandText);
-			oCmd.ExecuteNonQuery();
+			// 主キー
+			String aCmdTextStr = aCmdText.ToString();
+			switch (aPrimaryKeys.Count)
+			{
+				case 0:
+					break;
+				case 1:
+					// 主キーが 1 つの時は主キーの所に PRIMARY KEY を記述する（AUTOINCREMENT も使えるようにするため）
+					aCmdTextStr = aCmdTextStr.Replace(EACH_PRIMARY_KEY_SPECIFIER, " PRIMARY KEY");
+					break;
+				default:
+					// 主キーが複数の時はまとめて PRIMARY KEY を記述したので、個別の PRIMARY KEY は削除
+					aCmdTextStr = aCmdTextStr.Replace(EACH_PRIMARY_KEY_SPECIFIER, "");
+					break;
+			}
 
+			// テーブル作成
+			Debug.WriteLine("CreateTable() cmd: " + aCmdTextStr);
+			oCmd.CommandText = aCmdTextStr;
+			oCmd.ExecuteNonQuery();
 		}
 
 		// --------------------------------------------------------------------
@@ -274,6 +282,13 @@ namespace Shinta
 			oCmd.CommandText = "VACUUM";
 			oCmd.ExecuteNonQuery();
 		}
+
+		// ====================================================================
+		// private 定数
+		// ====================================================================
+
+		private const String EACH_PRIMARY_KEY_SPECIFIER = "%EACHPRIMARY%";
+		private const String WHOLE_PRIMARY_KEY_SPECIFIER = "%WHOLEPRIMARY%";
 
 		// ====================================================================
 		// private メンバー関数

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // 動作環境を取得する
-// Copyright (C) 2014-2018 by SHINTA
+// Copyright (C) 2014-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -18,6 +18,7 @@
 // (1.15) | 2017/11/18 (Sat) | StatusT の使用を廃止。
 //  1.20  | 2018/04/02 (Mon) | GetClrVersionRegistryNumber() を作成した。
 //  1.30  | 2018/04/02 (Mon) | GetClrVersionName() を作成した。
+// (1.31) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
 // ============================================================================
 
 using Microsoft.Win32;
@@ -25,7 +26,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Management;
-using System.Windows.Forms;
+using System.Reflection;
 
 namespace Shinta
 {
@@ -211,7 +212,7 @@ namespace Shinta
 					+ " / " + aClrVerNum.ToString() + " (" + aClrVerName + ")");
 
 			// 自身のパス
-			oLogWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Path: " + Application.ExecutablePath);
+			oLogWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Path: " + Assembly.GetEntryAssembly().Location);
 
 			// ファミリー
 			try
