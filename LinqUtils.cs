@@ -25,6 +25,7 @@
 // (1.53) | 2018/05/06 (Sun) | 複数カラムの組み合わせ主キーに対応した。
 // (1.54) | 2018/12/30 (Sun) | 主キーが単一カラムか複数カラムかで記述方を分けるようにした。
 // (1.55) | 2019/03/21 (Thu) | DB_TYPE_BLOB を作成。
+// (1.56) | 2019/04/09 (Tue) | CreateTable() の AUTOINCREMENT 指定方法を変更。
 // ============================================================================
 
 using System;
@@ -105,10 +106,10 @@ namespace Shinta
 		// ＜引数＞ oCmd: 対象となるデータベースファイルに接続された状態の DbCommand
 		//          oTypeOfTable: テーブルの型を定義したクラス。typeof(THoge) で与える
 		//          oUniques: ユニーク制約を付けるフィールド名（複数キーで 1 つのユニークにする場合はカンマ区切りで 1 つの String とする）
-		//          oAutoIncrement: AUTOINCREMENT を付けるフィールド名
+		//          oAutoIncrement: 主キーを AUTOINCREMENT にする
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-		public static void CreateTable(DbCommand oCmd, Type oTypeOfTable, List<String> oUniques = null, String oAutoIncrement = null)
+		public static void CreateTable(DbCommand oCmd, Type oTypeOfTable, List<String> oUniques = null, Boolean oAutoIncrement = false)
 		{
 			StringBuilder aCmdText = new StringBuilder();
 			aCmdText.Append("CREATE TABLE IF NOT EXISTS " + TableName(oTypeOfTable) + "(");
@@ -131,7 +132,7 @@ namespace Shinta
 				// フィールド名
 				aCmdText.Append(aFieldAttr.Name);
 
-				Boolean aIsAutoIncrement = (!String.IsNullOrEmpty(oAutoIncrement) && aFieldAttr.Name == oAutoIncrement);
+				Boolean aIsAutoIncrement = oAutoIncrement && aFieldAttr.IsPrimaryKey;
 
 				// 型
 				if (aIsAutoIncrement)
