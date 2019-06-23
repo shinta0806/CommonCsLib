@@ -16,6 +16,7 @@
 // (1.13) | 2018/03/18 (Sun) | ShowLogMessage() のフォームを前面に出す動作をさらに改善。
 // (1.14) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
 // (1.15) | 2019/03/10 (Sun) | WPF アプリケーションでも TextBox 出力できるようにした。
+// (1.16) | 2019/06/21 (Fri) | AppendDisplayText を作成。
 // ============================================================================
 
 using System;
@@ -59,6 +60,10 @@ namespace Shinta
 
 		// ログを表示するテキストボックス
 		public TextBox TextBoxDisplay { get; set; }
+
+		// 表示されるログを追加
+		public delegate void AppendDisplayTextDelegate(String oText);
+		public AppendDisplayTextDelegate AppendDisplayText { get; set; }
 
 		// アプリが終了シーケンスに入っているかどうかを表すトークン
 		public CancellationToken ApplicationQuitToken { get; set; }
@@ -241,6 +246,22 @@ namespace Shinta
 						TextBoxDisplay.CaretIndex = TextBoxDisplay.Text.Length;
 						TextBoxDisplay.ScrollToEnd();
 					}
+				}));
+			}
+
+			// 表示の追加
+			if (AppendDisplayText != null)
+			{
+				Application.Current.Dispatcher.Invoke(new Action(() =>
+				{
+#if DEBUG
+					AppendDisplayText(oMessage);
+#else
+					if (oEventType != TraceEventType.Verbose)
+					{
+						AppendDisplayText(oMessage);
+					}
+#endif
 				}));
 			}
 

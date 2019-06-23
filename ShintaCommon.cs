@@ -117,6 +117,7 @@ namespace Shinta
 		public const String FILE_EXT_KRA = ".kra";
 		public const String FILE_EXT_LOCK = ".lock";
 		public const String FILE_EXT_LOG = ".log";
+		public const String FILE_EXT_LGA = ".lga";
 		public const String FILE_EXT_LRC = ".lrc";
 		public const String FILE_EXT_M4A = ".m4a";
 		public const String FILE_EXT_MKV = ".mkv";
@@ -134,6 +135,7 @@ namespace Shinta
 		public const String FILE_EXT_WAV = ".wav";
 		public const String FILE_EXT_WMA = ".wma";
 		public const String FILE_EXT_WMV = ".wmv";
+		public const String FILE_EXT_XAML = ".xaml";
 		public const String FILE_EXT_ZIP = ".zip";
 
 		// --------------------------------------------------------------------
