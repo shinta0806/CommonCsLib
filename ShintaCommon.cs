@@ -12,10 +12,10 @@
 //  1.00  | 2014/11/29 (Sat) | Constants クラスを作成。
 //  1.10  | 2014/12/06 (Sat) | ShowLogMessage() を作成。
 //  1.20  | 2014/12/22 (Mon) | PostMessage() Windows API をインポート。
-// (1.21) | 2014/12/28 (Sun) | ShowLogMessage() でメッセージが空の場合に何もしないようにした。
-// (1.22) | 2014/12/28 (Sun) | ShowLogMessage() でログもできるようにした。
+// (1.21) | 2014/12/28 (Sun) |   ShowLogMessage() でメッセージが空の場合に何もしないようにした。
+// (1.22) | 2014/12/28 (Sun) |   ShowLogMessage() でログもできるようにした。
 //  1.30  | 2015/01/10 (Sat) | TraceEventTypeToCaption() を作成。
-// (1.31) | 2015/01/31 (Sat) | TRACE_SOURCE_DEFAULT_LISTENER_NAME を定義。
+// (1.31) | 2015/01/31 (Sat) |   TRACE_SOURCE_DEFAULT_LISTENER_NAME を定義。
 //  1.40  | 2015/02/15 (Sun) | FindWindow() Windows API をインポート。
 //  1.50  | 2015/02/21 (Sat) | Windows API 関連を分離。
 //  1.60  | 2015/03/15 (Sun) | DeleteZoneID() を作成。
@@ -26,27 +26,26 @@
 //  2.01  | 2015/10/03 (Sat) | ShowLogMessage() のオーバーロードを作成。
 //  2.10  | 2016/02/20 (Sat) | ContainsControl() を作成。
 //  2.20  | 2016/04/17 (Sun) | DetectEncoding() を作成。
-// (2.21) | 2016/04/17 (Sun) | 精度が悪いため DetectEncoding() を廃止。
+// (2.21) | 2016/04/17 (Sun) |   精度が悪いため DetectEncoding() を廃止。
 //  2.30  | 2016/05/03 (Tue) | MakeRelativePath() を作成。
 //  2.40  | 2016/05/03 (Tue) | MakeAbsolutePath() を作成。
-// (2.41) | 2017/11/17 (Fri) | StatusT の使用を廃止。
+// (2.41) | 2017/11/17 (Fri) |   StatusT の使用を廃止。
 //  2.50  | 2017/11/18 (Sat) | Serialize()、Deserialize() を作成。
 //  2.60  | 2018/01/18 (Thu) | CompareVersionString() を作成。
 //  2.70  | 2018/07/07 (Sat) | StringToInt32() を作成。
 //  2.80  | 2018/08/07 (Tue) | SameNameProcesses() を作成。
 //  2.90  | 2018/08/11 (Sat) | ActivateExternalWindow() を作成。
 //  3.00  | 2018/09/09 (Sun) | ContainFormIfNeeded() を作成。
-// (3.01) | 2019/01/14 (Mon) | Windows フォームアプリケーション用の関数を #if で隔離。
+// (3.01) | 2019/01/14 (Mon) |   Windows フォームアプリケーション用の関数を #if で隔離。
 //  3.10  | 2019/01/14 (Mon) | ActivateSameNameProcessWindow() を作成。
 //  3.20  | 2019/01/19 (Sat) | UserAppDataFolderPath() を作成。
 //  3.30  | 2019/02/10 (Sun) | SelectDataGridCell() を作成。
+//  3.40  | 2019/06/27 (Thu) | フォーム・WPF 特有のものを別ファイルに分離。
 // ============================================================================
 
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -55,17 +54,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml.Serialization;
-
-#if USE_FORM
-using System.Windows.Forms;
-#endif
-
-#if USE_WPF
-using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Controls;
-using System.Windows.Media;
-#endif
 
 namespace Shinta
 {
@@ -82,7 +70,9 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// ログ用定数（正規の TraceEventType への追加分）
 		// --------------------------------------------------------------------
-		public const TraceEventType TRACE_EVENT_TYPE_STATUS = (TraceEventType)1001; // Information より重要度の低い情報（ShowLogMessage() で表示しない）
+
+		// Information より重要度の低い情報（ShowLogMessage() で表示しない）
+		public const TraceEventType TRACE_EVENT_TYPE_STATUS = (TraceEventType)1001;
 
 		// --------------------------------------------------------------------
 		// デバッグ用バイナリかどうかを見分けるための印
@@ -225,114 +215,6 @@ namespace Shinta
 			}
 		}
 
-#if USE_FORM
-		// --------------------------------------------------------------------
-		// フォームの位置を親フォームに対してカスケードする
-		// --------------------------------------------------------------------
-		public static void CascadeForm(Form oForm)
-		{
-			if (oForm.Owner == null)
-			{
-				return;
-			}
-
-			// 位置をずらす
-			Point aLocation = oForm.Owner.DesktopLocation;
-			Int32 aDelta = SystemInformation.CaptionHeight + SystemInformation.FrameBorderSize.Height;
-			aLocation.Offset(aDelta, aDelta);
-
-			// 親フォームのディスプレイからはみ出さないように調整
-			Int32 aOwnderScreen = 0;
-			for (Int32 i = 0; i < Screen.AllScreens.Length; i++)
-			{
-				if (Screen.AllScreens[i].Bounds.IntersectsWith(oForm.Owner.DesktopBounds))
-				{
-					aOwnderScreen = i;
-					break;
-				}
-			}
-			Rectangle aOwnerScreenBounds = Screen.AllScreens[aOwnderScreen].Bounds;
-			if (aLocation.X + oForm.Width > aOwnerScreenBounds.Width)
-			{
-				aLocation.X = aOwnerScreenBounds.Left;
-			}
-			if (aLocation.Y + oForm.Height > aOwnerScreenBounds.Height)
-			{
-				aLocation.Y = aOwnerScreenBounds.Top;
-			}
-
-			oForm.DesktopLocation = aLocation;
-		}
-#endif
-
-#if USE_WPF
-		// --------------------------------------------------------------------
-		// ウィンドウの位置を親ウィンドウに対してカスケードする
-		// --------------------------------------------------------------------
-		public static void CascadeWindow(Window oWindow)
-		{
-			if (oWindow.Owner == null)
-			{
-				return;
-			}
-
-			// 位置をずらす
-			Double aDelta = SystemParameters.CaptionHeight + SystemParameters.WindowResizeBorderThickness.Top;
-			Double aNewLeft = oWindow.Owner.Left + aDelta;
-			Double aNewTop = oWindow.Owner.Top + aDelta;
-
-			// ディスプレイからはみ出さないように調整
-			// ToDo: 親ウィンドウと同じディスプレイからはみ出さないように調整
-			if (aNewLeft + oWindow.ActualWidth > SystemParameters.VirtualScreenWidth)
-			{
-				aNewLeft = oWindow.Owner.Left;
-			}
-			if (aNewTop + oWindow.ActualHeight > SystemParameters.VirtualScreenHeight)
-			{
-				aNewTop = oWindow.Owner.Top;
-			}
-
-			oWindow.Left = aNewLeft;
-			oWindow.Top = aNewTop;
-		}
-#endif
-
-#if USE_FORM
-		// --------------------------------------------------------------------
-		// .NET Framework 4.5 以降がインストールされていないなら終了する
-		// --------------------------------------------------------------------
-		public static void CloseIfNet45IsnotInstalled(Form oForm, String oAppName, LogWriter oLogWriter)
-		{
-			using (RegistryKey aRegKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(REG_KEY_DOT_NET_45_VERSION))
-			{
-				if (aRegKey == null || aRegKey.GetValue("Release") == null)
-				{
-					oLogWriter.ShowLogMessage(TraceEventType.Error, ".NET Framework 4.5 以降がインストールされていないため、" + oAppName
-							+ "は動作しません。\n.NET Framework 4.5 以降をインストールして下さい。");
-					oForm.Close();
-				}
-			}
-		}
-#endif
-
-#if USE_WPF
-		// --------------------------------------------------------------------
-		// .NET Framework 4.5 以降がインストールされていないなら終了する
-		// --------------------------------------------------------------------
-		public static void CloseIfNet45IsnotInstalled(String oAppName, LogWriter oLogWriter)
-		{
-			using (RegistryKey aRegKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(REG_KEY_DOT_NET_45_VERSION))
-			{
-				if (aRegKey == null || aRegKey.GetValue("Release") == null)
-				{
-					oLogWriter.ShowLogMessage(TraceEventType.Error, ".NET Framework 4.5 以降がインストールされていないため、" + oAppName
-							+ "は動作しません。\n.NET Framework 4.5 以降をインストールして下さい。");
-					Application.Current.Shutdown();
-				}
-			}
-		}
-#endif
-
 		// --------------------------------------------------------------------
 		// バージョン文字列を比較（大文字小文字は区別しない）
 		// --------------------------------------------------------------------
@@ -401,85 +283,6 @@ namespace Shinta
 			// 後続文字列同士を比較
 			return String.Compare(aSuffixA, aSuffixB, true);
 		}
-
-#if USE_FORM
-		// --------------------------------------------------------------------
-		// フォームがスクリーンから完全にはみ出している場合はスクリーン内に移動する
-		// --------------------------------------------------------------------
-		public static void ContainFormIfNeeded(Form oForm)
-		{
-			// 移動の必要があるか調査
-			for (Int32 i = 0; i < Screen.AllScreens.Length; i++)
-			{
-				// フォームとスクリーンがぴったりの場合は移動不要
-				if (Screen.AllScreens[i].Bounds == oForm.DesktopBounds)
-				{
-					return;
-				}
-
-				Rectangle aIntersect = Rectangle.Intersect(Screen.AllScreens[i].Bounds, oForm.DesktopBounds);
-				if (!aIntersect.IsEmpty && aIntersect != Screen.AllScreens[i].Bounds)
-				{
-					// フォームとスクリーンが一部重なっている場合は移動不要
-					// ※フォームがスクリーンより完全に大きい場合を除く
-					return;
-				}
-			}
-
-			// 移動の必要がある
-			oForm.DesktopLocation = new Point(0, 0);
-		}
-#endif
-
-#if USE_FORM
-		// --------------------------------------------------------------------
-		// oParent が oTarget を子として持っているか再帰的に確認
-		// --------------------------------------------------------------------
-		public static Boolean ContainsControl(Control oParent, Control oTarget)
-		{
-			if (oParent.Controls.Contains(oTarget))
-			{
-				return true;
-			}
-
-			foreach (Control aChild in oParent.Controls)
-			{
-				if (ContainsControl(aChild, oTarget))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-#endif
-
-#if USE_WPF
-		// --------------------------------------------------------------------
-		// ウィンドウがスクリーンから完全にはみ出している場合はスクリーン内に移動する
-		// --------------------------------------------------------------------
-		public static void ContainWindowIfNeeded(Window oWindow)
-		{
-			Rect aScreenRect = new Rect(0, 0, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
-
-			// ウィンドウとスクリーンがぴったりの場合は移動不要
-			if (aScreenRect == oWindow.RestoreBounds)
-			{
-				return;
-			}
-
-			// フォームとスクリーンが一部重なっている場合は移動不要
-			// ※フォームがスクリーンより完全に大きい場合を除く
-			Rect aIntersect = Rect.Intersect(aScreenRect, oWindow.RestoreBounds);
-			if (!aIntersect.IsEmpty && aIntersect != aScreenRect)
-			{
-				return;
-			}
-
-			// 移動の必要がある
-			oWindow.Left = 0;
-			oWindow.Top = 0;
-		}
-#endif
 
 		// --------------------------------------------------------------------
 		// Base64 エンコード済みの暗号化データを復号し、元の文字列を返す
@@ -554,45 +357,6 @@ namespace Shinta
 			return true;
 		}
 
-#if USE_STATUS_T
-		// --------------------------------------------------------------------
-		// ZoneID を削除
-		// ＜返値＞削除できたら Ok
-		// --------------------------------------------------------------------
-		public static StatusT DeleteZoneID(String oPath)
-		{
-			if (WindowsApi.DeleteFile(oPath + STREAM_NAME_ZONE_ID))
-			{
-				return StatusT.Ok;
-			}
-			else
-			{
-				return StatusT.Error;
-			}
-		}
-
-		// --------------------------------------------------------------------
-		// ZoneID を削除（フォルダ配下のすべてのファイル）
-		// ＜返値＞ファイル列挙で何らかのエラーが発生したら Error、削除できなくても Ok は返る
-		// --------------------------------------------------------------------
-		public static StatusT DeleteZoneID(String oFolder, SearchOption oOption)
-		{
-			try
-			{
-				String[] aFiles = Directory.GetFiles(oFolder, "*", oOption);
-				foreach (String aFile in aFiles)
-				{
-					DeleteZoneID(aFile);
-				}
-			}
-			catch
-			{
-				return StatusT.Error;
-			}
-			return StatusT.Ok;
-		}
-#endif
-
 		// --------------------------------------------------------------------
 		// オブジェクトをデシリアライズして読み出し
 		// クラスコンストラクタで List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
@@ -606,20 +370,6 @@ namespace Shinta
 				return (T)aSerializer.Deserialize(aSR);
 			}
 		}
-
-#if USE_WPF
-		// --------------------------------------------------------------------
-		// ウィンドウの最小化ボタンを無効化する
-		// フォームは MinimizeBox プロパティーで設定できるが WPF ではできないため
-		// --------------------------------------------------------------------
-		public static void DisableMinimizeBox(Window oWindow)
-		{
-			WindowInteropHelper aHelper = new WindowInteropHelper(oWindow);
-
-			Int64 aStyle = (Int64)WindowsApi.GetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE);
-			WindowsApi.SetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(aStyle & ~((Int64)WS.WS_MINIMIZEBOX)));
-		}
-#endif
 
 		// --------------------------------------------------------------------
 		// 文字列を暗号化し、文字列（Base64）で返す
@@ -645,54 +395,6 @@ namespace Shinta
 			// Base64 エンコード
 			return Convert.ToBase64String(aEncBytes);
 		}
-
-#if USE_WPF
-		// --------------------------------------------------------------------
-		// 対象セルの表示上の位置を取得する
-		// --------------------------------------------------------------------
-		public static void GetDataGridCellPosition(DataGrid oDataGrid, DependencyObject oTarget, out Int32 oRowIndex, out Int32 oColumnIndex)
-		{
-			oRowIndex = -1;
-			oColumnIndex = -1;
-
-			// 対象セルを取得する
-			// oTarget が MouseButtonEventArgs e から e.MouseDevice.DirectlyOver as DependencyObject で取得されている場合、
-			// oTarget は DataGridCell、Border、TextBlock のいずれか
-			DataGridCell aCell = null;
-			while (oTarget != null)
-			{
-				aCell = oTarget as DataGridCell;
-				if (aCell != null)
-				{
-					break;
-				}
-				oTarget = VisualTreeHelper.GetParent(oTarget);
-			}
-			if (aCell == null)
-			{
-				return;
-			}
-
-			// 対象行を取得する
-			DataGridRow aRow = null;
-			while (oTarget != null)
-			{
-				aRow = oTarget as DataGridRow;
-				if (aRow != null)
-				{
-					break;
-				}
-				oTarget = VisualTreeHelper.GetParent(oTarget);
-			}
-			if (aRow == null)
-			{
-				return;
-			}
-
-			oRowIndex = aRow.GetIndex();
-			oColumnIndex = aCell.Column.DisplayIndex;
-		}
-#endif
 
 		// --------------------------------------------------------------------
 		// セクションのない ini ファイルからペアを読み取る
@@ -902,30 +604,6 @@ namespace Shinta
 			return aSameNameProcesses;
 		}
 
-#if USE_WPF
-		// --------------------------------------------------------------------
-		// データグリッドのセルを選択状態にする
-		// --------------------------------------------------------------------
-		public static Boolean SelectDataGridCell(DataGrid oDataGrid, Int32 oRowIndex, Int32 oColumnIndex)
-		{
-			if (oRowIndex < 0 || oRowIndex >= oDataGrid.Items.Count || oColumnIndex < 0 || oColumnIndex >= oDataGrid.Columns.Count)
-			{
-				return false;
-			}
-
-			// 先にフォーカスを当てないと選択状態にならない
-			oDataGrid.Focus();
-			if (oDataGrid.SelectionUnit == DataGridSelectionUnit.FullRow)
-			{
-				oDataGrid.SelectedIndex = oRowIndex;
-			}
-
-			// セル選択
-			oDataGrid.CurrentCell = new DataGridCellInfo(oDataGrid.Items[oRowIndex], oDataGrid.Columns[oColumnIndex]);
-			return true;
-		}
-#endif
-
 		// --------------------------------------------------------------------
 		// オブジェクトをシリアライズして保存
 		// ＜例外＞ Exception
@@ -954,59 +632,6 @@ namespace Shinta
 			}
 		}
 
-#if USE_OBSOLETE_SHOW_LOG_MESSAGE
-		// --------------------------------------------------------------------
-		// ログメッセージを適切なアイコンと共に表示
-		// メッセージが空の場合は何もしない
-		// obsolete: LogWriter を使うこと
-		// --------------------------------------------------------------------
-		public static DialogResult ShowLogMessage(TraceEventType oEventType, String oMessage, TraceSource oTraceSource = null, Form oOwner = null)
-		{
-			MessageBoxIcon aIcon = MessageBoxIcon.Information;
-
-			// メッセージが空の場合は何もしない
-			if (String.IsNullOrEmpty(oMessage))
-			{
-				return DialogResult.None;
-			}
-
-			// 必要に応じてログ
-			if (oTraceSource != null)
-			{
-				oTraceSource.TraceEvent(oEventType, 0, oMessage);
-			}
-
-			// 表示
-			switch (oEventType)
-			{
-				case TraceEventType.Critical:
-				case TraceEventType.Error:
-					aIcon = MessageBoxIcon.Error;
-					break;
-				case TraceEventType.Warning:
-					aIcon = MessageBoxIcon.Warning;
-					break;
-				case TraceEventType.Information:
-					aIcon = MessageBoxIcon.Information;
-					break;
-				default:
-					return DialogResult.None;
-			}
-
-			if (oOwner != null)
-			{
-				oOwner.Activate();
-			}
-
-			return MessageBox.Show(oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButtons.OK, aIcon);
-		}
-
-		public static DialogResult ShowLogMessage(LogInfo oLogInfo, TraceSource oTraceSource = null, Form oForm = null)
-		{
-			return ShowLogMessage(oLogInfo.EventType, oLogInfo.Message, oTraceSource, oForm);
-		}
-#endif
-
 		// --------------------------------------------------------------------
 		// 文字列のうち、数値に見える部分を数値に変換
 		// --------------------------------------------------------------------
@@ -1034,27 +659,6 @@ namespace Shinta
 			oLhs = oRhs;
 			oRhs = aTemp;
 		}
-
-#if USE_OBSOLETE_SHOW_LOG_MESSAGE
-		// --------------------------------------------------------------------
-		// TraceEventType を表示用の文字列に変換
-		// obsolete: LogWriter を使うこと
-		// --------------------------------------------------------------------
-		public static String TraceEventTypeToCaption(TraceEventType oEventType)
-		{
-			switch (oEventType)
-			{
-				case TraceEventType.Critical:
-				case TraceEventType.Error:
-					return "エラー";
-				case TraceEventType.Warning:
-					return "警告";
-				case TraceEventType.Information:
-					return "情報";
-			}
-			return String.Empty;
-		}
-#endif
 
 		// --------------------------------------------------------------------
 		// 設定保存用フォルダーのパス（末尾 '\\'）
@@ -1146,23 +750,8 @@ namespace Shinta
 			return true;
 		}
 #endif
-	} // End: public class Common
-
-	// ====================================================================
-	// ログ情報格納用構造体
-	// ====================================================================
-
-	public struct LogInfo
-	{
-		public TraceEventType EventType { get; set; }
-		public String Message { get; set; }
-
-		public LogInfo(TraceEventType oEventType, String oMessage)
-		{
-			EventType = oEventType;
-			Message = oMessage;
-		}
 	}
+	// public class Common ___END___
 
 	// ====================================================================
 	// シリアライズ用構造体
@@ -1186,8 +775,18 @@ namespace Shinta
 			Key = oKey;
 			Value = oValue;
 		}
-	} // End: public struct SerializableKeyValuePair<TKey, TValue>
+	}
+	// public struct SerializableKeyValuePair<TKey, TValue> ___END___
 
+	// ====================================================================
+	// 多重起動例外
+	// ====================================================================
 
-} // End: namespace Shinta
+	public class MultiInstanceException : Exception
+	{
+	}
+	// public class MultiInstanceException ___END___
+
+}
+// namespace Shinta ___END___
 

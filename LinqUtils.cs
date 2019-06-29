@@ -14,29 +14,29 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2015/xx/xx (xxx) | 作成開始。
 //  1.00  | 2015/xx/xx (xxx) | オリジナルバージョン。
-// (1.01) | 2017/12/02 (Sat) | CreateIndex() の引数を変更。
+// (1.01) | 2017/12/02 (Sat) |   CreateIndex() の引数を変更。
 //  1.10  | 2017/12/02 (Sat) | SqliteMaster クラスを作成。
 //  1.20  | 2017/12/02 (Sat) | Tables() を作成。
 //  1.30  | 2017/12/02 (Sat) | DropTable() を作成。
 //  1.40  | 2017/12/02 (Sat) | DropAllTables() を作成。
 //  1.50  | 2017/12/02 (Sat) | Vacuum() を作成。
-// (1.51) | 2018/04/07 (Sat) | AUTOINCREMENT エラー対策の手法を変更。
-// (1.52) | 2018/04/30 (Mon) | DB_TYPE_DOUBLE を "REAL" から "FLOAT" に変更（"REAL" だと Single 精度に落ちるため）。
-// (1.53) | 2018/05/06 (Sun) | 複数カラムの組み合わせ主キーに対応した。
-// (1.54) | 2018/12/30 (Sun) | 主キーが単一カラムか複数カラムかで記述方を分けるようにした。
-// (1.55) | 2019/03/21 (Thu) | DB_TYPE_BLOB を作成。
-// (1.56) | 2019/04/09 (Tue) | CreateTable() の AUTOINCREMENT 指定方法を変更。
+// (1.51) | 2018/04/07 (Sat) |   AUTOINCREMENT エラー対策の手法を変更。
+// (1.52) | 2018/04/30 (Mon) |   DB_TYPE_DOUBLE を "REAL" から "FLOAT" に変更（"REAL" だと Single 精度に落ちるため）。
+// (1.53) | 2018/05/06 (Sun) |   複数カラムの組み合わせ主キーに対応した。
+// (1.54) | 2018/12/30 (Sun) |   主キーが単一カラムか複数カラムかで記述方を分けるようにした。
+// (1.55) | 2019/03/21 (Thu) |   DB_TYPE_BLOB を作成。
+// (1.56) | 2019/04/09 (Tue) |   CreateTable() の AUTOINCREMENT 指定方法を変更。
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Linq;
-using System.Data.Linq.Mapping;
-using System.Text;
-using System.Data.SQLite;
 using System.Data.Linq;
+using System.Data.Linq.Mapping;
+using System.Data.SQLite;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 namespace Shinta
 {

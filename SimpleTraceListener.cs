@@ -26,6 +26,7 @@
 //  1.20  | 2015/11/22 (Sun) | 複数世代を残せるようにした。
 // (1.21) | 2018/01/07 (Sun) |   MaxOldGenerations のデフォルト値を 3 にした。
 // (1.22) | 2019/01/19 (Sat) |   System.Windows.Forms を使用しないようにした。
+// (1.23) | 2019/06/27 (Thu) |   StatusT を廃止。
 // ============================================================================
 
 using System;
@@ -239,74 +240,8 @@ namespace Shinta
 			return true;
 		}
 
-#if USE_STATUS_T
-		// --------------------------------------------------------------------
-		// ファイルサイズが一定値を越えたらローテーション
-		// --------------------------------------------------------------------
-		private StatusT LotateLogFile()
-		{
-			// ローテーション設定確認（設定サイズが 0 ならローテーション不要）
-			if (MaxSize <= 0)
-			{
-				return StatusT.Ok;
-			}
-
-			// ファイル名の確認
-			if (String.IsNullOrEmpty(LogFileName))
-			{
-				return StatusT.Error;
-			}
-
-			try
-			{
-				// ファイルサイズの調査
-				FileInfo aFI = new FileInfo(LogFileName);
-				if (aFI.Length <= MaxSize)
-				{
-					// ローテーション不要
-					return StatusT.Ok;
-				}
-
-				try
-				{
-					// ローテーション：まずは最古のファイルを削除
-					File.Delete(OldLogFileName(MaxOldGenerations));
-				}
-				catch (Exception)
-				{
-				}
-
-				// 順に移動
-				for (Int32 i = MaxOldGenerations; i > 1; i--)
-				{
-					try
-					{
-						File.Move(OldLogFileName(i - 1), OldLogFileName(i));
-					}
-					catch (Exception)
-					{
-					}
-				}
-
-				if (MaxOldGenerations <= 0)
-				{
-					File.Delete(LogFileName);
-				}
-				else
-				{
-					// 最新を旧へ
-					File.Move(LogFileName, OldLogFileName(1));
-				}
-			}
-			catch (Exception)
-			{
-				return StatusT.Error;
-			}
-
-			return StatusT.Ok;
-		}
-#endif
-
 	}
+	// public class SimpleTraceListener ___END___
 }
+// namespace Shinta ___END___
 

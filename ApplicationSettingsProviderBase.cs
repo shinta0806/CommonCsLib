@@ -20,7 +20,7 @@
 //  1.00  | 2014/12/17 (Wed) | オリジナルバージョン。
 //  1.10  | 2014/12/22 (Mon) | 保存ファイル名の決定は派生クラスに委譲した。
 //  1.20  | 2015/01/12 (Mon) | Reset() を実装した。
-//  1.21  | 2015/05/23 (Sat) |   SerializableKeyValuePair を Common に移動した。
+// (1.21) | 2015/05/23 (Sat) |   SerializableKeyValuePair を Common に移動した。
 // ============================================================================
 
 using System;
@@ -187,5 +187,8 @@ namespace Shinta
 		}
 
 	}
+	// public class ApplicationSettingsProviderBase ___END___
+
 }
+// namespace Shinta ___END___
 

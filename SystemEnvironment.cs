@@ -22,6 +22,7 @@
 // ============================================================================
 
 using Microsoft.Win32;
+
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -36,7 +37,8 @@ namespace Shinta
 		// public 定数
 		// ====================================================================
 
-		public const String LOG_PREFIX_SYSTEM_ENV = "［動作環境］";   // ログの動作環境表記
+		// ログの動作環境表記
+		public const String LOG_PREFIX_SYSTEM_ENV = "［動作環境］";   
 
 		// ====================================================================
 		// public メンバー関数
@@ -276,7 +278,8 @@ namespace Shinta
 			return String.Empty;
 		}
 	}
-
+	// public class SystemEnvironment ___END___
 
 }
+// namespace Shinta ___END___
 

@@ -11,12 +11,13 @@
 //  -.--  | 2016/09/22 (Thu) | 作成開始。
 //  1.00  | 2016/09/22 (Thu) | オリジナルバージョン。
 //  1.10  | 2016/09/24 (Sat) | LogMessage() を作成。
-// (1.11) | 2017/11/20 (Mon) | LogMessage() がリリース時にデバッグ情報をテキストボックスに表示していたのを修正。
-// (1.12) | 2017/12/24 (Sun) | ShowLogMessage() のフォームを前面に出す動作の改善。
-// (1.13) | 2018/03/18 (Sun) | ShowLogMessage() のフォームを前面に出す動作をさらに改善。
-// (1.14) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
-// (1.15) | 2019/03/10 (Sun) | WPF アプリケーションでも TextBox 出力できるようにした。
-// (1.16) | 2019/06/21 (Fri) | AppendDisplayText を作成。
+// (1.11) | 2017/11/20 (Mon) |   LogMessage() がリリース時にデバッグ情報をテキストボックスに表示していたのを修正。
+// (1.12) | 2017/12/24 (Sun) |   ShowLogMessage() のフォームを前面に出す動作の改善。
+// (1.13) | 2018/03/18 (Sun) |   ShowLogMessage() のフォームを前面に出す動作をさらに改善。
+// (1.14) | 2019/01/20 (Sun) |   WPF アプリケーションでも使用可能にした。
+// (1.15) | 2019/03/10 (Sun) |   WPF アプリケーションでも TextBox 出力できるようにした。
+// (1.16) | 2019/06/21 (Fri) |   AppendDisplayText を作成。
+// (1.17) | 2019/06/27 (Thu) |   WPF 版のコードをシンプルにした。
 // ============================================================================
 
 using System;
@@ -27,9 +28,7 @@ using System.Threading;
 #if USE_FORM
 using System.Windows.Forms;
 #elif USE_WPF
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 #else
 #error Define USE_FORM or USE_WPF
 #endif
@@ -52,16 +51,12 @@ namespace Shinta
 #if USE_FORM
 		// メッセージボックス表示時に前面に出すフォーム
 		public Form FrontForm { get; set; }
-#endif
-#if USE_WPF
-		// メッセージボックス表示時に前面に出すウィンドウ
-		public Window FrontWindow { get; set; }
-#endif
 
 		// ログを表示するテキストボックス
 		public TextBox TextBoxDisplay { get; set; }
+#endif
 
-		// 表示されるログを追加
+		// 表示されるログを追加する関数
 		public delegate void AppendDisplayTextDelegate(String oText);
 		public AppendDisplayTextDelegate AppendDisplayText { get; set; }
 
@@ -227,28 +222,6 @@ namespace Shinta
 				return MessageBoxResult.OK;
 			}
 
-			// テキストボックスへの表示
-			if (TextBoxDisplay != null)
-			{
-				TextBoxDisplay.Dispatcher.Invoke(new Action(() =>
-				{
-					Boolean aIsScrollNeeded = TextBoxDisplay.CaretIndex == TextBoxDisplay.Text.Length;
-#if DEBUG
-					TextBoxDisplay.AppendText(oMessage + "\r\n");
-#else
-					if (oEventType != TraceEventType.Verbose)
-					{
-						TextBoxDisplay.AppendText(oMessage + "\r\n");
-					}
-#endif
-					if (aIsScrollNeeded)
-					{
-						TextBoxDisplay.CaretIndex = TextBoxDisplay.Text.Length;
-						TextBoxDisplay.ScrollToEnd();
-					}
-				}));
-			}
-
 			// 表示の追加
 			if (AppendDisplayText != null)
 			{
@@ -289,18 +262,6 @@ namespace Shinta
 					return MessageBoxResult.None;
 			}
 
-			// FrontWindow が指定されている場合はその子フォームにする
-			MessageBoxResult aResult = MessageBoxResult.None;
-			if (FrontWindow != null)
-			{
-				FrontWindow.Dispatcher.Invoke(new Action(() =>
-				{
-					FrontWindow.Activate();
-					aResult = MessageBox.Show(FrontWindow, oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButton.OK, aIcon);
-				}));
-				return aResult;
-			}
-
 			try
 			{
 				// ワーカースレッドから Application.Current.Windows にアクセスすると別スレッドからのアクセスによる例外が発生する
@@ -309,6 +270,7 @@ namespace Shinta
 				// 自アプリでアクティブなフォームがある場合はその子フォームにする
 				if (aActiveWindow != null)
 				{
+					MessageBoxResult aResult = MessageBoxResult.None;
 					aActiveWindow.Dispatcher.Invoke(new Action(() =>
 					{
 						// IsActive でも実際には前面に来ていない場合もあるのでアクティブ化する
@@ -317,25 +279,6 @@ namespace Shinta
 					}));
 					return aResult;
 				}
-			}
-			catch (Exception)
-			{
-			}
-
-			try
-			{
-				// ダミーフォームを前面に表示してその子フォームにする
-				Window aFrontForm = new Window();
-				aFrontForm.Left = -100;
-				aFrontForm.Top = -100;
-				aFrontForm.Width = 50;
-				aFrontForm.Height = 50;
-				aFrontForm.Topmost = true;
-				aFrontForm.Show();
-				aResult = MessageBox.Show(aFrontForm, oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButton.OK, aIcon);
-				aFrontForm.Topmost = false;
-				aFrontForm.Close();
-				return aResult;
 			}
 			catch (Exception)
 			{

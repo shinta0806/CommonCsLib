@@ -272,6 +272,9 @@ __pycache__/
 *.cs
 
 # Add needed C# files
+
+!Behaviors/*.cs
+
 !ApplicationNameSettingsProvider.cs
 !ApplicationSettingsProviderBase.cs
 !CsvManager.cs

@@ -81,5 +81,8 @@ namespace Shinta
 
 
 	}
+	// public class JulianDay ___END___
+
 }
+// namespace Shinta ___END___
 

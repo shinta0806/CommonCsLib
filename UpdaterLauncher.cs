@@ -51,8 +51,12 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 外部通信用メッセージ定数
 		// --------------------------------------------------------------------
-		public const Int32 WM_UPDATER_UI_DISPLAYED = 0x8000 /*WM_APP*/ + 0x1000;    // ウィンドウを表示した
-		public const Int32 WM_UPDATER_LAUNCHED = WM_UPDATER_UI_DISPLAYED + 1;       // 起動完了した（ウィンドウは非表示）
+
+		// ウィンドウを表示した
+		public const Int32 WM_UPDATER_UI_DISPLAYED = 0x8000 /*WM_APP*/ + 0x1000;
+
+		// 起動完了した（ウィンドウは非表示）
+		public const Int32 WM_UPDATER_LAUNCHED = WM_UPDATER_UI_DISPLAYED + 1;
 
 		// ====================================================================
 		// public プロパティ
@@ -61,37 +65,67 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 共通
 		// --------------------------------------------------------------------
-		public String ID { get; set; }                  // アプリの ID
-		public String Name { get; set; }                // アプリの名前（表示用）
-		public Boolean ForceShow { get; set; }          // 最新情報・更新が無くてもユーザーに通知
-		public Int32 Wait { get; set; }                 // チェック開始までの待ち時間 [s]
-		public IntPtr NotifyHWnd { get; set; }          // アプリのメインウィンドウのハンドル
+
+		// アプリの ID
+		public String ID { get; set; }
+
+		// アプリの名前（表示用）
+		public String Name { get; set; }
+
+		// 最新情報・更新が無くてもユーザーに通知
+		public Boolean ForceShow { get; set; }
+
+		// チェック開始までの待ち時間 [s]
+		public Int32 Wait { get; set; }
+
+		// アプリのメインウィンドウのハンドル
+		public IntPtr NotifyHWnd { get; set; }
 
 		// --------------------------------------------------------------------
 		// 共通（オンリー系）
 		// --------------------------------------------------------------------
-		public Boolean Verbose { get; set; }            // バージョン情報ダイアログを表示するのみ
-		public Boolean DeleteOld { get; set; }          // 古い Updater.exe を削除するのみ（更新後の作業用）（未実装）
+
+		// バージョン情報ダイアログを表示するのみ
+		public Boolean Verbose { get; set; }
+
+		// 古い Updater.exe を削除するのみ（更新後の作業用）（未実装）
+		public Boolean DeleteOld { get; set; }
 
 		// --------------------------------------------------------------------
 		// 最新情報確認用
 		// --------------------------------------------------------------------
-		public String LatestRss { get; set; }           // 最新情報を保持している RSS の URL
+
+		// 最新情報を保持している RSS の URL
+		public String LatestRss { get; set; }
 
 		// --------------------------------------------------------------------
 		// 更新用
 		// --------------------------------------------------------------------
-		public String UpdateRss { get; set; }           // 更新情報を保持している RSS の URL
-		public String CurrentVer { get; set; }          // 更新対象アプリのバージョン
-		public String Relaunch { get; set; }            // 更新後に起動するアプリのパス（Launch() では自動設定）
-		public Boolean ClearUpdateCache { get; set; }   // 更新情報をクリア
-		public Boolean ForceInstall { get; set; }       // 強制的にインストール
-		public Int32 PID { get; set; }                  // Updater.exe を起動した依頼元アプリ（Launch() では自動設定）
+
+		// 更新情報を保持している RSS の URL
+		public String UpdateRss { get; set; }
+
+		// 更新対象アプリのバージョン
+		public String CurrentVer { get; set; }
+
+		// 更新後に起動するアプリのパス（Launch() では自動設定）
+		public String Relaunch { get; set; }
+
+		// 更新情報をクリア
+		public Boolean ClearUpdateCache { get; set; }
+
+		// 強制的にインストール
+		public Boolean ForceInstall { get; set; }
+
+		// Updater.exe を起動した依頼元アプリ（Launch() では自動設定）
+		public Int32 PID { get; set; }
 
 		// --------------------------------------------------------------------
 		// ログ
 		// --------------------------------------------------------------------
-		public LogWriter LogWriter { get; set; }        // ログ
+
+		// ログ
+		public LogWriter LogWriter { get; set; }        
 
 		// ====================================================================
 		// public メンバー関数
@@ -305,5 +339,7 @@ namespace Shinta
 		}
 
 	}
-}
+	// public class UpdaterLauncher ___END___
 
+}
+// namespace Shinta ___END___
