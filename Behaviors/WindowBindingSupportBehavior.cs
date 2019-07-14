@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interactivity;
+using System.Windows.Interop;
 
 namespace Shinta.Behaviors
 {
@@ -52,6 +53,13 @@ namespace Shinta.Behaviors
 			set => SetValue(IsCascadeProperty, value);
 		}
 
+		// ウィンドウのキャプションバーに最小化ボタンを表示するかどうか
+		public Boolean MinimizeBox
+		{
+			get => (Boolean)GetValue(MinimizeBoxProperty);
+			set => SetValue(MinimizeBoxProperty, value);
+		}
+
 		// ====================================================================
 		// public メンバー変数
 		// ====================================================================
@@ -70,6 +78,11 @@ namespace Shinta.Behaviors
 		public static readonly DependencyProperty IsCascadeProperty =
 				DependencyProperty.Register("IsCascade", typeof(Boolean), typeof(WindowBindingSupportBehavior),
 				new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceIsCascadeChanged));
+
+		// ウィンドウのキャプションバーに最小化ボタンを表示するかどうか
+		public static readonly DependencyProperty MinimizeBoxProperty =
+				DependencyProperty.Register("MinimizeBox", typeof(Boolean), typeof(WindowBindingSupportBehavior),
+				new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceMinimizeBoxChanged));
 
 		// ====================================================================
 		// protected メンバー関数
@@ -159,8 +172,9 @@ namespace Shinta.Behaviors
 		{
 			if (AssociatedObject != null && AssociatedObject.SizeToContent != SizeToContent.Manual)
 			{
-				// SizeToContent が WidthAndHeight の場合は SourceInitialized よりも Loaded が先に呼び出されるのでここでカスケードする
+				// SizeToContent が WidthAndHeight の場合は SourceInitialized よりも Loaded が先に呼び出されるのでここで処理を行う
 				CascadeWindowIfNeeded();
+				UpdateMinimizeBox();
 			}
 		}
 
@@ -171,8 +185,9 @@ namespace Shinta.Behaviors
 		{
 			if (AssociatedObject != null && AssociatedObject.SizeToContent == SizeToContent.Manual)
 			{
-				// SizeToContent が Manual の場合は Loaded よりも SourceInitialized が先に呼び出されるのでここでカスケードする
+				// SizeToContent が Manual の場合は Loaded よりも SourceInitialized が先に呼び出されるのでここで処理を行う
 				CascadeWindowIfNeeded();
+				UpdateMinimizeBox();
 			}
 		}
 
@@ -223,6 +238,38 @@ namespace Shinta.Behaviors
 		{
 			WindowBindingSupportBehavior aThisObject = oObject as WindowBindingSupportBehavior;
 			aThisObject?.CascadeWindowIfNeeded();
+		}
+
+		// --------------------------------------------------------------------
+		// ViewModel 側で MinimizeBox が変更された
+		// --------------------------------------------------------------------
+		private static void SourceMinimizeBoxChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		{
+			WindowBindingSupportBehavior aThisObject = oObject as WindowBindingSupportBehavior;
+			aThisObject?.UpdateMinimizeBox();
+		}
+
+		// --------------------------------------------------------------------
+		// 最小化ボタンの状態を更新
+		// --------------------------------------------------------------------
+		private void UpdateMinimizeBox()
+		{
+			if (AssociatedObject == null)
+			{
+				return;
+			}
+
+			WindowInteropHelper aHelper = new WindowInteropHelper(AssociatedObject);
+			Int64 aStyle = (Int64)WindowsApi.GetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE);
+
+			if (MinimizeBox)
+			{
+				WindowsApi.SetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(aStyle | ((Int64)WS.WS_MINIMIZEBOX)));
+			}
+			else
+			{
+				WindowsApi.SetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(aStyle & ~((Int64)WS.WS_MINIMIZEBOX)));
+			}
 		}
 
 	}
