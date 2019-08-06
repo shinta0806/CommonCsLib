@@ -16,6 +16,7 @@
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
+//  1.01  | 2019/08/06 (Tue) |   SelectedItem の動作を改善。
 // ============================================================================
 
 using System;
@@ -129,8 +130,9 @@ namespace Shinta.Behaviors
 		{
 			base.OnAttached();
 
-			AssociatedObject.SelectedCellsChanged += ControlSelectedCellsChanged;
 			AssociatedObject.CurrentCellChanged += ControlCurrentCellChanged;
+			AssociatedObject.SelectedCellsChanged += ControlSelectedCellsChanged;
+			AssociatedObject.SelectionChanged += ControlSelectionChanged;
 		}
 
 		// ====================================================================
@@ -162,6 +164,18 @@ namespace Shinta.Behaviors
 			if (aDataGrid != null)
 			{
 				SelectedCells = aDataGrid.SelectedCells.ToList();
+			}
+		}
+
+		// --------------------------------------------------------------------
+		// View 側で Selector 選択項目が変更された
+		// --------------------------------------------------------------------
+		private void ControlSelectionChanged(Object oSender, SelectionChangedEventArgs oSelectionChangedEventArgs)
+		{
+			DataGrid aDataGrid = oSender as DataGrid;
+			if (aDataGrid != null)
+			{
+				SelectedItem = aDataGrid.SelectedItem;
 			}
 		}
 
@@ -296,7 +310,11 @@ namespace Shinta.Behaviors
 			}
 
 			DataGridBindingSupportBehavior aThisObject = oObject as DataGridBindingSupportBehavior;
-			aThisObject?.AssociatedObject?.ScrollIntoView(oArgs.NewValue);
+			if (aThisObject != null && aThisObject.AssociatedObject != null)
+			{
+				aThisObject.AssociatedObject.SelectedItem = oArgs.NewValue;
+				aThisObject.AssociatedObject.ScrollIntoView(oArgs.NewValue);
+			}
 		}
 
 		// --------------------------------------------------------------------

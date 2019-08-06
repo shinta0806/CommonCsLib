@@ -98,6 +98,7 @@ namespace Shinta
 		public const String FILE_EXT_AVI = ".avi";
 		public const String FILE_EXT_BAK = ".bak";
 		public const String FILE_EXT_CONFIG = ".config";
+		public const String FILE_EXT_CSS = ".css";
 		public const String FILE_EXT_CSV = ".csv";
 		public const String FILE_EXT_DLL = ".dll";
 		public const String FILE_EXT_EXE = ".exe";
