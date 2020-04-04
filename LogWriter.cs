@@ -18,6 +18,8 @@
 // (1.15) | 2019/03/10 (Sun) |   WPF アプリケーションでも TextBox 出力できるようにした。
 // (1.16) | 2019/06/21 (Fri) |   AppendDisplayText を作成。
 // (1.17) | 2019/06/27 (Thu) |   WPF 版のコードをシンプルにした。
+//  1.20  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
+// (1.21) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
@@ -31,6 +33,10 @@ using System.Windows.Forms;
 using System.Windows;
 #else
 #error Define USE_FORM or USE_WPF
+#endif
+
+#if !NULLABLE_DISABLED
+#nullable enable
 #endif
 
 namespace Shinta
@@ -58,7 +64,11 @@ namespace Shinta
 
 		// 表示されるログを追加する関数
 		public delegate void AppendDisplayTextDelegate(String oText);
+#if !NULLABLE_DISABLED
+		public AppendDisplayTextDelegate? AppendDisplayText { get; set; }
+#else
 		public AppendDisplayTextDelegate AppendDisplayText { get; set; }
+#endif
 
 		// アプリが終了シーケンスに入っているかどうかを表すトークン
 		public CancellationToken ApplicationQuitToken { get; set; }
@@ -282,6 +292,7 @@ namespace Shinta
 			}
 			catch (Exception)
 			{
+				Debug.WriteLine("ShowLogMessage() ワーカースレッドから Application.Current.Windows にアクセスできない");
 			}
 
 			return MessageBox.Show(oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButton.OK, aIcon);

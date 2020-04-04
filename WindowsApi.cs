@@ -10,26 +10,33 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2015/02/21 (Sat) | 作成開始。
 //  1.00  | 2015/02/21 (Sat) | オリジナルバージョン。
-//  1.01  | 2015/03/15 (Sun) | DeleteFile() を追加。
-//  1.02  | 2015/05/24 (Sun) | GetCurrentThreadId() を追加。
-//  1.03  | 2016/01/31 (Sun) | GetRunningObjectTable() を追加。
-//  1.04  | 2016/01/31 (Sun) | CreateItemMoniker() を追加。
-//  1.05  | 2016/02/06 (Sat) | HRESULT を追加。
-//  1.06  | 2016/06/10 (Fri) | FAILED() を追加。
-//  1.07  | 2016/06/11 (Sat) | SUCCEEDED() を追加。
-//  1.08  | 2017/06/28 (Wed) | GetWindowText() を追加。
-//  1.09  | 2018/03/23 (Fri) | SHChangeNotifyRegister() を追加。
+//  1.01  | 2015/03/15 (Sun) |   DeleteFile() を追加。
+//  1.02  | 2015/05/24 (Sun) |   GetCurrentThreadId() を追加。
+//  1.03  | 2016/01/31 (Sun) |   GetRunningObjectTable() を追加。
+//  1.04  | 2016/01/31 (Sun) |   CreateItemMoniker() を追加。
+//  1.05  | 2016/02/06 (Sat) |   HRESULT を追加。
+//  1.06  | 2016/06/10 (Fri) |   FAILED() を追加。
+//  1.07  | 2016/06/11 (Sat) |   SUCCEEDED() を追加。
+//  1.08  | 2017/06/28 (Wed) |   GetWindowText() を追加。
+//  1.09  | 2018/03/23 (Fri) |   SHChangeNotifyRegister() を追加。
 //  1.10  | 2018/08/10 (Fri) | IsIconic() を追加。
-//  1.11  | 2018/08/10 (Fri) | ShowWindowAsync() を追加。
-//  1.12  | 2018/08/10 (Fri) | SetForegroundWindow() を追加。
-//  1.13  | 2019/02/09 (Sat) | GetWindowLong() を追加。
-//  1.14  | 2019/02/09 (Sat) | SetWindowLong() を追加。
+//  1.11  | 2018/08/10 (Fri) |   ShowWindowAsync() を追加。
+//  1.12  | 2018/08/10 (Fri) |   SetForegroundWindow() を追加。
+//  1.13  | 2019/02/09 (Sat) |   GetWindowLong() を追加。
+//  1.14  | 2019/02/09 (Sat) |   SetWindowLong() を追加。
+//  1.15  | 2019/10/08 (Tue) |   CopyMemory() を追加。
+//  1.16  | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+//  1.17  | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
+
+#if !NULLABLE_DISABLED
+#nullable enable
+#endif
 
 namespace Shinta
 {
@@ -214,6 +221,7 @@ namespace Shinta
 		public const UInt32 WM_CLOSE = 0x0010;
 		public const UInt32 WM_COPYDATA = 0x4A;
 		public const UInt32 WM_DEVICECHANGE = 0x0219;
+		public const UInt32 WM_PAINT = 0x000F;
 		public const UInt32 WM_QUIT = 0x0012;
 		public const UInt32 WM_SHNOTIFY = 0x0401;
 
@@ -340,6 +348,13 @@ namespace Shinta
 		public static extern Boolean ChangeWindowMessageFilter(UInt32 oMsg, UInt32 oFlag);
 
 		// --------------------------------------------------------------------
+		// CopyMemory
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_KERNEL32_DLL, SetLastError = false)]
+
+		public static extern void CopyMemory(IntPtr oDest, IntPtr oSrc, UInt32 oCount);
+
+		// --------------------------------------------------------------------
 		// CreateItemMoniker
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_OLE32_DLL)]
@@ -366,10 +381,16 @@ namespace Shinta
 		public static extern Int32 GetClassName(IntPtr oWnd, StringBuilder oClassName, int oMaxCount);
 
 		// --------------------------------------------------------------------
-		// GetCurrentThreadId
+		// GetCurrentThread
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_KERNEL32_DLL)]
 		public static extern UInt32 GetCurrentThreadId();
+
+		// --------------------------------------------------------------------
+		// GetCurrentThreadId
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_KERNEL32_DLL)]
+		public static extern IntPtr GetCurrentThread();
 
 		// --------------------------------------------------------------------
 		// GetForegroundWindow
@@ -442,6 +463,13 @@ namespace Shinta
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern Boolean SetForegroundWindow(IntPtr oWnd);
+
+		// --------------------------------------------------------------------
+		// SetThreadDescription：うまく動かない？
+		// Win10 Ver 1607 以降
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_KERNEL32_DLL, CharSet = CharSet.Auto)]
+		public static extern Int32 SetThreadDescription(IntPtr hThread, StringBuilder description);
 
 		// --------------------------------------------------------------------
 		// SetWindowLong

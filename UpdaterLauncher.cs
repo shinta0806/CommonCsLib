@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ちょちょいと自動更新を起動する
-// Copyright (C) 2014-2019 by SHINTA
+// Copyright (C) 2014-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -15,12 +15,17 @@
 // (1.03) | 2016/09/24 (Sat) | LogWriter を使用するように変更。
 // (1.04) | 2017/11/18 (Sat) | StatusT を廃止。
 // (1.05) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
+// (1.06) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.07) | 2020/03/29 (Sun) |   null 許容参照型の対応を強化。
+// (1.08) | 2020/03/29 (Sun) |   発行した場合を考慮し Relaunch を活用。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+
+#nullable enable
 
 namespace Shinta
 {
@@ -125,7 +130,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 
 		// ログ
-		public LogWriter LogWriter { get; set; }        
+		public LogWriter? LogWriter { get; set; }
 
 		// ====================================================================
 		// public メンバー関数
@@ -266,8 +271,7 @@ namespace Shinta
 					aParam += " " + PARAM_STR_RELAUNCH + " \"";
 					if (String.IsNullOrEmpty(Relaunch))
 					{
-						aParam += Assembly.GetEntryAssembly().Location;
-
+						aParam += Assembly.GetEntryAssembly()?.Location;
 					}
 					else
 					{
@@ -291,7 +295,12 @@ namespace Shinta
 			try
 			{
 				ProcessStartInfo aPSInfo = new ProcessStartInfo();
-				aPSInfo.FileName = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) + "\\" + FILE_NAME_CUPDATER;
+				String exePath = Relaunch;
+				if (String.IsNullOrEmpty(exePath))
+				{
+					exePath = Assembly.GetEntryAssembly()?.Location ?? String.Empty;
+				}
+				aPSInfo.FileName = Path.GetDirectoryName(exePath) + "\\" + FILE_NAME_CUPDATER;
 				aPSInfo.Arguments = aParam;
 				Process.Start(aPSInfo);
 				LogMessage(TraceEventType.Information, "ちょちょいと自動更新を起動しました。");
@@ -332,10 +341,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		private void LogMessage(TraceEventType oEventType, String oMessage)
 		{
-			if (LogWriter != null)
-			{
-				LogWriter.LogMessage(oEventType, oMessage);
-			}
+			LogWriter?.LogMessage(oEventType, oMessage);
 		}
 
 	}

@@ -41,6 +41,8 @@
 //  3.20  | 2019/01/19 (Sat) | UserAppDataFolderPath() を作成。
 //  3.30  | 2019/02/10 (Sun) | SelectDataGridCell() を作成。
 //  3.40  | 2019/06/27 (Thu) | フォーム・WPF 特有のものを別ファイルに分離。
+//  3.50  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
+// (3.51) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
@@ -54,6 +56,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml.Serialization;
+
+#if !NULLABLE_DISABLED
+#nullable enable
+#endif
 
 namespace Shinta
 {
@@ -156,32 +162,34 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// ミューテックスを取得できない場合は、同名のプロセスのウィンドウをアクティベートする
-		// 無ければ oOwnedMutex を作成する
-		// oOwnedMutex は使い終わった後で呼び出し元にて解放する必要がある
-		// ＜返値＞ アクティベートした
+		// ＜返値＞ 既存プロセスが存在しミューテックスが取得できなかった場合：null
+		//          既存プロセスが存在せずミューテックスが取得できた場合：取得したミューテックス（使い終わった後で呼び出し元にて解放する必要がある）
 		// --------------------------------------------------------------------
-		public static Boolean ActivateAnotherProcessWindowIfNeeded(String oMutexName, out Mutex oOwnedMutex)
+#if !NULLABLE_DISABLED
+		public static Mutex? ActivateAnotherProcessWindowIfNeeded(String oMutexName)
+#else
+		public static Mutex ActivateAnotherProcessWindowIfNeeded(String oMutexName)
+#endif
 		{
 			// ミューテックスを取得する
-			oOwnedMutex = new Mutex(false, oMutexName);
+			Mutex aOwnedMutex = new Mutex(false, oMutexName);
 			try
 			{
-				if (oOwnedMutex.WaitOne(0))
+				if (aOwnedMutex.WaitOne(0))
 				{
 					// ミューテックスを取得できた
-					return false;
+					return aOwnedMutex;
 				}
 			}
 			catch (AbandonedMutexException)
 			{
 				// ミューテックスが放棄されていた場合にこの例外となるが、取得自体はできている
-				return false;
+				return aOwnedMutex;
 			}
 
 			// ミューテックスが取得できなかったため、同名プロセスを探し、そのウィンドウをアクティベートする
-			oOwnedMutex = null;
 			ActivateSameNameProcessWindow();
-			return true;
+			return null;
 		}
 
 		// --------------------------------------------------------------------
@@ -207,7 +215,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 指定プロセスと同名プロセスのウィンドウをアクティベートする
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
+		public static void ActivateSameNameProcessWindow(Process? oSpecifyProcess = null)
+#else
 		public static void ActivateSameNameProcessWindow(Process oSpecifyProcess = null)
+#endif
 		{
 			List<Process> aSameNameProcesses = SameNameProcesses(oSpecifyProcess);
 			if (aSameNameProcesses.Count > 0)
@@ -317,7 +329,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static T DeepClone<T>(T oSrc)
 		{
-			Object aClone = null;
+			Object aClone;
 			using (MemoryStream aStream = new MemoryStream())
 			{
 				BinaryFormatter aFormatter = new BinaryFormatter();
@@ -426,15 +438,15 @@ namespace Shinta
 		// ＜返値＞ 絶対パス
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-		public static String MakeAbsolutePath(String oBasePath, String oRelativePath)
+		public static String MakeAbsolutePath(String oBasePath, String? oRelativePath)
 		{
 			if (String.IsNullOrEmpty(oRelativePath))
 			{
-				return null;
+				return oBasePath;
 			}
 
 			// oBasePath の末尾が '\\' 1 つでないとうまく動作しない
-			if (oBasePath[oBasePath.Length - 1] != '\\')
+			if (!String.IsNullOrEmpty(oBasePath) && oBasePath[oBasePath.Length - 1] != '\\')
 			{
 				oBasePath = oBasePath + "\\";
 			}
@@ -459,7 +471,11 @@ namespace Shinta
 		// ＜返値＞ 相対パス
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
+		public static String? MakeRelativePath(String oBasePath, String oAbsolutePath)
+#else
 		public static String MakeRelativePath(String oBasePath, String oAbsolutePath)
+#endif
 		{
 			if (String.IsNullOrEmpty(oAbsolutePath))
 			{
@@ -583,7 +599,11 @@ namespace Shinta
 		// 指定されたプロセスと同じ名前のプロセス（指定されたプロセスを除く）を列挙する
 		// ＜返値＞ プロセス群（見つからない場合は空のリスト
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
+		public static List<Process> SameNameProcesses(Process? oSpecifyProcess = null)
+#else
 		public static List<Process> SameNameProcesses(Process oSpecifyProcess = null)
+#endif
 		{
 			// プロセスが指定されていない場合は実行中のプロセスが指定されたものとする
 			if (oSpecifyProcess == null)
@@ -636,7 +656,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 文字列のうち、数値に見える部分を数値に変換
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
+		public static Int32 StringToInt32(String? oString)
+#else
 		public static Int32 StringToInt32(String oString)
+#endif
 		{
 			if (String.IsNullOrEmpty(oString))
 			{
@@ -668,7 +692,7 @@ namespace Shinta
 		public static String UserAppDataFolderPath()
 		{
 			String aPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)
-					+ "\\" + Common.FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location) + "\\";
+					+ "\\" + Common.FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly()?.Location) + "\\";
 			try
 			{
 				Directory.CreateDirectory(aPath);

@@ -1,6 +1,6 @@
 ﻿// ============================================================================
 // 
-// FrameworkElement のバインド可能なプロパティーを増やすためのビヘイビア
+// UIElement のバインド可能なプロパティーを増やすためのビヘイビア
 // Copyright (C) 2019 by SHINTA
 // 
 // ============================================================================
@@ -12,52 +12,47 @@
 // ============================================================================
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
-//  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
-// (1.01) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+//  1.00  | 2019/11/23 (Sat) | オリジナルバージョン。
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
 
 using System;
+using System.Diagnostics;
 using System.Windows;
-
-#nullable enable
+using System.Windows.Media;
 
 namespace Shinta.Behaviors
 {
-	public class FrameworkElementBindingSupportBehavior : Behavior<FrameworkElement>
+	public class UIElementBindingSupportBehavior : Behavior<UIElement>
 	{
 		// ====================================================================
 		// public プロパティー
 		// ====================================================================
 
-		// FrameworkElement.ActualHeight をバインド可能にする
-		public Double ActualHeight
+		// ウィンドウ座標系での左位置をバインド可能にする
+		public static readonly DependencyProperty LeftProperty =
+				DependencyProperty.Register("Left", typeof(Double), typeof(UIElementBindingSupportBehavior),
+				new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, null));
+		public Double Left
 		{
-			get => (Double)GetValue(ActualHeightProperty);
-			set => SetValue(ActualHeightProperty, value);
+			get => (Double)GetValue(LeftProperty);
+			set => SetValue(LeftProperty, value);
 		}
 
-		// FrameworkElement.ActualWidth をバインド可能にする
-		public Double ActualWidth
+		// ウィンドウ座標系での上位置をバインド可能にする
+		public static readonly DependencyProperty TopProperty =
+				DependencyProperty.Register("Top", typeof(Double), typeof(UIElementBindingSupportBehavior),
+				new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, null));
+		public Double Top
 		{
-			get => (Double)GetValue(ActualWidthProperty);
-			set => SetValue(ActualWidthProperty, value);
+			get => (Double)GetValue(TopProperty);
+			set => SetValue(TopProperty, value);
 		}
 
 		// ====================================================================
 		// public メンバー変数
 		// ====================================================================
-
-		// FrameworkElement.ActualHeight
-		public static readonly DependencyProperty ActualHeightProperty =
-				DependencyProperty.Register("ActualHeight", typeof(Double), typeof(FrameworkElementBindingSupportBehavior),
-				new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, null));
-
-		// FrameworkElement.ActualWidth
-		public static readonly DependencyProperty ActualWidthProperty =
-				DependencyProperty.Register("ActualWidth", typeof(Double), typeof(FrameworkElementBindingSupportBehavior),
-				new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, null));
 
 		// ====================================================================
 		// protected メンバー関数
@@ -70,7 +65,7 @@ namespace Shinta.Behaviors
 		{
 			base.OnAttached();
 
-			AssociatedObject.SizeChanged += ControlSizeChanged;
+			AssociatedObject.LayoutUpdated += ControlLayoutUpdated;
 		}
 
 		// ====================================================================
@@ -78,17 +73,40 @@ namespace Shinta.Behaviors
 		// ====================================================================
 
 		// --------------------------------------------------------------------
-		// View 側でサイズが変更された
+		// View 側でレイアウトが変更された
 		// --------------------------------------------------------------------
-		private void ControlSizeChanged(Object oSender, SizeChangedEventArgs oArgs)
+		private void ControlLayoutUpdated(Object? oSender, EventArgs oArgs)
 		{
-			FrameworkElement aElement = (FrameworkElement)oSender;
+			try
+			{
+				// 親ウィンドウを探す
+				Window? aWindow = null;
+				DependencyObject? aDep = AssociatedObject;
+				while (aDep != null)
+				{
+					aDep = VisualTreeHelper.GetParent(aDep);
+					aWindow = aDep as Window;
+					if (aWindow != null)
+					{
+						break;
+					}
+				}
+				if (aWindow == null)
+				{
+					return;
+				}
 
-			ActualHeight = aElement.ActualHeight;
-			ActualWidth = aElement.ActualWidth;
+				// 相対位置
+				Point aPoint = AssociatedObject.TranslatePoint(new Point(0.0, 0.0), aWindow);
+				Left = aPoint.X;
+				Top = aPoint.Y;
+			}
+			catch (Exception)
+			{
+			}
 		}
 	}
-	// public class FrameworkElementBindingSupportBehavior ___END___
+	// public class UIElementBindingSupportBehavior ___END___
 
 }
 // namespace Shinta.Behaviors ___END___

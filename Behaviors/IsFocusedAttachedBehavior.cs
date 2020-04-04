@@ -15,10 +15,13 @@
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
+// (1.01) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // ============================================================================
 
 using System;
 using System.Windows;
+
+#nullable enable
 
 namespace Shinta.Behaviors
 {
@@ -64,7 +67,7 @@ namespace Shinta.Behaviors
 		{
 			if ((Boolean)oArgs.NewValue)
 			{
-				UIElement aElement = oObject as UIElement;
+				UIElement? aElement = oObject as UIElement;
 				aElement?.Focus();
 
 				// 再度フォーカスを当てる際にイベント駆動するように false にしておく

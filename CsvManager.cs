@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // CSV ファイルを管理するクラス
-// Copyright (C) 2015-2018 by SHINTA
+// Copyright (C) 2015-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -20,12 +20,18 @@
 //  1.30  | 2018/01/08 (Mon) | 書き込みできるようにした。
 // (1.31) | 2018/04/22 (Sun) |   書き込み時にカンマを含む列をエスケープしていなかった不具合を修正。
 // (1.32) | 2018/05/20 (Sun) |   書き込み時に " をエスケープしていなかった不具合を修正。
+// (1.33) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.34) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+
+#if !NULLABLE_DISABLED
+#nullable enable
+#endif
 
 namespace Shinta
 {
@@ -126,7 +132,11 @@ namespace Shinta
 		// 行列を CSV 文字列に統合
 		// oRemoveLineIndex に関わらず、oTitle には行番号列は無いものとする
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
+		public static String ListToCsvString(List<List<String>> oRecords, String oCrCode, List<String>? oTitle = null, Boolean oRemoveLineIndex = false)
+#else
 		public static String ListToCsvString(List<List<String>> oRecords, String oCrCode, List<String> oTitle = null, Boolean oRemoveLineIndex = false)
+#endif
 		{
 			StringBuilder aSB = new StringBuilder();
 
@@ -159,7 +169,11 @@ namespace Shinta
 		// ファイルに CSV を書き込む
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
+		public static void SaveCsv(String oPath, List<List<String>> oRecords, String oCrCode, Encoding oEncoding, List<String>? oTitle = null, Boolean oRemoveLineIndex = false)
+#else
 		public static void SaveCsv(String oPath, List<List<String>> oRecords, String oCrCode, Encoding oEncoding, List<String> oTitle = null, Boolean oRemoveLineIndex = false)
+#endif
 		{
 			File.WriteAllText(oPath, ListToCsvString(oRecords, oCrCode, oTitle, oRemoveLineIndex), oEncoding);
 		}

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // アプリケーション設定を XML 形式でファイルに保存するための SettingsProvider 基底クラス
-// Copyright (C) 2014-2015 by SHINTA
+// Copyright (C) 2014-2019 by SHINTA
 // 
 // ============================================================================
 
@@ -21,6 +21,8 @@
 //  1.10  | 2014/12/22 (Mon) | 保存ファイル名の決定は派生クラスに委譲した。
 //  1.20  | 2015/01/12 (Mon) | Reset() を実装した。
 // (1.21) | 2015/05/23 (Sat) |   SerializableKeyValuePair を Common に移動した。
+// (1.22) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.23) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
@@ -30,6 +32,10 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Xml.Serialization;
+
+#if !NULLABLE_DISABLED
+#nullable enable
+#endif
 
 namespace Shinta
 {
@@ -42,17 +48,16 @@ namespace Shinta
 		// 識別用アプリ名（アセンブリ名を使用）
 		public override String ApplicationName
 		{
-			get
-			{
-				return Assembly.GetExecutingAssembly().GetName().Name;
-			}
-			set
-			{
-			}
+			get => Assembly.GetExecutingAssembly().GetName().Name;
+			set { }
 		}
 
 		// 設定の保存先ファイル
+#if !NULLABLE_DISABLED
+		public String? FileName { get; set; }
+#else
 		public String FileName { get; set; }
+#endif
 
 		// ====================================================================
 		// public メンバー関数
@@ -71,9 +76,8 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public SettingsPropertyValue GetPreviousVersion(SettingsContext oContext, SettingsProperty oProperty)
 		{
-			return null;
+			throw new NotImplementedException();
 		}
-
 
 		// --------------------------------------------------------------------
 		// プロパティ群をファイルから読み込み
@@ -91,6 +95,7 @@ namespace Shinta
 
 				// 逆シリアライズ
 				XmlSerializer aSerializer = aSerializer = new XmlSerializer(aPairs.GetType());
+
 				// UTF-8、BOM 無しで読込
 				using (StreamReader aSR = new StreamReader(FileName, new UTF8Encoding(false)))
 				{
@@ -139,8 +144,6 @@ namespace Shinta
 			}
 		}
 
-
-
 		// --------------------------------------------------------------------
 		// プロパティ群をファイルに保存
 		// --------------------------------------------------------------------
@@ -174,7 +177,6 @@ namespace Shinta
 			{
 				return;
 			}
-
 		}
 
 		// --------------------------------------------------------------------
@@ -183,7 +185,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public void Upgrade(SettingsContext oContext, SettingsPropertyCollection oProperties)
 		{
-
+			throw new NotImplementedException();
 		}
 
 	}

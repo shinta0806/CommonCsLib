@@ -26,6 +26,8 @@
 // (1.54) | 2018/12/30 (Sun) |   主キーが単一カラムか複数カラムかで記述方を分けるようにした。
 // (1.55) | 2019/03/21 (Thu) |   DB_TYPE_BLOB を作成。
 // (1.56) | 2019/04/09 (Tue) |   CreateTable() の AUTOINCREMENT 指定方法を変更。
+// (1.57) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.58) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
@@ -37,6 +39,10 @@ using System.Data.SQLite;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+
+#if !NULLABLE_DISABLED
+#nullable enable
+#endif
 
 namespace Shinta
 {
@@ -69,14 +75,15 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static void CreateIndex(DbCommand oCmd, String oTableName, List<String> oIndices)
 		{
-			if (oIndices == null)
-			{
-				return;
-			}
 			foreach (String aIndex in oIndices)
 			{
 				Int32 aIndexNumber = 0;
+
+#if !NULLABLE_DISABLED
+				String? aIndexName = null;
+#else
 				String aIndexName = null;
+#endif
 				for (; ; )
 				{
 					aIndexName = "index_" + aIndex + (aIndexNumber == 0 ? String.Empty : "_" + aIndexNumber.ToString());
@@ -109,11 +116,22 @@ namespace Shinta
 		//          oAutoIncrement: 主キーを AUTOINCREMENT にする
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
+		public static void CreateTable(DbCommand oCmd, Type oTypeOfTable, List<String>? oUniques = null, Boolean oAutoIncrement = false)
+#else
 		public static void CreateTable(DbCommand oCmd, Type oTypeOfTable, List<String> oUniques = null, Boolean oAutoIncrement = false)
+#endif
 		{
 			StringBuilder aCmdText = new StringBuilder();
 			aCmdText.Append("CREATE TABLE IF NOT EXISTS " + TableName(oTypeOfTable) + "(");
-			IEnumerable<ColumnAttribute> aAttrs = oTypeOfTable.GetProperties().Select(x => Attribute.GetCustomAttribute(x, typeof(ColumnAttribute)) as ColumnAttribute);
+
+#if !NULLABLE_DISABLED
+			IEnumerable<ColumnAttribute?> aAttrs;
+#else
+			IEnumerable<ColumnAttribute> aAttrs;
+#endif
+
+			aAttrs = oTypeOfTable.GetProperties().Select(x => Attribute.GetCustomAttribute(x, typeof(ColumnAttribute)) as ColumnAttribute);
 			if (aAttrs.Count() == 0)
 			{
 				throw new Exception("テーブルにフィールドが存在しません。");
@@ -121,7 +139,12 @@ namespace Shinta
 
 			// フィールド
 			List<String> aPrimaryKeys = new List<String>();
+
+#if !NULLABLE_DISABLED
+			foreach (ColumnAttribute? aFieldAttr in aAttrs)
+#else
 			foreach (ColumnAttribute aFieldAttr in aAttrs)
+#endif
 			{
 				// Name 属性の無いプロパティーは非保存とみなす
 				if (aFieldAttr == null)
@@ -244,7 +267,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static String TableName(Type oTypeOfTable)
 		{
-			return (Attribute.GetCustomAttribute(oTypeOfTable, typeof(TableAttribute)) as TableAttribute).Name;
+			return ((TableAttribute)Attribute.GetCustomAttribute(oTypeOfTable, typeof(TableAttribute))).Name;
 		}
 
 		// --------------------------------------------------------------------
@@ -264,7 +287,7 @@ namespace Shinta
 						select x;
 				foreach (SqliteMaster aRecord in aQueryResult)
 				{
-					if (aRecord.Name.IndexOf("sqlite_") < 0)
+					if (aRecord.Name != null && aRecord.Name.IndexOf("sqlite_") < 0)
 					{
 						aTables.Add(aRecord.Name);
 					}
@@ -341,15 +364,27 @@ namespace Shinta
 
 		// タイプ
 		[Column(Name = FIELD_NAME_SQLITE_MASTER_TYPE, DbType = LinqUtils.DB_TYPE_STRING)]
+#if !NULLABLE_DISABLED
+		public String? Type { get; set; }
+#else
 		public String Type { get; set; }
+#endif
 
 		// 名前
 		[Column(Name = FIELD_NAME_SQLITE_MASTER_NAME, DbType = LinqUtils.DB_TYPE_STRING)]
+#if !NULLABLE_DISABLED
+		public String? Name { get; set; }
+#else
 		public String Name { get; set; }
+#endif
 
 		// テーブル名
 		[Column(Name = FIELD_NAME_SQLITE_MASTER_TBL_NAME, DbType = LinqUtils.DB_TYPE_STRING)]
+#if !NULLABLE_DISABLED
+		public String? TblName { get; set; }
+#else
 		public String TblName { get; set; }
+#endif
 
 		// ルートページ
 		[Column(Name = FIELD_NAME_SQLITE_MASTER_ROOTPAGE, DbType = LinqUtils.DB_TYPE_INT32)]
@@ -357,7 +392,11 @@ namespace Shinta
 
 		// SQL
 		[Column(Name = FIELD_NAME_SQLITE_MASTER_SQL, DbType = LinqUtils.DB_TYPE_STRING)]
+#if !NULLABLE_DISABLED
+		public String? Sql { get; set; }
+#else
 		public String Sql { get; set; }
+#endif
 	}
 	// public class SqliteMaster ___END___
 

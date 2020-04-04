@@ -13,12 +13,15 @@
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
+// (1.01) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // ============================================================================
 
 using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+
+#nullable enable
 
 namespace Shinta.Behaviors
 {
@@ -86,25 +89,20 @@ namespace Shinta.Behaviors
 		// ====================================================================
 
 		// --------------------------------------------------------------------
-		// 設定されたコマンドが実行可能かどうか
+		// 設定されたコマンドが実行可能な場合にそのコマンドを返す
 		// --------------------------------------------------------------------
-		private static Boolean CanExecuteCommand(Object oSender, out ICommand oCommand)
+		private static ICommand? ExecutableCommand(Object? oSender)
 		{
-			oCommand = null;
-
-			UIElement aElement = oSender as UIElement;
-			if (aElement == null)
+			if (oSender is UIElement aElement)
 			{
-				return false;
+				ICommand? aCommand = GetCommand(aElement);
+				if (aCommand != null && aCommand.CanExecute(null))
+				{
+					return aCommand;
+				}
 			}
 
-			oCommand = GetCommand(aElement);
-			if (oCommand == null || !oCommand.CanExecute(null))
-			{
-				return false;
-			}
-
-			return true;
+			return null;
 		}
 
 		// --------------------------------------------------------------------
@@ -112,7 +110,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceCommandChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
 		{
-			Window aWindow = oObject as Window;
+			Window? aWindow = oObject as Window;
 			if (aWindow == null)
 			{
 				return;
@@ -139,13 +137,13 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceUpdaterLauncherChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
 		{
-			Window aWindow = oObject as Window;
+			Window? aWindow = oObject as Window;
 			if (aWindow == null)
 			{
 				return;
 			}
 
-			UpdaterLauncher aLauncher = oArgs.NewValue as UpdaterLauncher;
+			UpdaterLauncher? aLauncher = oArgs.NewValue as UpdaterLauncher;
 			if (aLauncher == null)
 			{
 				return;
@@ -162,7 +160,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// HWnd から Window を取得
 		// --------------------------------------------------------------------
-		private static Window WindowFromHWnd(IntPtr oHWnd)
+		private static Window? WindowFromHWnd(IntPtr oHWnd)
 		{
 			HwndSource aWndSource = HwndSource.FromHwnd(oHWnd);
 			return aWndSource.RootVisual as Window;
@@ -173,14 +171,10 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void WMUpdaterUIDisplayed(IntPtr oHWnd)
 		{
-			ICommand aCommand;
-			if (!CanExecuteCommand(WindowFromHWnd(oHWnd), out aCommand))
-			{
-				return;
-			}
+			ICommand? aCommand = ExecutableCommand(WindowFromHWnd(oHWnd));
 
 			// コマンドを実行
-			aCommand.Execute(null);
+			aCommand?.Execute(null);
 		}
 
 		// --------------------------------------------------------------------

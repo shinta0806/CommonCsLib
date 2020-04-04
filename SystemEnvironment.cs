@@ -19,6 +19,7 @@
 //  1.20  | 2018/04/02 (Mon) | GetClrVersionRegistryNumber() を作成した。
 //  1.30  | 2018/04/02 (Mon) | GetClrVersionName() を作成した。
 // (1.31) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
+// (1.32) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // ============================================================================
 
 using Microsoft.Win32;
@@ -28,6 +29,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Management;
 using System.Reflection;
+
+#nullable enable
 
 namespace Shinta
 {

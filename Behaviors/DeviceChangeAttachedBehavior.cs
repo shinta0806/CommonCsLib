@@ -13,6 +13,7 @@
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
+// (1.01) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // ============================================================================
 
 using System;
@@ -21,6 +22,8 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+
+#nullable enable
 
 namespace Shinta.Behaviors
 {
@@ -67,25 +70,20 @@ namespace Shinta.Behaviors
 		// ====================================================================
 
 		// --------------------------------------------------------------------
-		// 設定されたコマンドが実行可能かどうか
+		// 設定されたコマンドが実行可能な場合にそのコマンドを返す
 		// --------------------------------------------------------------------
-		private static Boolean CanExecuteCommand(Object oSender, out ICommand oCommand)
+		private static ICommand? ExecutableCommand(Object? oSender)
 		{
-			oCommand = null;
-
-			UIElement aElement = oSender as UIElement;
-			if (aElement == null)
+			if (oSender is UIElement aElement)
 			{
-				return false;
+				ICommand? aCommand = GetCommand(aElement);
+				if (aCommand != null && aCommand.CanExecute(null))
+				{
+					return aCommand;
+				}
 			}
 
-			oCommand = GetCommand(aElement);
-			if (oCommand == null || !oCommand.CanExecute(null))
-			{
-				return false;
-			}
-
-			return true;
+			return null;
 		}
 
 		// --------------------------------------------------------------------
@@ -93,8 +91,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceCommandChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
 		{
-			Window aWindow = oObject as Window;
-			if (aWindow == null)
+			if (!(oObject is Window aWindow))
 			{
 				return;
 			}
@@ -118,7 +115,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// HWnd から Window を取得
 		// --------------------------------------------------------------------
-		private static Window WindowFromHWnd(IntPtr oHWnd)
+		private static Window? WindowFromHWnd(IntPtr oHWnd)
 		{
 			HwndSource aWndSource = HwndSource.FromHwnd(oHWnd);
 			return aWndSource.RootVisual as Window;
@@ -130,8 +127,8 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void WmDeviceChange(IntPtr oHWnd, IntPtr oWParam, IntPtr oLParam)
 		{
-			ICommand aCommand;
-			if (!CanExecuteCommand(WindowFromHWnd(oHWnd), out aCommand))
+			ICommand? aCommand = ExecutableCommand(WindowFromHWnd(oHWnd));
+			if (aCommand == null)
 			{
 				return;
 			}
@@ -184,8 +181,8 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void WmShNotify(IntPtr oHWnd, IntPtr oWParam, IntPtr oLParam)
 		{
-			ICommand aCommand;
-			if (!CanExecuteCommand(WindowFromHWnd(oHWnd), out aCommand))
+			ICommand? aCommand = ExecutableCommand(WindowFromHWnd(oHWnd));
+			if (aCommand == null)
 			{
 				return;
 			}
@@ -216,16 +213,22 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static IntPtr WndProc(IntPtr oHWnd, Int32 oMsg, IntPtr oWParam, IntPtr oLParam, ref Boolean oHandled)
 		{
-			switch ((UInt32)oMsg)
+			try
 			{
-				case WindowsApi.WM_DEVICECHANGE:
-					WmDeviceChange(oHWnd, oWParam, oLParam);
-					oHandled = true;
-					break;
-				case WindowsApi.WM_SHNOTIFY:
-					WmShNotify(oHWnd, oWParam, oLParam);
-					oHandled = true;
-					break;
+				switch ((UInt32)oMsg)
+				{
+					case WindowsApi.WM_DEVICECHANGE:
+						WmDeviceChange(oHWnd, oWParam, oLParam);
+						oHandled = true;
+						break;
+					case WindowsApi.WM_SHNOTIFY:
+						WmShNotify(oHWnd, oWParam, oLParam);
+						oHandled = true;
+						break;
+				}
+			}
+			catch (Exception)
+			{
 			}
 
 			return IntPtr.Zero;
@@ -244,7 +247,7 @@ namespace Shinta.Behaviors
 		public DBT Kind { get; set; }
 
 		// 着脱されたドライブレター（"A:" のようにコロンまで）
-		public String DriveLetter { get; set; }
+		public String? DriveLetter { get; set; }
 	}
 	// public class DeviceChangeInfo ___END___
 }

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // Window のバインド可能なプロパティーを増やすためのビヘイビア
-// Copyright (C) 2019 by SHINTA
+// Copyright (C) 2019-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -14,15 +14,19 @@
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
 //  1.10  | 2019/06/29 (Sat) | IsCascade を実装。
+// (1.11) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.12) | 2020/03/29 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
+using Microsoft.Xaml.Behaviors;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interactivity;
 using System.Windows.Interop;
+
+#nullable enable
 
 namespace Shinta.Behaviors
 {
@@ -116,29 +120,29 @@ namespace Shinta.Behaviors
 			}
 
 			// 位置をずらす
-			Double aDelta = SystemParameters.CaptionHeight + SystemParameters.WindowResizeBorderThickness.Top;
-			Double aNewLeft = AssociatedObject.Owner.Left + aDelta;
-			Double aNewTop = AssociatedObject.Owner.Top + aDelta;
+			Double delta = SystemParameters.CaptionHeight + SystemParameters.WindowResizeBorderThickness.Top;
+			Double newLeft = AssociatedObject.Owner.Left + delta;
+			Double newTop = AssociatedObject.Owner.Top + delta;
 
 			// ディスプレイからはみ出さないように調整
 			// ToDo: オーナーウィンドウと同じディスプレイからはみ出さないように調整
-			if (aNewLeft + AssociatedObject.ActualWidth > SystemParameters.VirtualScreenWidth)
+			if (newLeft + AssociatedObject.ActualWidth > SystemParameters.VirtualScreenWidth)
 			{
-				aNewLeft = AssociatedObject.Owner.Left;
+				newLeft = AssociatedObject.Owner.Left;
 			}
-			if (aNewTop + AssociatedObject.ActualHeight > SystemParameters.VirtualScreenHeight)
+			if (newTop + AssociatedObject.ActualHeight > SystemParameters.VirtualScreenHeight)
 			{
-				aNewTop = AssociatedObject.Owner.Top;
+				newTop = AssociatedObject.Owner.Top;
 			}
 
-			AssociatedObject.Left = aNewLeft;
-			AssociatedObject.Top = aNewTop;
+			AssociatedObject.Left = newLeft;
+			AssociatedObject.Top = newTop;
 		}
 
 		// --------------------------------------------------------------------
 		// View 側で IsActive が変更された
 		// --------------------------------------------------------------------
-		private void ControlActivated(Object oSender, EventArgs oArgs)
+		private void ControlActivated(Object? sender, EventArgs args)
 		{
 			IsActive = true;
 		}
@@ -146,7 +150,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// View 側で Closing された
 		// --------------------------------------------------------------------
-		private void ControlClosing(Object oSender, CancelEventArgs oCancelEventArgs)
+		private void ControlClosing(Object sender, CancelEventArgs cancelEventArgs)
 		{
 			if (ClosingCommand == null || !ClosingCommand.CanExecute(null))
 			{
@@ -154,13 +158,13 @@ namespace Shinta.Behaviors
 			}
 
 			// イベント引数を引数としてコマンドを実行
-			ClosingCommand.Execute(oCancelEventArgs);
+			ClosingCommand.Execute(cancelEventArgs);
 		}
 
 		// --------------------------------------------------------------------
 		// View 側で IsActive が変更された
 		// --------------------------------------------------------------------
-		private void ControlDeactivated(Object oSender, EventArgs oArgs)
+		private void ControlDeactivated(Object? sender, EventArgs args)
 		{
 			IsActive = false;
 		}
@@ -168,7 +172,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// View 側で Loaded された
 		// --------------------------------------------------------------------
-		private void ControlLoaded(Object oSender, RoutedEventArgs oRoutedEventArgs)
+		private void ControlLoaded(Object sender, RoutedEventArgs routedEventArgs)
 		{
 			if (AssociatedObject != null && AssociatedObject.SizeToContent != SizeToContent.Manual)
 			{
@@ -181,7 +185,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// View 側で SourceInitialized された
 		// --------------------------------------------------------------------
-		private void ControlSourceInitialized(Object oSender, EventArgs oArgs)
+		private void ControlSourceInitialized(Object? sender, EventArgs args)
 		{
 			if (AssociatedObject != null && AssociatedObject.SizeToContent == SizeToContent.Manual)
 			{
@@ -194,59 +198,59 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// ViewModel 側で ClosingCommand が変更された
 		// --------------------------------------------------------------------
-		private static void SourceClosingCommandChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceClosingCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior aThisObject = oObject as WindowBindingSupportBehavior;
-			if (aThisObject == null || aThisObject.AssociatedObject == null)
+			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
+			if (thisObject == null || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
 
-			if (oArgs.NewValue != null)
+			if (args.NewValue != null)
 			{
 				// コマンドが設定された場合はイベントハンドラーを有効にする
-				aThisObject.AssociatedObject.Closing += aThisObject.ControlClosing;
+				thisObject.AssociatedObject.Closing += thisObject.ControlClosing;
 			}
 			else
 			{
 				// コマンドが解除された場合はイベントハンドラーを無効にする
-				aThisObject.AssociatedObject.Closing -= aThisObject.ControlClosing;
+				thisObject.AssociatedObject.Closing -= thisObject.ControlClosing;
 			}
 		}
 
 		// --------------------------------------------------------------------
 		// ViewModel 側で IsActive が変更された
 		// --------------------------------------------------------------------
-		private static void SourceIsActiveChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceIsActiveChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior aThisObject = oObject as WindowBindingSupportBehavior;
-			if (aThisObject == null || aThisObject.AssociatedObject == null)
+			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
+			if (thisObject == null || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
 
-			if ((Boolean)oArgs.NewValue)
+			if ((Boolean)args.NewValue)
 			{
-				aThisObject.AssociatedObject.Activate();
+				thisObject.AssociatedObject.Activate();
 			}
 		}
 
 		// --------------------------------------------------------------------
 		// ViewModel 側で IsCascade が変更された
 		// --------------------------------------------------------------------
-		private static void SourceIsCascadeChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceIsCascadeChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior aThisObject = oObject as WindowBindingSupportBehavior;
-			aThisObject?.CascadeWindowIfNeeded();
+			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
+			thisObject?.CascadeWindowIfNeeded();
 		}
 
 		// --------------------------------------------------------------------
 		// ViewModel 側で MinimizeBox が変更された
 		// --------------------------------------------------------------------
-		private static void SourceMinimizeBoxChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceMinimizeBoxChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior aThisObject = oObject as WindowBindingSupportBehavior;
-			aThisObject?.UpdateMinimizeBox();
+			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
+			thisObject?.UpdateMinimizeBox();
 		}
 
 		// --------------------------------------------------------------------
@@ -259,16 +263,16 @@ namespace Shinta.Behaviors
 				return;
 			}
 
-			WindowInteropHelper aHelper = new WindowInteropHelper(AssociatedObject);
-			Int64 aStyle = (Int64)WindowsApi.GetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE);
+			WindowInteropHelper helper = new WindowInteropHelper(AssociatedObject);
+			Int64 style = (Int64)WindowsApi.GetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE);
 
 			if (MinimizeBox)
 			{
-				WindowsApi.SetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(aStyle | ((Int64)WS.WS_MINIMIZEBOX)));
+				WindowsApi.SetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(style | ((Int64)WS.WS_MINIMIZEBOX)));
 			}
 			else
 			{
-				WindowsApi.SetWindowLong(aHelper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(aStyle & ~((Int64)WS.WS_MINIMIZEBOX)));
+				WindowsApi.SetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(style & ~((Int64)WS.WS_MINIMIZEBOX)));
 			}
 		}
 

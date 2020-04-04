@@ -27,6 +27,8 @@
 // (1.21) | 2018/01/07 (Sun) |   MaxOldGenerations のデフォルト値を 3 にした。
 // (1.22) | 2019/01/19 (Sat) |   System.Windows.Forms を使用しないようにした。
 // (1.23) | 2019/06/27 (Thu) |   StatusT を廃止。
+//  1.30  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
+// (1.31) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
@@ -34,6 +36,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+
+#if !NULLABLE_DISABLED
+#nullable enable
+#endif
 
 namespace Shinta
 {
@@ -73,7 +79,7 @@ namespace Shinta
 		{
 			// プロパティのデフォルト値
 			LogFileName = Common.UserAppDataFolderPath()
-					+ Path.ChangeExtension(Path.GetFileName(Assembly.GetEntryAssembly().Location), Common.FILE_EXT_LOG);
+					+ Path.ChangeExtension(Path.GetFileName(Assembly.GetEntryAssembly()?.Location), Common.FILE_EXT_LOG);
 			MaxSize = MAX_LOG_SIZE_DEFAULT;
 			MaxOldGenerations = 3;
 			ThreadSafe = false;

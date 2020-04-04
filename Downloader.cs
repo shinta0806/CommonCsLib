@@ -30,6 +30,7 @@
 //  1.50  | 2015/11/07 (Sat) | ITerminatableThread の代わりに CancellationToken を使うようにした。
 // (1.51) | 2018/05/21 (Mon) |   Post() をファイル送信にも対応させた。
 //  1.60  | 2019/06/24 (Mon) | IDisposable を実装した。
+// (1.61) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // ============================================================================
 
 using System;
@@ -44,9 +45,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Shinta
 {
-	delegate Task<HttpResponseMessage> CoreHttpDg(String oUrl, Object oOption);
+	delegate Task<HttpResponseMessage>? CoreHttpDg(String oUrl, Object? oOption);
 
 	public class Downloader : IDisposable
 	{
@@ -91,7 +94,7 @@ namespace Shinta
 #endif
 
 		// クッキー等を保持
-		public HttpClientHandler ClientHandler { get; private set; }
+		public HttpClientHandler? ClientHandler { get; private set; }
 
 		// ====================================================================
 		// public メンバー関数
@@ -194,7 +197,7 @@ namespace Shinta
 		// ＜引数＞ oPost: Name=Value, oFiles: Name=Path
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		public void Post(String oUrl, Dictionary<String, String> oPost, Dictionary<String, String> oFiles = null)
+		public void Post(String oUrl, Dictionary<String, String?> oPost, Dictionary<String, String>? oFiles = null)
 		{
 			if (oFiles == null || oFiles.Count == 0)
 			{
@@ -206,7 +209,7 @@ namespace Shinta
 			using (MultipartFormDataContent aMultipart = new MultipartFormDataContent())
 			{
 				// 文字列
-				foreach (KeyValuePair<String, String> aKVP in oPost)
+				foreach (KeyValuePair<String, String?> aKVP in oPost)
 				{
 					StringContent aStringContent = new StringContent(aKVP.Value);
 					aStringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
@@ -262,7 +265,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// マネージドリソース解放
 		// --------------------------------------------------------------------
-		protected void DisposeManagedResource(IDisposable oResource)
+		protected void DisposeManagedResource(IDisposable? oResource)
 		{
 			if (oResource != null)
 			{
@@ -294,7 +297,7 @@ namespace Shinta
 		// ====================================================================
 
 		// http クライアント
-		private HttpClient mClient = null;
+		private HttpClient? mClient = null;
 
 		// Dispose フラグ
 		private Boolean mIsDisposed = false;
@@ -306,35 +309,45 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：GET 用
 		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage> CoreHttpGet(String oUrl, Object oOption)
+		private Task<HttpResponseMessage>? CoreHttpGet(String oUrl, Object? oOption)
 		{
-			return mClient.GetAsync(oUrl);
+			return mClient?.GetAsync(oUrl);
 		}
 
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：POST 用
 		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage> CoreHttpPost(String oUrl, Object oOption)
+		private Task<HttpResponseMessage>? CoreHttpPost(String oUrl, Object? oOption)
 		{
-			return mClient.PostAsync(oUrl, (FormUrlEncodedContent)oOption);
+			if (oOption is FormUrlEncodedContent aContent)
+			{
+				return mClient?.PostAsync(oUrl, aContent);
+			}
+
+			return null;
 		}
 
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：POST（ファイル送信）用
 		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage> CoreHttpPostWithFile(String oUrl, Object oOption)
+		private Task<HttpResponseMessage>? CoreHttpPostWithFile(String oUrl, Object? oOption)
 		{
-			return mClient.PostAsync(oUrl, (MultipartFormDataContent)oOption);
+			if (oOption is MultipartFormDataContent aContent)
+			{
+				return mClient?.PostAsync(oUrl, aContent);
+			}
+
+			return null;
 		}
 
 		// --------------------------------------------------------------------
 		// http リクエストを処理する汎用関数
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage> HttpMethod(String oUrl, CoreHttpDg oCoreDg, Object oCoreDgOption)
+		private Task<HttpResponseMessage> HttpMethod(String oUrl, CoreHttpDg oCoreDg, Object? oCoreDgOption)
 		{
-			String aErr = null;
-			Task<HttpResponseMessage> aRes = null;
+			String? aErr = null;
+			Task<HttpResponseMessage>? aRes = null;
 
 			// クライアントの設定
 			SetClient(oUrl);
@@ -346,13 +359,16 @@ namespace Shinta
 				{
 					// http コアリクエスト（デリゲート）
 					aRes = oCoreDg(oUrl, oCoreDgOption);
-					aRes.Wait();
-					ThrowIfCancellationRequested();
-
-					// 成功したら関数から返る
-					if (aRes.Result.IsSuccessStatusCode)
+					if (aRes != null)
 					{
-						return aRes;
+						aRes.Wait();
+						ThrowIfCancellationRequested();
+
+						// 成功したら関数から返る
+						if (aRes.Result.IsSuccessStatusCode)
+						{
+							return aRes;
+						}
 					}
 				}
 				catch (OperationCanceledException oExcep)
@@ -370,9 +386,6 @@ namespace Shinta
 				if (aRes != null && aRes.Result.StatusCode == HttpStatusCode.RequestTimeout)
 				{
 					// タイムアウトなら、一定時間後にリトライする
-#if DEBUGz
-					MessageBox.Show("[DEBUG] Downloader::HttpMethod()\nデリゲート：" + oCoreDg.ToString() + "\nHTTP ステータスエラー：リトライします");
-#endif
 					Wait(GET_RETRY_INTERVAL);
 				}
 				else
