@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // アプリケーション設定を XML 形式でファイルに保存するための SettingsProvider 基底クラス
-// Copyright (C) 2014-2019 by SHINTA
+// Copyright (C) 2014-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -23,6 +23,7 @@
 // (1.21) | 2015/05/23 (Sat) |   SerializableKeyValuePair を Common に移動した。
 // (1.22) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.23) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
+// (1.24) | 2020/04/05 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using System;
@@ -48,7 +49,7 @@ namespace Shinta
 		// 識別用アプリ名（アセンブリ名を使用）
 		public override String ApplicationName
 		{
-			get => Assembly.GetExecutingAssembly().GetName().Name;
+			get => Assembly.GetExecutingAssembly().GetName().Name ?? String.Empty;
 			set { }
 		}
 
@@ -74,7 +75,7 @@ namespace Shinta
 		// IApplicationSettingsProvider 実装
 		// 以前のバージョンの値を返すのが本来だと思うが、未実装
 		// --------------------------------------------------------------------
-		public SettingsPropertyValue GetPreviousVersion(SettingsContext oContext, SettingsProperty oProperty)
+		public SettingsPropertyValue GetPreviousVersion(SettingsContext context, SettingsProperty property)
 		{
 			throw new NotImplementedException();
 		}
@@ -82,10 +83,10 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// プロパティ群をファイルから読み込み
 		// --------------------------------------------------------------------
-		public override SettingsPropertyValueCollection GetPropertyValues(SettingsContext oContext, SettingsPropertyCollection oPropertyCollection)
+		public override SettingsPropertyValueCollection GetPropertyValues(SettingsContext context, SettingsPropertyCollection propertyCollection)
 		{
-			SettingsPropertyValueCollection aValueCollection = new SettingsPropertyValueCollection();
-			List<SerializableKeyValuePair<String, Object>> aPairs = new List<SerializableKeyValuePair<String, Object>>();
+			SettingsPropertyValueCollection valueCollection = new SettingsPropertyValueCollection();
+			List<SerializableKeyValuePair<String, Object>> pairs = new List<SerializableKeyValuePair<String, Object>>();
 			try
 			{
 				if (String.IsNullOrEmpty(FileName))
@@ -94,43 +95,47 @@ namespace Shinta
 				}
 
 				// 逆シリアライズ
-				XmlSerializer aSerializer = aSerializer = new XmlSerializer(aPairs.GetType());
+				XmlSerializer serializer = new XmlSerializer(pairs.GetType());
 
 				// UTF-8、BOM 無しで読込
-				using (StreamReader aSR = new StreamReader(FileName, new UTF8Encoding(false)))
+				using (StreamReader sr = new StreamReader(FileName, new UTF8Encoding(false)))
 				{
-					aPairs = (List<SerializableKeyValuePair<String, Object>>)aSerializer.Deserialize(aSR);
+					pairs = (List<SerializableKeyValuePair<String, Object>>)serializer.Deserialize(sr);
 				}
 			}
 			catch (Exception)
 			{
 			}
 
-			// リストから aValueCollection にコピー
-			SortedDictionary<String, Object> aDic = new SortedDictionary<String, Object>();
-			foreach (SerializableKeyValuePair<String, Object> aPair in aPairs)
+			// リストから valueCollection にコピー
+			SortedDictionary<String, Object> dic = new SortedDictionary<String, Object>();
+			foreach (SerializableKeyValuePair<String, Object> pair in pairs)
 			{
-				if (aPair.Key != null && aPair.Value != null)
+				if (pair.Key != null && pair.Value != null)
 				{
-					aDic[aPair.Key] = aPair.Value;
+					dic[pair.Key] = pair.Value;
 				}
 			}
-			foreach (SettingsProperty aProperty in oPropertyCollection)
+			foreach (SettingsProperty? property in propertyCollection)
 			{
-				SettingsPropertyValue aValue = new SettingsPropertyValue(aProperty);
-				aValue.SerializedValue = aDic.ContainsKey(aProperty.Name) ? aDic[aProperty.Name] : aProperty.DefaultValue;
-				aValue.IsDirty = false;
-				aValueCollection.Add(aValue);
+				if (property == null)
+				{
+					continue;
+				}
+				SettingsPropertyValue value = new SettingsPropertyValue(property);
+				value.SerializedValue = dic.ContainsKey(property.Name) ? dic[property.Name] : property.DefaultValue;
+				value.IsDirty = false;
+				valueCollection.Add(value);
 			}
 
-			return aValueCollection;
+			return valueCollection;
 		}
 
 		// --------------------------------------------------------------------
 		// IApplicationSettingsProvider 実装
 		// プロパティ値をデフォルトに戻す
 		// --------------------------------------------------------------------
-		public void Reset(SettingsContext oContext)
+		public void Reset(SettingsContext context)
 		{
 			try
 			{
@@ -147,29 +152,33 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// プロパティ群をファイルに保存
 		// --------------------------------------------------------------------
-		public override void SetPropertyValues(SettingsContext oContext, SettingsPropertyValueCollection oCollection)
+		public override void SetPropertyValues(SettingsContext context, SettingsPropertyValueCollection collection)
 		{
 			if (String.IsNullOrEmpty(FileName))
 			{
 				return;
 			}
 
-			List<SerializableKeyValuePair<String, Object>> aPairs = new List<SerializableKeyValuePair<String, Object>>();
-			XmlSerializer aSerializer = new XmlSerializer(aPairs.GetType());
+			List<SerializableKeyValuePair<String, Object>> pairs = new List<SerializableKeyValuePair<String, Object>>();
+			XmlSerializer serializer = new XmlSerializer(pairs.GetType());
 
-			// oCollection からリストにコピー
-			foreach (SettingsPropertyValue aValue in oCollection)
+			// collection からリストにコピー
+			foreach (SettingsPropertyValue? value in collection)
 			{
-				aPairs.Add(new SerializableKeyValuePair<String, Object>(aValue.Name, aValue.SerializedValue));
+				if (value == null)
+				{
+					continue;
+				}
+				pairs.Add(new SerializableKeyValuePair<String, Object>(value.Name, value.SerializedValue));
 			}
 
 			// シリアライズ
 			try
 			{
 				// UTF-8、BOM 無しで保存
-				using (StreamWriter aSW = new StreamWriter(FileName, false, new UTF8Encoding(false)))
+				using (StreamWriter sw = new StreamWriter(FileName, false, new UTF8Encoding(false)))
 				{
-					aSerializer.Serialize(aSW, aPairs);
+					serializer.Serialize(sw, pairs);
 
 				}
 			}
@@ -183,7 +192,7 @@ namespace Shinta
 		// IApplicationSettingsProvider 実装
 		// 以前のバージョンの値を更新するのが本来だと思うが、未実装
 		// --------------------------------------------------------------------
-		public void Upgrade(SettingsContext oContext, SettingsPropertyCollection oProperties)
+		public void Upgrade(SettingsContext context, SettingsPropertyCollection properties)
 		{
 			throw new NotImplementedException();
 		}
