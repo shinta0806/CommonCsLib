@@ -24,6 +24,7 @@
 // (1.22) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.23) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // (1.24) | 2020/04/05 (Sun) |   null 許容参照型の対応強化。
+// (1.25) | 2020/05/05 (Tue) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using System;
@@ -57,7 +58,11 @@ namespace Shinta
 #if !NULLABLE_DISABLED
 		public String? FileName { get; set; }
 #else
-		public String FileName { get; set; }
+		public String FileName 
+		{ 
+			get; 
+			set; 
+		}
 #endif
 
 		// ====================================================================
@@ -116,7 +121,11 @@ namespace Shinta
 					dic[pair.Key] = pair.Value;
 				}
 			}
+#if !NULLABLE_DISABLED
 			foreach (SettingsProperty? property in propertyCollection)
+#else
+			foreach (SettingsProperty property in propertyCollection)
+#endif
 			{
 				if (property == null)
 				{
@@ -163,7 +172,11 @@ namespace Shinta
 			XmlSerializer serializer = new XmlSerializer(pairs.GetType());
 
 			// collection からリストにコピー
+#if !NULLABLE_DISABLED
 			foreach (SettingsPropertyValue? value in collection)
+#else
+			foreach (SettingsPropertyValue value in collection)
+#endif
 			{
 				if (value == null)
 				{

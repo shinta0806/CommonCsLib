@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // よく使う一般的な定数や関数
-// Copyright (C) 2014-2019 by SHINTA
+// Copyright (C) 2014-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -43,6 +43,7 @@
 //  3.40  | 2019/06/27 (Thu) | フォーム・WPF 特有のものを別ファイルに分離。
 //  3.50  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
 // (3.51) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
+// (3.52) | 2020/05/05 (Tue) |   MakeAbsolutePath() のnull 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
@@ -438,7 +439,11 @@ namespace Shinta
 		// ＜返値＞ 絶対パス
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
 		public static String MakeAbsolutePath(String oBasePath, String? oRelativePath)
+#else
+		public static String MakeAbsolutePath(String oBasePath, String oRelativePath)
+#endif
 		{
 			if (String.IsNullOrEmpty(oRelativePath))
 			{

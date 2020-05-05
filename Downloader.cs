@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ファイルをダウンロードするクラス（ログイン用に POST 機能あり）
-// Copyright (C) 2014-2019 by SHINTA
+// Copyright (C) 2014-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -31,6 +31,7 @@
 // (1.51) | 2018/05/21 (Mon) |   Post() をファイル送信にも対応させた。
 //  1.60  | 2019/06/24 (Mon) | IDisposable を実装した。
 // (1.61) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.62) | 2020/05/05 (Tue) |   null 許容参照型を無効化できるようにした。
 // ============================================================================
 
 using System;
@@ -45,11 +46,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#if !NULLABLE_DISABLED
 #nullable enable
+#endif
 
 namespace Shinta
 {
+#if !NULLABLE_DISABLED
 	delegate Task<HttpResponseMessage>? CoreHttpDg(String oUrl, Object? oOption);
+#else
+	delegate Task<HttpResponseMessage> CoreHttpDg(String oUrl, Object oOption);
+#endif
 
 	public class Downloader : IDisposable
 	{
@@ -94,7 +101,11 @@ namespace Shinta
 #endif
 
 		// クッキー等を保持
+#if !NULLABLE_DISABLED
 		public HttpClientHandler? ClientHandler { get; private set; }
+#else
+		public HttpClientHandler ClientHandler { get; private set; }
+#endif
 
 		// ====================================================================
 		// public メンバー関数
@@ -197,7 +208,11 @@ namespace Shinta
 		// ＜引数＞ oPost: Name=Value, oFiles: Name=Path
 		// ＜例外＞
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
 		public void Post(String oUrl, Dictionary<String, String?> oPost, Dictionary<String, String>? oFiles = null)
+#else
+		public void Post(String oUrl, Dictionary<String, String> oPost, Dictionary<String, String> oFiles = null)
+#endif
 		{
 			if (oFiles == null || oFiles.Count == 0)
 			{
@@ -209,7 +224,11 @@ namespace Shinta
 			using (MultipartFormDataContent aMultipart = new MultipartFormDataContent())
 			{
 				// 文字列
+#if !NULLABLE_DISABLED
 				foreach (KeyValuePair<String, String?> aKVP in oPost)
+#else
+				foreach (KeyValuePair<String, String> aKVP in oPost)
+#endif
 				{
 					StringContent aStringContent = new StringContent(aKVP.Value);
 					aStringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
@@ -265,7 +284,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// マネージドリソース解放
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
 		protected void DisposeManagedResource(IDisposable? oResource)
+#else
+		protected void DisposeManagedResource(IDisposable oResource)
+#endif
 		{
 			if (oResource != null)
 			{
@@ -297,7 +320,11 @@ namespace Shinta
 		// ====================================================================
 
 		// http クライアント
+#if !NULLABLE_DISABLED
 		private HttpClient? mClient = null;
+#else
+		private HttpClient mClient = null;
+#endif
 
 		// Dispose フラグ
 		private Boolean mIsDisposed = false;
@@ -309,7 +336,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：GET 用
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
 		private Task<HttpResponseMessage>? CoreHttpGet(String oUrl, Object? oOption)
+#else
+		private Task<HttpResponseMessage> CoreHttpGet(String oUrl, Object oOption)
+#endif
 		{
 			return mClient?.GetAsync(oUrl);
 		}
@@ -317,7 +348,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：POST 用
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
 		private Task<HttpResponseMessage>? CoreHttpPost(String oUrl, Object? oOption)
+#else
+		private Task<HttpResponseMessage> CoreHttpPost(String oUrl, Object oOption)
+#endif
 		{
 			if (oOption is FormUrlEncodedContent aContent)
 			{
@@ -330,7 +365,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：POST（ファイル送信）用
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
 		private Task<HttpResponseMessage>? CoreHttpPostWithFile(String oUrl, Object? oOption)
+#else
+		private Task<HttpResponseMessage> CoreHttpPostWithFile(String oUrl, Object oOption)
+#endif
 		{
 			if (oOption is MultipartFormDataContent aContent)
 			{
@@ -344,10 +383,19 @@ namespace Shinta
 		// http リクエストを処理する汎用関数
 		// ＜例外＞
 		// --------------------------------------------------------------------
+#if !NULLABLE_DISABLED
 		private Task<HttpResponseMessage> HttpMethod(String oUrl, CoreHttpDg oCoreDg, Object? oCoreDgOption)
+#else
+		private Task<HttpResponseMessage> HttpMethod(String oUrl, CoreHttpDg oCoreDg, Object oCoreDgOption)
+#endif
 		{
+#if !NULLABLE_DISABLED
 			String? aErr = null;
 			Task<HttpResponseMessage>? aRes = null;
+#else
+			String aErr = null;
+			Task<HttpResponseMessage> aRes = null;
+#endif
 
 			// クライアントの設定
 			SetClient(oUrl);

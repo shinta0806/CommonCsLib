@@ -18,6 +18,9 @@
 // (1.06) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.07) | 2020/03/29 (Sun) |   null 許容参照型の対応を強化。
 // (1.08) | 2020/03/29 (Sun) |   発行した場合を考慮し Relaunch を活用。
+// (1.09) | 2020/05/05 (Tue) |   null 許容参照型を無効化できるようにした。
+//  1.10  | 2020/05/05 (Tue) | マイナーバージョンアップの積み重ね。
+//                               プロセスを破棄していなかったのを修正。
 // ============================================================================
 
 using System;
@@ -25,7 +28,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
+#if !NULLABLE_DISABLED
 #nullable enable
+#endif
 
 namespace Shinta
 {
@@ -130,7 +135,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 
 		// ログ
+#if !NULLABLE_DISABLED
 		public LogWriter? LogWriter { get; set; }
+#else
+		public LogWriter LogWriter { get; set; }
+#endif
 
 		// ====================================================================
 		// public メンバー関数
@@ -302,7 +311,14 @@ namespace Shinta
 				}
 				aPSInfo.FileName = Path.GetDirectoryName(exePath) + "\\" + FILE_NAME_CUPDATER;
 				aPSInfo.Arguments = aParam;
-				Process.Start(aPSInfo);
+
+#if !NULLABLE_DISABLED
+				Process? process;
+#else
+				Process process;
+#endif
+				process = Process.Start(aPSInfo);
+				process?.Dispose();
 				LogMessage(TraceEventType.Information, "ちょちょいと自動更新を起動しました。");
 			}
 			catch (Exception oExcep)
