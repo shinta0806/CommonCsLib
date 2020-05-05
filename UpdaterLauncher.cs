@@ -21,6 +21,7 @@
 // (1.09) | 2020/05/05 (Tue) |   null 許容参照型を無効化できるようにした。
 //  1.10  | 2020/05/05 (Tue) | マイナーバージョンアップの積み重ね。
 //                               プロセスを破棄していなかったのを修正。
+// (1.11) | 2020/05/05 (Tue) |   SelfLaunch プロパティーをサポート。
 // ============================================================================
 
 using System;
@@ -54,6 +55,7 @@ namespace Shinta
 		public const String PARAM_STR_NOTIFY_HWND = "/NotifyHWnd";
 		public const String PARAM_STR_PID = "/PID";
 		public const String PARAM_STR_RELAUNCH = "/Relaunch";
+		public const String PARAM_STR_SELF_LAUNCH = "/SelfLaunch";
 		public const String PARAM_STR_UPDATE_RSS = "/UpdateRSS";
 		public const String PARAM_STR_VERBOSE = "/Verbose";
 		public const String PARAM_STR_WAIT = "/Wait";
@@ -90,6 +92,9 @@ namespace Shinta
 
 		// アプリのメインウィンドウのハンドル
 		public IntPtr NotifyHWnd { get; set; }
+
+		// ちょちょいと自動更新自身による起動
+		public Boolean SelfLaunch { get; set; }
 
 		// --------------------------------------------------------------------
 		// 共通（オンリー系）
@@ -256,6 +261,10 @@ namespace Shinta
 				if (NotifyHWnd != null)
 				{
 					aParam += PARAM_STR_NOTIFY_HWND + " " + NotifyHWnd.ToString() + " ";
+				}
+				if (SelfLaunch)
+				{
+					aParam += PARAM_STR_SELF_LAUNCH + " ";
 				}
 				// 最新情報確認
 				if (!String.IsNullOrEmpty(LatestRss))
