@@ -696,16 +696,16 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static String UserAppDataFolderPath()
 		{
-			String aPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)
+			String path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)
 					+ "\\" + Common.FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly()?.Location) + "\\";
 			try
 			{
-				Directory.CreateDirectory(aPath);
+				Directory.CreateDirectory(path);
 			}
 			catch (Exception)
 			{
 			}
-			return aPath;
+			return path;
 		}
 
 		// ====================================================================
