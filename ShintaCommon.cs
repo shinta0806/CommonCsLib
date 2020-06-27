@@ -43,7 +43,10 @@
 //  3.40  | 2019/06/27 (Thu) | フォーム・WPF 特有のものを別ファイルに分離。
 //  3.50  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
 // (3.51) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
-// (3.52) | 2020/05/05 (Tue) |   MakeAbsolutePath() のnull 許容参照型を無効化できるようにした。
+// (3.52) | 2020/05/05 (Tue) |   MakeAbsolutePath() の null 許容参照型を無効化できるようにした。
+// (3.53) | 2020/05/16 (Sat) |   Deserialize() 引数の多態性に対応。
+// (3.54) | 2020/05/16 (Sat) |   MakeRelativePath() の引数チェックを強化。
+// (3.55) | 2020/05/19 (Tue) |   Deserialize() スペースをデシリアライズできるようにした。
 // ============================================================================
 
 using System;
@@ -56,6 +59,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Xml;
 using System.Xml.Serialization;
 
 #if !NULLABLE_DISABLED
@@ -99,19 +103,34 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public const String FOLDER_NAME_SHINTA = SHINTA + "\\";
 
+
+		// --------------------------------------------------------------------
+		// よく使うファイル
+		// --------------------------------------------------------------------
+		public const String FILE_NAME_USER_CONFIG = "user" + FILE_EXT_CONFIG;
+
 		// --------------------------------------------------------------------
 		// よく使う拡張子
 		// --------------------------------------------------------------------
+		public const String FILE_EXT_AAC = ".aac";
 		public const String FILE_EXT_AVI = ".avi";
 		public const String FILE_EXT_BAK = ".bak";
+		public const String FILE_EXT_BMP = ".bmp";
 		public const String FILE_EXT_CONFIG = ".config";
 		public const String FILE_EXT_CSS = ".css";
 		public const String FILE_EXT_CSV = ".csv";
+		public const String FILE_EXT_DDS = ".dds";
 		public const String FILE_EXT_DLL = ".dll";
+		public const String FILE_EXT_DNG = ".dng";
 		public const String FILE_EXT_EXE = ".exe";
 		public const String FILE_EXT_FLV = ".flv";
+		public const String FILE_EXT_GIF = ".gif";
 		public const String FILE_EXT_HTML = ".html";
+		public const String FILE_EXT_ICO = ".ico";
 		public const String FILE_EXT_INI = ".ini";
+		public const String FILE_EXT_JPEG = ".jpeg";
+		public const String FILE_EXT_JPG = ".jpg";
+		public const String FILE_EXT_JXR = ".jxr";
 		public const String FILE_EXT_KRA = ".kra";
 		public const String FILE_EXT_LOCK = ".lock";
 		public const String FILE_EXT_LOG = ".log";
@@ -128,6 +147,8 @@ namespace Shinta
 		public const String FILE_EXT_PNG = ".png";
 		public const String FILE_EXT_REG = ".reg";
 		public const String FILE_EXT_SQLITE3 = ".sqlite3";
+		public const String FILE_EXT_TIF = ".tif";
+		public const String FILE_EXT_TIFF = ".tiff";
 		public const String FILE_EXT_TPL = ".tpl";
 		public const String FILE_EXT_TXT = ".txt";
 		public const String FILE_EXT_WAV = ".wav";
@@ -328,17 +349,17 @@ namespace Shinta
 		// 深いコピーを行う
 		// 対象は SerializableAttribute が付いているクラス
 		// --------------------------------------------------------------------
-		public static T DeepClone<T>(T oSrc)
+		public static T DeepClone<T>(T src)
 		{
-			Object aClone;
-			using (MemoryStream aStream = new MemoryStream())
+			Object clone;
+			using (MemoryStream stream = new MemoryStream())
 			{
 				BinaryFormatter aFormatter = new BinaryFormatter();
-				aFormatter.Serialize(aStream, oSrc);
-				aStream.Position = 0;
-				aClone = aFormatter.Deserialize(aStream);
+				aFormatter.Serialize(stream, src);
+				stream.Position = 0;
+				clone = aFormatter.Deserialize(stream);
 			}
-			return (T)aClone;
+			return (T)clone;
 		}
 
 		// --------------------------------------------------------------------
@@ -371,9 +392,11 @@ namespace Shinta
 			return true;
 		}
 
+#if USE_OBSOLETE
 		// --------------------------------------------------------------------
 		// オブジェクトをデシリアライズして読み出し
-		// クラスコンストラクタで List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
+		// クラス継承に対応できないと思う
+		// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
 		public static T Deserialize<T>(String oPath)
@@ -383,6 +406,23 @@ namespace Shinta
 			{
 				return (T)aSerializer.Deserialize(aSR);
 			}
+		}
+#endif
+
+		// --------------------------------------------------------------------
+		// オブジェクトをデシリアライズして読み出し
+		// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
+		// ＜例外＞ Exception
+		// --------------------------------------------------------------------
+		public static T Deserialize<T>(String path, T obj) where T : notnull
+		{
+			XmlSerializer xmlSerializer = new XmlSerializer(obj.GetType());
+			using StreamReader streamReader = new StreamReader(path, new UTF8Encoding(false));
+			XmlDocument xmlDocument = new XmlDocument();
+			xmlDocument.PreserveWhitespace = true;
+			xmlDocument.Load(streamReader);
+			using XmlNodeReader xmlNodeReader = new XmlNodeReader(xmlDocument.DocumentElement);
+			return (T)xmlSerializer.Deserialize(xmlNodeReader);
 		}
 
 		// --------------------------------------------------------------------
@@ -440,35 +480,39 @@ namespace Shinta
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
 #if !NULLABLE_DISABLED
-		public static String MakeAbsolutePath(String oBasePath, String? oRelativePath)
+		public static String MakeAbsolutePath(String? basePath, String? relativePath)
 #else
 		public static String MakeAbsolutePath(String oBasePath, String oRelativePath)
 #endif
 		{
-			if (String.IsNullOrEmpty(oRelativePath))
+			if (basePath == null)
 			{
-				return oBasePath;
+				basePath = String.Empty;
+			}
+			if (String.IsNullOrEmpty(relativePath))
+			{
+				return basePath;
 			}
 
-			// oBasePath の末尾が '\\' 1 つでないとうまく動作しない
-			if (!String.IsNullOrEmpty(oBasePath) && oBasePath[oBasePath.Length - 1] != '\\')
+			// basePath の末尾が '\\' 1 つでないとうまく動作しない
+			if (String.IsNullOrEmpty(basePath) || basePath[basePath.Length - 1] != '\\')
 			{
-				oBasePath = oBasePath + "\\";
+				basePath = basePath + "\\";
 			}
 
 			// Uri クラスのコンストラクターが勝手にデコードするので、予め "%" を "%25" にしておく
-			oBasePath = oBasePath.Replace("%", "%25");
-			oRelativePath = oRelativePath.Replace("%", "%25");
+			basePath = basePath.Replace("%", "%25");
+			relativePath = relativePath.Replace("%", "%25");
 
 			// 絶対パス
-			Uri aBaseUri = new Uri(oBasePath);
-			Uri aAbsoluteUri = new Uri(aBaseUri, oRelativePath);
-			String aAbsolutePath = aAbsoluteUri.LocalPath;
+			Uri baseUri = new Uri(basePath);
+			Uri absoluteUri = new Uri(baseUri, relativePath);
+			String absolutePath = absoluteUri.LocalPath;
 
 			// "%25" を "%" に戻す
-			aAbsolutePath = aAbsolutePath.Replace("%25", "%");
+			absolutePath = absolutePath.Replace("%25", "%");
 
-			return aAbsolutePath;
+			return absolutePath;
 		}
 
 		// --------------------------------------------------------------------
@@ -477,40 +521,44 @@ namespace Shinta
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
 #if !NULLABLE_DISABLED
-		public static String? MakeRelativePath(String oBasePath, String oAbsolutePath)
+		public static String MakeRelativePath(String? basePath, String? absolutePath)
 #else
-		public static String MakeRelativePath(String oBasePath, String oAbsolutePath)
+		public static String MakeRelativePath(String basePath, String absolutePath)
 #endif
 		{
-			if (String.IsNullOrEmpty(oAbsolutePath))
+			if (basePath == null)
 			{
-				return null;
+				basePath = String.Empty;
+			}
+			if (String.IsNullOrEmpty(absolutePath))
+			{
+				return String.Empty;
 			}
 
-			// oBasePath の末尾が '\\' 1 つでないとうまく動作しない
-			if (oBasePath[oBasePath.Length - 1] != '\\')
+			// basePath の末尾が '\\' 1 つでないとうまく動作しない
+			if (String.IsNullOrEmpty(basePath) || basePath[basePath.Length - 1] != '\\')
 			{
-				oBasePath = oBasePath + "\\";
+				basePath = basePath + "\\";
 			}
 
 			// Uri クラスのコンストラクターが勝手にデコードするので、予め "%" を "%25" にしておく
-			oBasePath = oBasePath.Replace("%", "%25");
-			oAbsolutePath = oAbsolutePath.Replace("%", "%25");
+			basePath = basePath.Replace("%", "%25");
+			absolutePath = absolutePath.Replace("%", "%25");
 
 			// 相対パス
-			Uri aBaseUri = new Uri(oBasePath);
-			String aRelativePath = aBaseUri.MakeRelativeUri(new Uri(oAbsolutePath)).ToString();
+			Uri baseUri = new Uri(basePath);
+			String relativePath = baseUri.MakeRelativeUri(new Uri(absolutePath)).ToString();
 
 			// 勝手に URL エンコードされるのでデコードする
-			aRelativePath = Uri.UnescapeDataString(aRelativePath);
+			relativePath = Uri.UnescapeDataString(relativePath);
 
 			// '/' を '\\' にする
-			aRelativePath = aRelativePath.Replace('/', '\\');
+			relativePath = relativePath.Replace('/', '\\');
 
 			// "%25" を "%" に戻す
-			aRelativePath = aRelativePath.Replace("%25", "%");
+			relativePath = relativePath.Replace("%25", "%");
 
-			return aRelativePath;
+			return relativePath;
 		}
 
 #if USE_UNSAFE
@@ -634,13 +682,11 @@ namespace Shinta
 		// オブジェクトをシリアライズして保存
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-		public static void Serialize(String oPath, Object oObject)
+		public static void Serialize(String path, Object obj)
 		{
-			XmlSerializer aSerializer = new XmlSerializer(oObject.GetType());
-			using (StreamWriter aSW = new StreamWriter(oPath, false, new UTF8Encoding(false)))
-			{
-				aSerializer.Serialize(aSW, oObject);
-			}
+			XmlSerializer xmlSerializer = new XmlSerializer(obj.GetType());
+			using StreamWriter streamWriter = new StreamWriter(path, false, new UTF8Encoding(false));
+			xmlSerializer.Serialize(streamWriter, obj);
 		}
 
 		// --------------------------------------------------------------------
@@ -649,12 +695,13 @@ namespace Shinta
 		// ApplicationSettingsBase 派生のクラスに対してはフィールドが取得できないためコピーできない
 		// （this[] は取得できないのか？）
 		// --------------------------------------------------------------------
-		public static void ShallowCopy<T>(T oSrc, T oDest)
+		public static void ShallowCopy<T>(T src, T dest)
 		{
-			FieldInfo[] aFields = typeof(T).GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-			foreach (FieldInfo aField in aFields)
+			FieldInfo[] fields = typeof(T).GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+			foreach (FieldInfo field in fields)
 			{
-				aField.SetValue(oDest, aField.GetValue(oSrc));
+				//Debug.WriteLine("ShallowCopy() " + field.Name);
+				field.SetValue(dest, field.GetValue(src));
 			}
 		}
 
@@ -791,7 +838,7 @@ namespace Shinta
 	// シリアライズ可能なキーと値のペア
 	// NameValueCollection、Dictionary などはシリアライズできないため、
 	// 本クラスでペアを作成した上で、シリアライズ可能な List に詰め込む
-	// なぜか System.Collections.Generic.KeyValuePair を使うとうまくシリアライズできない
+	// System.Collections.Generic.KeyValuePair はプロパティーの setter がないためシリアライズできない
 	// --------------------------------------------------------------------
 	[Serializable]
 	public struct SerializableKeyValuePair<TKey, TValue>
@@ -799,11 +846,11 @@ namespace Shinta
 		public TKey Key { get; set; }
 		public TValue Value { get; set; }
 
-		public SerializableKeyValuePair(TKey oKey, TValue oValue)
+		public SerializableKeyValuePair(TKey key, TValue value)
 			: this()
 		{
-			Key = oKey;
-			Value = oValue;
+			Key = key;
+			Value = value;
 		}
 	}
 	// public struct SerializableKeyValuePair<TKey, TValue> ___END___
