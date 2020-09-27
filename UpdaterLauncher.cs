@@ -220,9 +220,9 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// ちょちょいと自動更新を起動
 		// --------------------------------------------------------------------
-		public Boolean Launch(Boolean oShowError = false)
+		public Boolean Launch(Boolean showError = false)
 		{
-			String aParam = String.Empty;
+			String param = String.Empty;
 
 			if (!IsRequiredValid())
 			{
@@ -235,113 +235,113 @@ namespace Shinta
 			if (Verbose)
 			{
 				// オンリー系
-				aParam += PARAM_STR_VERBOSE + " ";
+				param += PARAM_STR_VERBOSE + " ";
 			}
 			else if (DeleteOld)
 			{
 				// オンリー系
-				aParam += PARAM_STR_DELETE_OLD + " ";
+				param += PARAM_STR_DELETE_OLD + " ";
 			}
 			else
 			{
 				// 共通
-				aParam += PARAM_STR_ID + " \"" + ID + "\" ";
+				param += PARAM_STR_ID + " \"" + ID + "\" ";
 				if (!String.IsNullOrEmpty(Name))
 				{
-					aParam += PARAM_STR_NAME + " \"" + Name + "\" ";
+					param += PARAM_STR_NAME + " \"" + Name + "\" ";
 				}
 				if (ForceShow)
 				{
-					aParam += PARAM_STR_FORCE_SHOW + " ";
+					param += PARAM_STR_FORCE_SHOW + " ";
 				}
 				if (Wait > 0)
 				{
-					aParam += PARAM_STR_WAIT + " " + Wait.ToString() + " ";
+					param += PARAM_STR_WAIT + " " + Wait.ToString() + " ";
 				}
 				if (NotifyHWnd != null)
 				{
-					aParam += PARAM_STR_NOTIFY_HWND + " " + NotifyHWnd.ToString() + " ";
+					param += PARAM_STR_NOTIFY_HWND + " " + NotifyHWnd.ToString() + " ";
 				}
 				if (SelfLaunch)
 				{
-					aParam += PARAM_STR_SELF_LAUNCH + " ";
+					param += PARAM_STR_SELF_LAUNCH + " ";
 				}
 				// 最新情報確認
 				if (!String.IsNullOrEmpty(LatestRss))
 				{
-					aParam += PARAM_STR_LATEST_RSS + " \"" + LatestRss + "\" ";
+					param += PARAM_STR_LATEST_RSS + " \"" + LatestRss + "\" ";
 				}
 				// 更新
 				if (!String.IsNullOrEmpty(UpdateRss))
 				{
-					aParam += PARAM_STR_UPDATE_RSS + " \"" + UpdateRss + "\" ";
-					aParam += PARAM_STR_CURRENT_VER + " \"" + CurrentVer + "\" ";
-					aParam += PARAM_STR_PID + " ";
+					param += PARAM_STR_UPDATE_RSS + " \"" + UpdateRss + "\" ";
+					param += PARAM_STR_CURRENT_VER + " \"" + CurrentVer + "\" ";
+					param += PARAM_STR_PID + " ";
 					if (PID == 0)
 					{
-						aParam += Process.GetCurrentProcess().Id.ToString();
+						param += Process.GetCurrentProcess().Id.ToString();
 
 					}
 					else
 					{
-						aParam += PID.ToString();
+						param += PID.ToString();
 					}
-					aParam += " " + PARAM_STR_RELAUNCH + " \"";
+					param += " " + PARAM_STR_RELAUNCH + " \"";
 					if (String.IsNullOrEmpty(Relaunch))
 					{
-						aParam += Assembly.GetEntryAssembly()?.Location;
+						param += Assembly.GetEntryAssembly()?.Location;
 					}
 					else
 					{
-						aParam += Relaunch;
+						param += Relaunch;
 					}
-					aParam += "\" ";
+					param += "\" ";
 					if (ClearUpdateCache)
 					{
-						aParam += PARAM_STR_CLEAR_UPDATE_CACHE + " ";
+						param += PARAM_STR_CLEAR_UPDATE_CACHE + " ";
 					}
 					if (ForceInstall)
 					{
-						aParam += PARAM_STR_FORCE_INSTALL + " ";
+						param += PARAM_STR_FORCE_INSTALL + " ";
 					}
 				}
 
 			}
-			LogMessage(TraceEventType.Verbose, "UpdaterLauncher.Launch() aParam: " + aParam);
+			LogMessage(TraceEventType.Verbose, "UpdaterLauncher.Launch() aParam: " + param);
 
 			// 起動
+			ProcessStartInfo psInfo = new ProcessStartInfo();
 			try
 			{
-				ProcessStartInfo aPSInfo = new ProcessStartInfo();
 				String exePath = Relaunch;
 				if (String.IsNullOrEmpty(exePath))
 				{
 					exePath = Assembly.GetEntryAssembly()?.Location ?? String.Empty;
 				}
-				aPSInfo.FileName = Path.GetDirectoryName(exePath) + "\\" + FILE_NAME_CUPDATER;
-				aPSInfo.Arguments = aParam;
+				psInfo.FileName = Path.GetDirectoryName(exePath) + "\\" + FILE_NAME_CUPDATER;
+				psInfo.Arguments = param;
 
 #if !NULLABLE_DISABLED
 				Process? process;
 #else
 				Process process;
 #endif
-				process = Process.Start(aPSInfo);
+				process = Process.Start(psInfo);
 				process?.Dispose();
 				LogMessage(TraceEventType.Information, "ちょちょいと自動更新を起動しました。");
 			}
-			catch (Exception oExcep)
+			catch (Exception excep)
 			{
 				if (LogWriter != null)
 				{
-					String aErrMsg = "ちょちょいと自動更新を起動できませんでした：\n" + oExcep.Message;
-					if (oShowError)
+					String errMsg = "ちょちょいと自動更新を起動できませんでした：\n" + excep.Message + "\n" + psInfo.FileName;
+					if (showError)
 					{
-						LogWriter.ShowLogMessage(TraceEventType.Error, aErrMsg);
+						LogWriter.ShowLogMessage(TraceEventType.Error, errMsg);
 					}
 					else
 					{
-						LogWriter.LogMessage(TraceEventType.Error, aErrMsg);
+						LogWriter.LogMessage(TraceEventType.Error, errMsg);
 					}
 				}
 

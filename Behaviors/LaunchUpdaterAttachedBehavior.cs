@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ちょちょいと自動更新との通信を行う添付ビヘイビア
-// Copyright (C) 2019 by SHINTA
+// Copyright (C) 2019-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -14,6 +14,8 @@
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
 // (1.01) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.02) | 2020/09/13 (Sun) |   リファクタリング。
+// (1.03) | 2020/09/14 (Mon) |   起動失敗時にコマンドを発行するようにした。
 // ============================================================================
 
 using System;
@@ -48,33 +50,33 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// UpdaterLauncher 添付プロパティー GET
 		// --------------------------------------------------------------------
-		public static UpdaterLauncher GetUpdaterLauncher(DependencyObject oObject)
+		public static UpdaterLauncher GetUpdaterLauncher(DependencyObject obj)
 		{
-			return (UpdaterLauncher)oObject.GetValue(UpdaterLauncherProperty);
+			return (UpdaterLauncher)obj.GetValue(UpdaterLauncherProperty);
 		}
 
 		// --------------------------------------------------------------------
 		// UpdaterLauncher 添付プロパティー SET
 		// --------------------------------------------------------------------
-		public static void SetUpdaterLauncher(DependencyObject oObject, UpdaterLauncher oValue)
+		public static void SetUpdaterLauncher(DependencyObject obj, UpdaterLauncher value)
 		{
-			oObject.SetValue(UpdaterLauncherProperty, oValue);
+			obj.SetValue(UpdaterLauncherProperty, value);
 		}
 
 		// --------------------------------------------------------------------
 		// コマンド添付プロパティー GET
 		// --------------------------------------------------------------------
-		public static ICommand GetCommand(DependencyObject oObject)
+		public static ICommand GetCommand(DependencyObject obj)
 		{
-			return (ICommand)oObject.GetValue(CommandProperty);
+			return (ICommand)obj.GetValue(CommandProperty);
 		}
 
 		// --------------------------------------------------------------------
 		// コマンド添付プロパティー SET
 		// --------------------------------------------------------------------
-		public static void SetCommand(DependencyObject oObject, ICommand oValue)
+		public static void SetCommand(DependencyObject obj, ICommand value)
 		{
-			oObject.SetValue(CommandProperty, oValue);
+			obj.SetValue(CommandProperty, value);
 		}
 
 		// ====================================================================
@@ -91,14 +93,14 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// 設定されたコマンドが実行可能な場合にそのコマンドを返す
 		// --------------------------------------------------------------------
-		private static ICommand? ExecutableCommand(Object? oSender)
+		private static ICommand? ExecutableCommand(Object? sender)
 		{
-			if (oSender is UIElement aElement)
+			if (sender is UIElement element)
 			{
-				ICommand? aCommand = GetCommand(aElement);
-				if (aCommand != null && aCommand.CanExecute(null))
+				ICommand? command = GetCommand(element);
+				if (command != null && command.CanExecute(null))
 				{
-					return aCommand;
+					return command;
 				}
 			}
 
@@ -108,26 +110,26 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// ViewModel 側で Command が変更された
 		// --------------------------------------------------------------------
-		private static void SourceCommandChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			Window? aWindow = oObject as Window;
-			if (aWindow == null)
+			Window? window = obj as Window;
+			if (window == null)
 			{
 				return;
 			}
 
-			if (GetCommand(aWindow) != null)
+			if (GetCommand(window) != null)
 			{
 				// コマンドが設定された場合はイベントハンドラーを有効にする
-				WindowInteropHelper aHelper = new WindowInteropHelper(aWindow);
-				HwndSource aWndSource = HwndSource.FromHwnd(aHelper.Handle);
-				aWndSource.AddHook(smWndProc);
+				WindowInteropHelper helper = new WindowInteropHelper(window);
+				HwndSource wndSource = HwndSource.FromHwnd(helper.Handle);
+				wndSource.AddHook(smWndProc);
 			}
 			else
 			{
 				// コマンドが解除された場合はイベントハンドラーを無効にする
-				WindowInteropHelper aHelper = new WindowInteropHelper(aWindow);
-				HwndSource aWndSource = HwndSource.FromHwnd(aHelper.Handle);
+				WindowInteropHelper helper = new WindowInteropHelper(window);
+				HwndSource aWndSource = HwndSource.FromHwnd(helper.Handle);
 				aWndSource.RemoveHook(smWndProc);
 			}
 		}
@@ -135,58 +137,61 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// ViewModel 側で UpdaterLauncher が変更された
 		// --------------------------------------------------------------------
-		private static void SourceUpdaterLauncherChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceUpdaterLauncherChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			Window? aWindow = oObject as Window;
-			if (aWindow == null)
+			Window? window = obj as Window;
+			if (window == null)
 			{
 				return;
 			}
 
-			UpdaterLauncher? aLauncher = oArgs.NewValue as UpdaterLauncher;
-			if (aLauncher == null)
+			UpdaterLauncher? launcher = args.NewValue as UpdaterLauncher;
+			if (launcher == null)
 			{
 				return;
 			}
 
 			// ウィンドウハンドル設定
-			WindowInteropHelper aHelper = new WindowInteropHelper(aWindow);
-			aLauncher.NotifyHWnd = aHelper.Handle;
+			WindowInteropHelper helper = new WindowInteropHelper(window);
+			launcher.NotifyHWnd = helper.Handle;
 
 			// ちょちょいと自動更新を起動
-			aLauncher.Launch(aLauncher.ForceShow);
+			if (!launcher.Launch(launcher.ForceShow))
+			{
+				WMUpdaterUIDisplayed(launcher.NotifyHWnd);
+			}
 		}
 
 		// --------------------------------------------------------------------
 		// HWnd から Window を取得
 		// --------------------------------------------------------------------
-		private static Window? WindowFromHWnd(IntPtr oHWnd)
+		private static Window? WindowFromHWnd(IntPtr hWnd)
 		{
-			HwndSource aWndSource = HwndSource.FromHwnd(oHWnd);
-			return aWndSource.RootVisual as Window;
+			HwndSource wndSource = HwndSource.FromHwnd(hWnd);
+			return wndSource.RootVisual as Window;
 		}
 
 		// --------------------------------------------------------------------
 		// イベントハンドラー（ちょちょいと自動更新からのメッセージを受信）
 		// --------------------------------------------------------------------
-		private static void WMUpdaterUIDisplayed(IntPtr oHWnd)
+		private static void WMUpdaterUIDisplayed(IntPtr hWnd)
 		{
-			ICommand? aCommand = ExecutableCommand(WindowFromHWnd(oHWnd));
+			ICommand? command = ExecutableCommand(WindowFromHWnd(hWnd));
 
 			// コマンドを実行
-			aCommand?.Execute(null);
+			command?.Execute(null);
 		}
 
 		// --------------------------------------------------------------------
 		// メッセージハンドラ
 		// --------------------------------------------------------------------
-		private static IntPtr WndProc(IntPtr oHWnd, Int32 oMsg, IntPtr oWParam, IntPtr oLParam, ref Boolean oHandled)
+		private static IntPtr WndProc(IntPtr hWnd, Int32 msg, IntPtr wParam, IntPtr lParam, ref Boolean handled)
 		{
-			switch (oMsg)
+			switch (msg)
 			{
 				case UpdaterLauncher.WM_UPDATER_UI_DISPLAYED:
-					WMUpdaterUIDisplayed(oHWnd);
-					oHandled = true;
+					WMUpdaterUIDisplayed(hWnd);
+					handled = true;
 					break;
 			}
 
