@@ -409,6 +409,7 @@ namespace Shinta
 		}
 #endif
 
+#if NETCOREAPP3_1
 		// --------------------------------------------------------------------
 		// オブジェクトをデシリアライズして読み出し
 		// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
@@ -424,6 +425,7 @@ namespace Shinta
 			using XmlNodeReader xmlNodeReader = new XmlNodeReader(xmlDocument.DocumentElement);
 			return (T)xmlSerializer.Deserialize(xmlNodeReader);
 		}
+#endif
 
 		// --------------------------------------------------------------------
 		// 文字列を暗号化し、文字列（Base64）で返す
@@ -482,7 +484,7 @@ namespace Shinta
 #if !NULLABLE_DISABLED
 		public static String MakeAbsolutePath(String? basePath, String? relativePath)
 #else
-		public static String MakeAbsolutePath(String oBasePath, String oRelativePath)
+		public static String MakeAbsolutePath(String basePath, String relativePath)
 #endif
 		{
 			if (basePath == null)
@@ -678,6 +680,7 @@ namespace Shinta
 			return aSameNameProcesses;
 		}
 
+#if NETCOREAPP3_1
 		// --------------------------------------------------------------------
 		// オブジェクトをシリアライズして保存
 		// ＜例外＞ Exception
@@ -688,6 +691,7 @@ namespace Shinta
 			using StreamWriter streamWriter = new StreamWriter(path, false, new UTF8Encoding(false));
 			xmlSerializer.Serialize(streamWriter, obj);
 		}
+#endif
 
 		// --------------------------------------------------------------------
 		// 全メンバを浅くコピーする
