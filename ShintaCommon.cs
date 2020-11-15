@@ -48,6 +48,7 @@
 // (3.54) | 2020/05/16 (Sat) |   MakeRelativePath() の引数チェックを強化。
 // (3.55) | 2020/05/19 (Tue) |   Deserialize() スペースをデシリアライズできるようにした。
 // (3.56) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
+// (3.57) | 2020/11/15 (Sun) |   UserAppDataFolderPath() .NET 5 の単一ファイルに対応。
 // ============================================================================
 
 using System;
@@ -761,7 +762,7 @@ namespace Shinta
 		public static String UserAppDataFolderPath()
 		{
 			String path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)
-					+ "\\" + Common.FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly()?.Location) + "\\";
+					+ "\\" + Common.FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]) + "\\";
 			try
 			{
 				Directory.CreateDirectory(path);

@@ -30,6 +30,7 @@
 //  1.30  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
 // (1.31) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // (1.32) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
+// (1.33) | 2020/11/15 (Sun) |   .NET 5 の単一ファイルに対応。
 // ============================================================================
 
 using System;
@@ -80,7 +81,7 @@ namespace Shinta
 		{
 			// プロパティのデフォルト値
 			LogFileName = Common.UserAppDataFolderPath()
-					+ Path.ChangeExtension(Path.GetFileName(Assembly.GetEntryAssembly()?.Location), Common.FILE_EXT_LOG);
+					+ Path.ChangeExtension(Path.GetFileName(Environment.GetCommandLineArgs()[0]), Common.FILE_EXT_LOG);
 			MaxSize = MAX_LOG_SIZE_DEFAULT;
 			MaxOldGenerations = 3;
 			ThreadSafe = false;

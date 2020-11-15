@@ -23,12 +23,12 @@
 //                               プロセスを破棄していなかったのを修正。
 // (1.11) | 2020/05/05 (Tue) |   SelfLaunch プロパティーをサポート。
 // (1.12) | 2020/11/15 (Sun) |   NotifyHWnd が空の場合に検出できない不具合を修正。
+// (1.13) | 2020/11/15 (Sun) |   .NET 5 の単一ファイルに対応。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 
 #if !NULLABLE_DISABLED
 #nullable enable
@@ -287,16 +287,7 @@ namespace Shinta
 					{
 						param += PID.ToString();
 					}
-					param += " " + PARAM_STR_RELAUNCH + " \"";
-					if (String.IsNullOrEmpty(Relaunch))
-					{
-						param += Assembly.GetEntryAssembly()?.Location;
-					}
-					else
-					{
-						param += Relaunch;
-					}
-					param += "\" ";
+					param += " " + PARAM_STR_RELAUNCH + " \"" + ExePath() + "\" ";
 					if (ClearUpdateCache)
 					{
 						param += PARAM_STR_CLEAR_UPDATE_CACHE + " ";
@@ -314,12 +305,7 @@ namespace Shinta
 			ProcessStartInfo psInfo = new ProcessStartInfo();
 			try
 			{
-				String exePath = Relaunch;
-				if (String.IsNullOrEmpty(exePath))
-				{
-					exePath = Assembly.GetEntryAssembly()?.Location ?? String.Empty;
-				}
-				psInfo.FileName = Path.GetDirectoryName(exePath) + "\\" + FILE_NAME_CUPDATER;
+				psInfo.FileName = Path.GetDirectoryName(ExePath()) + "\\" + FILE_NAME_CUPDATER;
 				psInfo.Arguments = param;
 
 #if !NULLABLE_DISABLED
@@ -361,6 +347,19 @@ namespace Shinta
 		// ====================================================================
 		// private メンバー関数
 		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// Relaunch または EXE パスを返す
+		// --------------------------------------------------------------------
+		private String ExePath()
+		{
+			String exePath = Relaunch;
+			if (String.IsNullOrEmpty(exePath))
+			{
+				exePath = Path.ChangeExtension(Environment.GetCommandLineArgs()[0], Common.FILE_EXT_EXE);
+			}
+			return exePath;
+		}
 
 		// --------------------------------------------------------------------
 		// ログ書き込み

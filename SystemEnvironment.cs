@@ -235,7 +235,7 @@ namespace Shinta
 						+ " / " + clrVerNum.ToString() + " (" + clrVerName + ")");
 
 				// 自身のパス
-				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Path: " + Assembly.GetEntryAssembly()?.Location);
+				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Path: " + Environment.GetCommandLineArgs()[0]);
 
 				// ファミリー
 				try
