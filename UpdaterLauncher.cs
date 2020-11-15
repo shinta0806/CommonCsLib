@@ -22,6 +22,7 @@
 //  1.10  | 2020/05/05 (Tue) | マイナーバージョンアップの積み重ね。
 //                               プロセスを破棄していなかったのを修正。
 // (1.11) | 2020/05/05 (Tue) |   SelfLaunch プロパティーをサポート。
+// (1.12) | 2020/11/15 (Sun) |   NotifyHWnd が空の場合に検出できない不具合を修正。
 // ============================================================================
 
 using System;
@@ -258,7 +259,7 @@ namespace Shinta
 				{
 					param += PARAM_STR_WAIT + " " + Wait.ToString() + " ";
 				}
-				if (NotifyHWnd != null)
+				if (NotifyHWnd != IntPtr.Zero)
 				{
 					param += PARAM_STR_NOTIFY_HWND + " " + NotifyHWnd.ToString() + " ";
 				}

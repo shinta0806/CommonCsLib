@@ -20,6 +20,7 @@
 // (1.02) | 2019/11/09 (Sat) |   null 許容参照型を有効化した。
 // (1.03) | 2020/01/20 (Mon) |   SelectedItems をバインド可能にした。
 // (1.04) | 2020/01/21 (Tue) |   SelectionChangedCommand をバインド可能にした。
+// (1.05) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
@@ -256,20 +257,20 @@ namespace Shinta.Behaviors
 
 			// カラム変更に対応できるようにする
 			newColumns.CollectionChanged
-					+= delegate (Object oSender, NotifyCollectionChangedEventArgs oNotifyCollectionChangedEventArgs)
+					+= delegate (Object? sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
 			{
-				if (oNotifyCollectionChangedEventArgs.NewItems != null)
+				if (notifyCollectionChangedEventArgs.NewItems != null)
 				{
-					foreach (DataGridColumn aDataGridColumn in oNotifyCollectionChangedEventArgs.NewItems.Cast<DataGridColumn>())
+					foreach (DataGridColumn dataGridColumn in notifyCollectionChangedEventArgs.NewItems.Cast<DataGridColumn>())
 					{
-						thisObject.AssociatedObject.Columns.Add(aDataGridColumn);
+						thisObject.AssociatedObject.Columns.Add(dataGridColumn);
 					}
 				}
-				if (oNotifyCollectionChangedEventArgs.OldItems != null)
+				if (notifyCollectionChangedEventArgs.OldItems != null)
 				{
-					foreach (DataGridColumn aDataGridColumn in oNotifyCollectionChangedEventArgs.OldItems.Cast<DataGridColumn>())
+					foreach (DataGridColumn dataGridColumn in notifyCollectionChangedEventArgs.OldItems.Cast<DataGridColumn>())
 					{
-						thisObject.AssociatedObject.Columns.Remove(aDataGridColumn);
+						thisObject.AssociatedObject.Columns.Remove(dataGridColumn);
 					}
 				}
 			};

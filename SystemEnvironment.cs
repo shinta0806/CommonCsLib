@@ -23,6 +23,7 @@
 // (1.33) | 2020/05/05 (Tue) |   null 許容参照型を無効化できるようにした。
 // (1.34) | 2020/06/27 (Sat) |   null 許容参照型の対応強化。
 // (1.35) | 2020/06/27 (Sat) |   GetClrVersionName() の強化。
+// (1.36) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using Microsoft.Win32;
@@ -127,19 +128,20 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public Boolean GetClrVersionRegistryNumber(out Int32 clrVersion)
 		{
-			using (RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\"))
+			clrVersion = 0;
+			using RegistryKey? key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\");
+			if (key == null)
 			{
-				if (key != null && key.GetValue("Release") != null)
-				{
-					clrVersion = (Int32)key.GetValue("Release");
-					return true;
-				}
-				else
-				{
-					clrVersion = 0;
-					return false;
-				}
+				return false;
 			}
+			Object? value = key.GetValue("Release");
+			if (value == null)
+			{
+				return false;
+			}
+
+			clrVersion = (Int32)value;
+			return true;
 		}
 
 		// --------------------------------------------------------------------

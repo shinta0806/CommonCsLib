@@ -47,6 +47,7 @@
 // (3.53) | 2020/05/16 (Sat) |   Deserialize() 引数の多態性に対応。
 // (3.54) | 2020/05/16 (Sat) |   MakeRelativePath() の引数チェックを強化。
 // (3.55) | 2020/05/19 (Tue) |   Deserialize() スペースをデシリアライズできるようにした。
+// (3.56) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using System;
@@ -345,22 +346,25 @@ namespace Shinta
 			return Encoding.Unicode.GetString(aDecBytes);
 		}
 
+#if USE_OBSOLETE
 		// --------------------------------------------------------------------
 		// 深いコピーを行う
 		// 対象は SerializableAttribute が付いているクラス
+		// BinaryFormatter はセキュリティ上の理由で推奨されなくなった
 		// --------------------------------------------------------------------
 		public static T DeepClone<T>(T src)
 		{
 			Object clone;
 			using (MemoryStream stream = new MemoryStream())
 			{
-				BinaryFormatter aFormatter = new BinaryFormatter();
-				aFormatter.Serialize(stream, src);
+				BinaryFormatter formatter = new BinaryFormatter();
+				formatter.Serialize(stream, src);
 				stream.Position = 0;
-				clone = aFormatter.Deserialize(stream);
+				clone = formatter.Deserialize(stream);
 			}
 			return (T)clone;
 		}
+#endif
 
 		// --------------------------------------------------------------------
 		// ZoneID を削除
@@ -409,7 +413,7 @@ namespace Shinta
 		}
 #endif
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
 		// --------------------------------------------------------------------
 		// オブジェクトをデシリアライズして読み出し
 		// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
@@ -422,8 +426,17 @@ namespace Shinta
 			XmlDocument xmlDocument = new XmlDocument();
 			xmlDocument.PreserveWhitespace = true;
 			xmlDocument.Load(streamReader);
+			if (xmlDocument.DocumentElement == null)
+			{
+				throw new Exception("xmlDocument.DocumentElement is null");
+			}
 			using XmlNodeReader xmlNodeReader = new XmlNodeReader(xmlDocument.DocumentElement);
-			return (T)xmlSerializer.Deserialize(xmlNodeReader);
+			Object? des = xmlSerializer.Deserialize(xmlNodeReader);
+			if (des == null)
+			{
+				throw new Exception("Deserialize result is null");
+			}
+			return (T)des;
 		}
 #endif
 
@@ -680,7 +693,7 @@ namespace Shinta
 			return aSameNameProcesses;
 		}
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
 		// --------------------------------------------------------------------
 		// オブジェクトをシリアライズして保存
 		// ＜例外＞ Exception

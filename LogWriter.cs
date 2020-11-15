@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ログをファイル・メッセージボックス・テキストボックスに出力する
-// Copyright (C) 2016-2019 by SHINTA
+// Copyright (C) 2016-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -20,6 +20,7 @@
 // (1.17) | 2019/06/27 (Thu) |   WPF 版のコードをシンプルにした。
 //  1.20  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
 // (1.21) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
+// (1.22) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using System;
@@ -214,20 +215,20 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// ログ書き込み＆表示
 		// --------------------------------------------------------------------
-		public MessageBoxResult ShowLogMessage(TraceEventType oEventType, String oMessage, Boolean oSuppressMessageBox = false)
+		public MessageBoxResult ShowLogMessage(TraceEventType eventType, String message, Boolean suppressMessageBox = false)
 		{
 			// メッセージが空の場合は何もしない
-			if (String.IsNullOrEmpty(oMessage))
+			if (String.IsNullOrEmpty(message))
 			{
 				return MessageBoxResult.None;
 			}
 
 			// ログファイルに記録
-			mTraceSource.TraceEvent(oEventType, 0, oMessage);
+			mTraceSource.TraceEvent(eventType, 0, message);
 
 			// アプリが終了シーケンスに入っている場合は、UI にアクセスすると、
 			// ウィンドウハンドルが無い例外が発生したり、スレッドが止まったりするようなので、ここで返る
-			if (ApplicationQuitToken != null && ApplicationQuitToken.IsCancellationRequested)
+			if (ApplicationQuitToken.IsCancellationRequested)
 			{
 				return MessageBoxResult.OK;
 			}
@@ -238,35 +239,35 @@ namespace Shinta
 				Application.Current.Dispatcher.Invoke(new Action(() =>
 				{
 #if DEBUG
-					AppendDisplayText(oMessage);
+					AppendDisplayText(message);
 #else
-					if (oEventType != TraceEventType.Verbose)
+					if (eventType != TraceEventType.Verbose)
 					{
-						AppendDisplayText(oMessage);
+						AppendDisplayText(message);
 					}
 #endif
 				}));
 			}
 
 			// メッセージボックスに表示しない場合
-			if (oSuppressMessageBox)
+			if (suppressMessageBox)
 			{
 				return MessageBoxResult.None;
 			}
 
 			// メッセージボックス表示
-			MessageBoxImage aIcon = MessageBoxImage.Information;
-			switch (oEventType)
+			MessageBoxImage icon = MessageBoxImage.Information;
+			switch (eventType)
 			{
 				case TraceEventType.Critical:
 				case TraceEventType.Error:
-					aIcon = MessageBoxImage.Error;
+					icon = MessageBoxImage.Error;
 					break;
 				case TraceEventType.Warning:
-					aIcon = MessageBoxImage.Warning;
+					icon = MessageBoxImage.Warning;
 					break;
 				case TraceEventType.Information:
-					aIcon = MessageBoxImage.Information;
+					icon = MessageBoxImage.Information;
 					break;
 				default:
 					return MessageBoxResult.None;
@@ -275,19 +276,19 @@ namespace Shinta
 			try
 			{
 				// ワーカースレッドから Application.Current.Windows にアクセスすると別スレッドからのアクセスによる例外が発生する
-				Window aActiveWindow = Application.Current.Windows.OfType<Window>().FirstOrDefault(x => x.IsActive);
+				Window? activeWindow = Application.Current.Windows.OfType<Window>().FirstOrDefault(x => x.IsActive);
 
 				// 自アプリでアクティブなフォームがある場合はその子フォームにする
-				if (aActiveWindow != null)
+				if (activeWindow != null)
 				{
-					MessageBoxResult aResult = MessageBoxResult.None;
-					aActiveWindow.Dispatcher.Invoke(new Action(() =>
+					MessageBoxResult result = MessageBoxResult.None;
+					activeWindow.Dispatcher.Invoke(new Action(() =>
 					{
 						// IsActive でも実際には前面に来ていない場合もあるのでアクティブ化する
-						aActiveWindow.Activate();
-						aResult = MessageBox.Show(aActiveWindow, oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButton.OK, aIcon);
+						activeWindow.Activate();
+						result = MessageBox.Show(activeWindow, message, TraceEventTypeToCaption(eventType), MessageBoxButton.OK, icon);
 					}));
-					return aResult;
+					return result;
 				}
 			}
 			catch (Exception)
@@ -295,7 +296,7 @@ namespace Shinta
 				Debug.WriteLine("ShowLogMessage() ワーカースレッドから Application.Current.Windows にアクセスできない");
 			}
 
-			return MessageBox.Show(oMessage, TraceEventTypeToCaption(oEventType), MessageBoxButton.OK, aIcon);
+			return MessageBox.Show(message, TraceEventTypeToCaption(eventType), MessageBoxButton.OK, icon);
 		}
 #endif
 

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // メッセージおよび付加情報を CSV 形式でログファイルに保存
-// Copyright (C) 2014-2019 by SHINTA
+// Copyright (C) 2014-2020 by SHINTA
 // 
 // ============================================================================
 
@@ -29,6 +29,7 @@
 // (1.23) | 2019/06/27 (Thu) |   StatusT を廃止。
 //  1.30  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
 // (1.31) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
+// (1.32) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using System;
@@ -97,30 +98,33 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// ログ記録
-		// ＜引数＞ oSource: TraceSource 生成時に指定された値
+		// ＜引数＞ source: TraceSource 生成時に指定された値
 		// --------------------------------------------------------------------
-		public override void TraceEvent(TraceEventCache oEventCache, String oSource, TraceEventType oEventType, int oID, String oMessage)
+		public override void TraceEvent(TraceEventCache? eventCache, String source, TraceEventType eventType, int oID, String? message)
 		{
-			String aContents;
-			String aEventType;
+			String contents;
+			String eventTypeString;
 
 			// イベントタイプ
-			switch (oEventType)
+			switch (eventType)
 			{
 				case Common.TRACE_EVENT_TYPE_STATUS:
-					aEventType = "Status";
+					eventTypeString = "Status";
 					break;
 				default:
-					aEventType = oEventType.ToString();
+					eventTypeString = eventType.ToString();
 					break;
 			}
 
 			// メッセージ
-			oMessage = oMessage.Replace("\r\n", BR_SYMBOL);
-			oMessage = oMessage.Replace("\r", BR_SYMBOL);
-			oMessage = oMessage.Replace("\n", BR_SYMBOL);
-			aContents = DateTime.Now.ToString("yyyy/MM/dd,HH:mm:ss") + "," + Process.GetCurrentProcess().Id.ToString() + ",N"
-					+ WindowsApi.GetCurrentThreadId() + "/M" + Thread.CurrentThread.ManagedThreadId.ToString() + "," + oSource + "," + aEventType + ",\"" + oMessage + "\"";
+			if (!String.IsNullOrEmpty(message))
+			{
+				message = message.Replace("\r\n", BR_SYMBOL);
+				message = message.Replace("\r", BR_SYMBOL);
+				message = message.Replace("\n", BR_SYMBOL);
+			}
+			contents = DateTime.Now.ToString("yyyy/MM/dd,HH:mm:ss") + "," + Process.GetCurrentProcess().Id.ToString() + ",N"
+					+ WindowsApi.GetCurrentThreadId() + "/M" + Thread.CurrentThread.ManagedThreadId.ToString() + "," + source + "," + eventTypeString + ",\"" + message + "\"";
 
 			// 書き込み（最大 MAX_WRITE_TRY 回試行する）
 			for (Int32 i = 0; i < MAX_WRITE_TRY; i++)
@@ -129,7 +133,7 @@ namespace Shinta
 				{
 					using (Writer = CreateTextWriter())
 					{
-						WriteLine(aContents);
+						WriteLine(contents);
 					}
 					// 書き込みに成功したらループを抜ける
 					break;

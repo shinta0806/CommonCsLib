@@ -25,6 +25,7 @@
 // (1.23) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // (1.24) | 2020/04/05 (Sun) |   null 許容参照型の対応強化。
 // (1.25) | 2020/05/05 (Tue) |   null 許容参照型の対応強化。
+// (1.26) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using System;
@@ -105,7 +106,10 @@ namespace Shinta
 				// UTF-8、BOM 無しで読込
 				using (StreamReader sr = new StreamReader(FileName, new UTF8Encoding(false)))
 				{
-					pairs = (List<SerializableKeyValuePair<String, Object>>)serializer.Deserialize(sr);
+					if (serializer.Deserialize(sr) is List<SerializableKeyValuePair<String, Object>> desPairs)
+					{
+						pairs = desPairs;
+					}
 				}
 			}
 			catch (Exception)
@@ -148,9 +152,12 @@ namespace Shinta
 		{
 			try
 			{
-				// ApplicationSettingsBase.Reset() を呼びだすと、IApplicationSettingsProvider.Reset() が
-				// 呼ばれた後に、Reload() が呼ばれるので、設定ファイルを削除するだけで、目的は達成される
-				File.Delete(FileName);
+				if (!String.IsNullOrEmpty(FileName))
+				{
+					// ApplicationSettingsBase.Reset() を呼びだすと、IApplicationSettingsProvider.Reset() が
+					// 呼ばれた後に、Reload() が呼ばれるので、設定ファイルを削除するだけで、目的は達成される
+					File.Delete(FileName);
+				}
 			}
 			catch
 			{
