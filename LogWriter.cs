@@ -21,6 +21,7 @@
 //  1.20  | 2019/11/10 (Sun) | null 許容参照型を有効化した。
 // (1.21) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // (1.22) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
+// (1.23) | 2021/03/06 (Sat) |   TraceEventTypeToCaption() 改善。
 // ============================================================================
 
 using System;
@@ -85,15 +86,34 @@ namespace Shinta
 		{
 			// トレースソース
 #if DEBUG
-			mTraceSource = new TraceSource(oName, SourceLevels.Verbose);
+			_traceSource = new TraceSource(oName, SourceLevels.Verbose);
 #else
-			mTraceSource = new TraceSource(oName, SourceLevels.Information);
+			_traceSource = new TraceSource(oName, SourceLevels.Information);
 #endif
 
 			// トレースリスナー
-			mTraceSource.Listeners.Remove(Common.TRACE_SOURCE_DEFAULT_LISTENER_NAME);
+			_traceSource.Listeners.Remove(Common.TRACE_SOURCE_DEFAULT_LISTENER_NAME);
 			SimpleTraceListener = new SimpleTraceListener();
-			mTraceSource.Listeners.Add(SimpleTraceListener);
+			_traceSource.Listeners.Add(SimpleTraceListener);
+		}
+
+		// ====================================================================
+		// public static メンバー関数
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// TraceEventType を表示用の文字列に変換
+		// --------------------------------------------------------------------
+		public static String TraceEventTypeToCaption(TraceEventType eventType)
+		{
+			return eventType switch
+			{
+				TraceEventType.Critical => "エラー",
+				TraceEventType.Error => "エラー",
+				TraceEventType.Warning => "警告",
+				TraceEventType.Information => "情報",
+				_ => String.Empty,
+			};
 		}
 
 		// ====================================================================
@@ -112,7 +132,7 @@ namespace Shinta
 			}
 
 			// ログファイルに記録
-			mTraceSource.TraceEvent(oEventType, 0, oMessage);
+			_traceSource.TraceEvent(oEventType, 0, oMessage);
 		}
 
 #if USE_FORM
@@ -224,7 +244,7 @@ namespace Shinta
 			}
 
 			// ログファイルに記録
-			mTraceSource.TraceEvent(eventType, 0, message);
+			_traceSource.TraceEvent(eventType, 0, message);
 
 			// アプリが終了シーケンスに入っている場合は、UI にアクセスすると、
 			// ウィンドウハンドルが無い例外が発生したり、スレッドが止まったりするようなので、ここで返る
@@ -300,24 +320,6 @@ namespace Shinta
 		}
 #endif
 
-		// --------------------------------------------------------------------
-		// TraceEventType を表示用の文字列に変換
-		// --------------------------------------------------------------------
-		public String TraceEventTypeToCaption(TraceEventType oEventType)
-		{
-			switch (oEventType)
-			{
-				case TraceEventType.Critical:
-				case TraceEventType.Error:
-					return "エラー";
-				case TraceEventType.Warning:
-					return "警告";
-				case TraceEventType.Information:
-					return "情報";
-			}
-			return String.Empty;
-		}
-
 		// ====================================================================
 		// private 定数
 		// ====================================================================
@@ -327,7 +329,7 @@ namespace Shinta
 		// ====================================================================
 
 		// ログ
-		private TraceSource mTraceSource;
+		private readonly TraceSource _traceSource;
 
 		// ====================================================================
 		// private メンバー関数

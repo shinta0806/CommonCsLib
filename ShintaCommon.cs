@@ -61,6 +61,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Windows;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -196,7 +197,7 @@ namespace Shinta
 #endif
 		{
 			// ミューテックスを取得する
-			Mutex aOwnedMutex = new Mutex(false, oMutexName);
+			Mutex aOwnedMutex = new(false, oMutexName);
 			try
 			{
 				if (aOwnedMutex.WaitOne(0))
@@ -250,6 +251,31 @@ namespace Shinta
 			{
 				ActivateExternalWindow(aSameNameProcesses[0].MainWindowHandle);
 			}
+		}
+
+		// --------------------------------------------------------------------
+		// ウィンドウがスクリーンから完全にはみ出している場合はスクリーン内に移動する
+		// --------------------------------------------------------------------
+		public static Rect AdjustWindowRect(Rect windowRect)
+		{
+			Rect screenRect = new Rect(0, 0, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
+
+			// ウィンドウとスクリーンがぴったりの場合は移動不要
+			if (screenRect == windowRect)
+			{
+				return windowRect;
+			}
+
+			// ウィンドウとスクリーンが一部重なっている場合は移動不要
+			// ※ウィンドウがスクリーンより完全に大きい場合を除く
+			Rect intersect = Rect.Intersect(screenRect, windowRect);
+			if (!intersect.IsEmpty && intersect != screenRect)
+			{
+				return windowRect;
+			}
+
+			// 移動の必要がある
+			return new Rect(0, 0, windowRect.Width, windowRect.Height);
 		}
 
 		// --------------------------------------------------------------------
@@ -422,16 +448,16 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static T Deserialize<T>(String path, T obj) where T : notnull
 		{
-			XmlSerializer xmlSerializer = new XmlSerializer(obj.GetType());
-			using StreamReader streamReader = new StreamReader(path, new UTF8Encoding(false));
-			XmlDocument xmlDocument = new XmlDocument();
+			XmlSerializer xmlSerializer = new(obj.GetType());
+			using StreamReader streamReader = new(path, new UTF8Encoding(false));
+			XmlDocument xmlDocument = new();
 			xmlDocument.PreserveWhitespace = true;
 			xmlDocument.Load(streamReader);
 			if (xmlDocument.DocumentElement == null)
 			{
 				throw new Exception("xmlDocument.DocumentElement is null");
 			}
-			using XmlNodeReader xmlNodeReader = new XmlNodeReader(xmlDocument.DocumentElement);
+			using XmlNodeReader xmlNodeReader = new(xmlDocument.DocumentElement);
 			Object? des = xmlSerializer.Deserialize(xmlNodeReader);
 			if (des == null)
 			{
@@ -471,23 +497,23 @@ namespace Shinta
 		// ＜返値＞ ペア
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-		public static SortedDictionary<String, String> LoadKeyAndValue(String oIniPath)
+		public static SortedDictionary<String, String> LoadKeyAndValue(String iniPath)
 		{
-			SortedDictionary<String, String> aKeyValuePairs = new SortedDictionary<String, String>();
-			String[] aLines = File.ReadAllLines(oIniPath, Encoding.GetEncoding(Common.CODE_PAGE_SHIFT_JIS));
-			foreach (String aLine in aLines)
+			SortedDictionary<String, String> keyValuePairs = new();
+			String[] lines = File.ReadAllLines(iniPath, Encoding.GetEncoding(Common.CODE_PAGE_SHIFT_JIS));
+			foreach (String line in lines)
 			{
-				Int32 aEqPos = aLine.IndexOf('=');
-				if (aEqPos < 0)
+				Int32 eqPos = line.IndexOf('=');
+				if (eqPos < 0)
 				{
-					aKeyValuePairs[aLine.Trim().ToLower()] = String.Empty;
+					keyValuePairs[line.Trim().ToLower()] = String.Empty;
 				}
 				else
 				{
-					aKeyValuePairs[aLine.Substring(0, aEqPos).Trim().ToLower()] = aLine.Substring(aEqPos + 1).Trim();
+					keyValuePairs[line[0..eqPos].Trim().ToLower()] = line[(eqPos + 1)..^0].Trim();
 				}
 			}
-			return aKeyValuePairs;
+			return keyValuePairs;
 		}
 
 		// --------------------------------------------------------------------
@@ -511,9 +537,9 @@ namespace Shinta
 			}
 
 			// basePath の末尾が '\\' 1 つでないとうまく動作しない
-			if (String.IsNullOrEmpty(basePath) || basePath[basePath.Length - 1] != '\\')
+			if (String.IsNullOrEmpty(basePath) || basePath[^1] != '\\')
 			{
-				basePath = basePath + "\\";
+				basePath += "\\";
 			}
 
 			// Uri クラスのコンストラクターが勝手にデコードするので、予め "%" を "%25" にしておく
@@ -521,8 +547,8 @@ namespace Shinta
 			relativePath = relativePath.Replace("%", "%25");
 
 			// 絶対パス
-			Uri baseUri = new Uri(basePath);
-			Uri absoluteUri = new Uri(baseUri, relativePath);
+			Uri baseUri = new(basePath);
+			Uri absoluteUri = new (baseUri, relativePath);
 			String absolutePath = absoluteUri.LocalPath;
 
 			// "%25" を "%" に戻す
@@ -552,9 +578,9 @@ namespace Shinta
 			}
 
 			// basePath の末尾が '\\' 1 つでないとうまく動作しない
-			if (String.IsNullOrEmpty(basePath) || basePath[basePath.Length - 1] != '\\')
+			if (String.IsNullOrEmpty(basePath) || basePath[^1] != '\\')
 			{
-				basePath = basePath + "\\";
+				basePath += "\\";
 			}
 
 			// Uri クラスのコンストラクターが勝手にデコードするので、予め "%" を "%25" にしておく
@@ -562,7 +588,7 @@ namespace Shinta
 			absolutePath = absolutePath.Replace("%", "%25");
 
 			// 相対パス
-			Uri baseUri = new Uri(basePath);
+			Uri baseUri = new (basePath);
 			String relativePath = baseUri.MakeRelativeUri(new Uri(absolutePath)).ToString();
 
 			// 勝手に URL エンコードされるのでデコードする
@@ -669,29 +695,29 @@ namespace Shinta
 		// ＜返値＞ プロセス群（見つからない場合は空のリスト
 		// --------------------------------------------------------------------
 #if !NULLABLE_DISABLED
-		public static List<Process> SameNameProcesses(Process? oSpecifyProcess = null)
+		public static List<Process> SameNameProcesses(Process? specifyProcess = null)
 #else
-		public static List<Process> SameNameProcesses(Process oSpecifyProcess = null)
+		public static List<Process> SameNameProcesses(Process specifyProcess = null)
 #endif
 		{
 			// プロセスが指定されていない場合は実行中のプロセスが指定されたものとする
-			if (oSpecifyProcess == null)
+			if (specifyProcess == null)
 			{
-				oSpecifyProcess = Process.GetCurrentProcess();
+				specifyProcess = Process.GetCurrentProcess();
 			}
 
-			Process[] aAllProcesses = Process.GetProcessesByName(oSpecifyProcess.ProcessName);
-			List<Process> aSameNameProcesses = new List<Process>();
+			Process[] allProcesses = Process.GetProcessesByName(specifyProcess.ProcessName);
+			List<Process> sameNameProcesses = new();
 
-			foreach (Process aProcess in aAllProcesses)
+			foreach (Process process in allProcesses)
 			{
-				if (aProcess.Id != oSpecifyProcess.Id)
+				if (process.Id != specifyProcess.Id)
 				{
-					aSameNameProcesses.Add(aProcess);
+					sameNameProcesses.Add(process);
 				}
 			}
 
-			return aSameNameProcesses;
+			return sameNameProcesses;
 		}
 
 #if NETCOREAPP3_1 || NET5_0
@@ -701,8 +727,8 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static void Serialize(String path, Object obj)
 		{
-			XmlSerializer xmlSerializer = new XmlSerializer(obj.GetType());
-			using StreamWriter streamWriter = new StreamWriter(path, false, new UTF8Encoding(false));
+			XmlSerializer xmlSerializer = new (obj.GetType());
+			using StreamWriter streamWriter = new (path, false, new UTF8Encoding(false));
 			xmlSerializer.Serialize(streamWriter, obj);
 		}
 #endif
@@ -793,13 +819,13 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		private static RijndaelManaged CreateRijndaelManaged(String oPassword, String oSalt)
 		{
-			RijndaelManaged aRijndael = new RijndaelManaged();
+			RijndaelManaged aRijndael = new ();
 
 			// salt をバイト化
 			Byte[] aSaltBytes = Encoding.Unicode.GetBytes(oSalt);
 
 			// パスワードから共有キーと初期化ベクタを作成する
-			Rfc2898DeriveBytes aDeriveBytes = new Rfc2898DeriveBytes(oPassword, aSaltBytes);
+			Rfc2898DeriveBytes aDeriveBytes = new (oPassword, aSaltBytes);
 			aDeriveBytes.IterationCount = 1000;
 			aRijndael.Key = aDeriveBytes.GetBytes(aRijndael.KeySize / 8);
 			aRijndael.IV = aDeriveBytes.GetBytes(aRijndael.BlockSize / 8);

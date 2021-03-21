@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // Windows API を C# で使えるようにするための記述
-// Copyright (C) 2015-2019 by SHINTA
+// Copyright (C) 2015-2021 by SHINTA
 // 
 // ============================================================================
 
@@ -27,6 +27,8 @@
 //  1.15  | 2019/10/08 (Tue) |   CopyMemory() を追加。
 //  1.16  | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 //  1.17  | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
+//  1.18  | 2021/03/06 (Sat) |   DllImport 属性の関数のアクセスレベルを public から internal に変更。
+//  1.19  | 2021/03/06 (Sat) |   文字列を引数とする関数に CharSet.Unicode を指定。
 // ============================================================================
 
 using System;
@@ -162,10 +164,10 @@ namespace Shinta
 	{
 		SW_HIDE = 0,
 		SW_SHOWNORMAL = 1,
-		SW_NORMAL = 1,
+		SW_NORMAL = SW_SHOWNORMAL,
 		SW_SHOWMINIMIZED = 2,
 		SW_SHOWMAXIMIZED = 3,
-		SW_MAXIMIZE = 3,
+		SW_MAXIMIZE = SW_SHOWMAXIMIZED,
 		SW_SHOWNOACTIVATE = 4,
 		SW_SHOW = 5,
 		SW_MINIMIZE = 6,
@@ -176,6 +178,7 @@ namespace Shinta
 
 	// --------------------------------------------------------------------
 	// WS (Window Style)
+	// https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
 	// --------------------------------------------------------------------
 	[Flags]
 	public enum WS : UInt32
@@ -192,14 +195,14 @@ namespace Shinta
 		WS_MAXIMIZE = 0x1000000,
 		WS_MAXIMIZEBOX = 0x10000,
 		WS_MINIMIZE = 0x20000000,
-		WS_MINIMIZEBOX = 0x20000,
+		WS_MINIMIZEBOX = WS_GROUP,
 		WS_OVERLAPPED = 0x0,
 		WS_OVERLAPPEDWINDOW = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_SIZEFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 		WS_POPUP = 0x80000000u,
 		WS_POPUPWINDOW = WS_POPUP | WS_BORDER | WS_SYSMENU,
 		WS_SIZEFRAME = 0x40000,
 		WS_SYSMENU = 0x80000,
-		WS_TABSTOP = 0x10000,
+		WS_TABSTOP = WS_MAXIMIZEBOX,
 		WS_VISIBLE = 0x10000000,
 		WS_VSCROLL = 0x200000,
 	}
@@ -332,102 +335,103 @@ namespace Shinta
 
 		// ====================================================================
 		// DLL インポート
+		// public にすると CA1401 となるため internal にする
 		// ====================================================================
 
 		// --------------------------------------------------------------------
 		// BringWindowToTop
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
-		public static extern Boolean BringWindowToTop(IntPtr oWnd);
+		internal static extern Boolean BringWindowToTop(IntPtr oWnd);
 
 		// --------------------------------------------------------------------
 		// ChangeWindowMessageFilter
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean ChangeWindowMessageFilter(UInt32 oMsg, UInt32 oFlag);
+		internal static extern Boolean ChangeWindowMessageFilter(UInt32 oMsg, UInt32 oFlag);
 
 		// --------------------------------------------------------------------
 		// CopyMemory
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_KERNEL32_DLL, SetLastError = false)]
 
-		public static extern void CopyMemory(IntPtr oDest, IntPtr oSrc, UInt32 oCount);
+		internal static extern void CopyMemory(IntPtr oDest, IntPtr oSrc, UInt32 oCount);
 
 		// --------------------------------------------------------------------
 		// CreateItemMoniker
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_OLE32_DLL)]
-		public static extern Int32 CreateItemMoniker([MarshalAs(UnmanagedType.LPWStr)] String oDelim,
+		internal static extern Int32 CreateItemMoniker([MarshalAs(UnmanagedType.LPWStr)] String oDelim,
 				[MarshalAs(UnmanagedType.LPWStr)] String oItem, out IMoniker oPpmk);
 
 		// --------------------------------------------------------------------
 		// DeleteFile
 		// --------------------------------------------------------------------
-		[DllImport(FILE_NAME_KERNEL32_DLL, SetLastError = true)]
+		[DllImport(FILE_NAME_KERNEL32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean DeleteFile(String oFileName);
+		internal static extern Boolean DeleteFile(String fileName);
 
 		// --------------------------------------------------------------------
 		// FindWindow
 		// --------------------------------------------------------------------
-		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
-		public static extern IntPtr FindWindow(String oClassName, String oWindowName);
+		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
+		internal static extern IntPtr FindWindow(String className, String windowName);
 
 		// --------------------------------------------------------------------
 		// GetClassName
 		// --------------------------------------------------------------------
-		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Auto)]
-		public static extern Int32 GetClassName(IntPtr oWnd, StringBuilder oClassName, int oMaxCount);
+		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
+		internal static extern Int32 GetClassName(IntPtr wnd, StringBuilder className, int maxCount);
 
 		// --------------------------------------------------------------------
 		// GetCurrentThread
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_KERNEL32_DLL)]
-		public static extern UInt32 GetCurrentThreadId();
+		internal static extern UInt32 GetCurrentThreadId();
 
 		// --------------------------------------------------------------------
 		// GetCurrentThreadId
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_KERNEL32_DLL)]
-		public static extern IntPtr GetCurrentThread();
+		internal static extern IntPtr GetCurrentThread();
 
 		// --------------------------------------------------------------------
 		// GetForegroundWindow
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
-		public static extern IntPtr GetForegroundWindow();
+		internal static extern IntPtr GetForegroundWindow();
 
 		// --------------------------------------------------------------------
 		// GetRunningObjectTable
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_OLE32_DLL)]
-		public static extern Int32 GetRunningObjectTable(UInt32 oReserved, out IRunningObjectTable oPprot);
+		internal static extern Int32 GetRunningObjectTable(UInt32 oReserved, out IRunningObjectTable oPprot);
 
 		// --------------------------------------------------------------------
 		// GetWindowLong
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
-		public static extern IntPtr GetWindowLong(IntPtr oHWnd, Int32 oIndex);
+		internal static extern IntPtr GetWindowLong(IntPtr oHWnd, Int32 oIndex);
 
 		// --------------------------------------------------------------------
 		// GetWindowText
 		// --------------------------------------------------------------------
-		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Auto)]
-		public static extern Int32 GetWindowText(IntPtr oHWnd, StringBuilder oString, Int32 oMaxCount);
+		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
+		internal static extern Int32 GetWindowText(IntPtr wnd, StringBuilder str, Int32 maxCount);
 
 		// --------------------------------------------------------------------
 		// GetWindowTextLength
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Auto)]
-		public static extern Int32 GetWindowTextLength(IntPtr oHWnd);
+		internal static extern Int32 GetWindowTextLength(IntPtr oHWnd);
 
 		// --------------------------------------------------------------------
 		// IsIconic
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean IsIconic(IntPtr oHWnd);
+		internal static extern Boolean IsIconic(IntPtr oHWnd);
 
 		// --------------------------------------------------------------------
 		// PostMessage
@@ -435,10 +439,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean PostMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, IntPtr oLParam);
-		//[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
-		//[return: MarshalAs(UnmanagedType.Bool)]
-		//public static extern Boolean PostMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, ref COPYDATASTRUCT_String oLParam);
+		internal static extern Boolean PostMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, IntPtr oLParam);
 
 		// --------------------------------------------------------------------
 		// ReplyMessage
@@ -446,56 +447,56 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean ReplyMessage(IntPtr oLResult);
+		internal static extern Boolean ReplyMessage(IntPtr oLResult);
 
 		// --------------------------------------------------------------------
 		// SendMessage
 		// 同期通信
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
-		public static extern IntPtr SendMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, IntPtr oLParam);
+		internal static extern IntPtr SendMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, IntPtr oLParam);
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
-		public static extern IntPtr SendMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, ref COPYDATASTRUCT_String oLParam);
+		internal static extern IntPtr SendMessage(IntPtr oHWnd, UInt32 oMsg, IntPtr oWParam, ref COPYDATASTRUCT_String oLParam);
 
 		// --------------------------------------------------------------------
 		// SetForegroundWindow
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean SetForegroundWindow(IntPtr oWnd);
+		internal static extern Boolean SetForegroundWindow(IntPtr oWnd);
 
 		// --------------------------------------------------------------------
 		// SetThreadDescription：うまく動かない？
 		// Win10 Ver 1607 以降
 		// --------------------------------------------------------------------
-		[DllImport(FILE_NAME_KERNEL32_DLL, CharSet = CharSet.Auto)]
-		public static extern Int32 SetThreadDescription(IntPtr hThread, StringBuilder description);
+		[DllImport(FILE_NAME_KERNEL32_DLL, CharSet = CharSet.Unicode)]
+		internal static extern Int32 SetThreadDescription(IntPtr thread, StringBuilder description);
 
 		// --------------------------------------------------------------------
 		// SetWindowLong
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
-		public static extern IntPtr SetWindowLong(IntPtr oHWnd, Int32 oIndex, IntPtr oNewLong);
+		internal static extern IntPtr SetWindowLong(IntPtr oHWnd, Int32 oIndex, IntPtr oNewLong);
 
 		// --------------------------------------------------------------------
 		// SHChangeNotifyRegister
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_SHELL32_DLL, SetLastError = true, EntryPoint = "#2", CharSet = CharSet.Auto)]
-		public static extern UInt32 SHChangeNotifyRegister(IntPtr oHWnd, SHCNRF oSources, SHCNE oEvents, UInt32 oMsg, Int32 oEntries, ref SHChangeNotifyEntry oShCne);
+		internal static extern UInt32 SHChangeNotifyRegister(IntPtr oHWnd, SHCNRF oSources, SHCNE oEvents, UInt32 oMsg, Int32 oEntries, ref SHChangeNotifyEntry oShCne);
 
 		// --------------------------------------------------------------------
 		// SHGetPathFromIDList
 		// --------------------------------------------------------------------
-		[DllImport(FILE_NAME_SHELL32_DLL, CharSet = CharSet.Auto)]
+		[DllImport(FILE_NAME_SHELL32_DLL, CharSet = CharSet.Unicode)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean SHGetPathFromIDList(IntPtr oIdl, [MarshalAs(UnmanagedType.LPTStr)] StringBuilder oPath);
+		internal static extern Boolean SHGetPathFromIDList(IntPtr idList, StringBuilder path);
 
 		// --------------------------------------------------------------------
 		// ShowWindowAsync
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern Boolean ShowWindowAsync(IntPtr oHWnd, Int32 oCmdShow);
+		internal static extern Boolean ShowWindowAsync(IntPtr oHWnd, Int32 oCmdShow);
 	}
 	// public class WindowsApi ___END___
 

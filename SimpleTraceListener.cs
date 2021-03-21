@@ -1,13 +1,12 @@
 ﻿// ============================================================================
 // 
 // メッセージおよび付加情報を CSV 形式でログファイルに保存
-// Copyright (C) 2014-2020 by SHINTA
+// Copyright (C) 2014-2021 by SHINTA
 // 
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 文字コードは UTF-8
-// アプリケーションアセンブリ情報（保存フォルダ名になる）を設定した状態で使用すること
+// ログの文字コードは UTF-8
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -31,6 +30,7 @@
 // (1.31) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 // (1.32) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // (1.33) | 2020/11/15 (Sun) |   .NET 5 の単一ファイルに対応。
+// (1.34) | 2021/03/06 (Sat) |   TraceEvent() の表記を簡略化。
 // ============================================================================
 
 using System;
@@ -101,21 +101,17 @@ namespace Shinta
 		// ログ記録
 		// ＜引数＞ source: TraceSource 生成時に指定された値
 		// --------------------------------------------------------------------
-		public override void TraceEvent(TraceEventCache? eventCache, String source, TraceEventType eventType, int oID, String? message)
+		public override void TraceEvent(TraceEventCache? eventCache, String source, TraceEventType eventType, int id, String? message)
 		{
 			String contents;
 			String eventTypeString;
 
 			// イベントタイプ
-			switch (eventType)
+			eventTypeString = eventType switch
 			{
-				case Common.TRACE_EVENT_TYPE_STATUS:
-					eventTypeString = "Status";
-					break;
-				default:
-					eventTypeString = eventType.ToString();
-					break;
-			}
+				Common.TRACE_EVENT_TYPE_STATUS => "Status",
+				_ => eventType.ToString(),
+			};
 
 			// メッセージ
 			if (!String.IsNullOrEmpty(message))
@@ -124,7 +120,7 @@ namespace Shinta
 				message = message.Replace("\r", BR_SYMBOL);
 				message = message.Replace("\n", BR_SYMBOL);
 			}
-			contents = DateTime.Now.ToString("yyyy/MM/dd,HH:mm:ss") + "," + Process.GetCurrentProcess().Id.ToString() + ",N"
+			contents = DateTime.Now.ToString("yyyy/MM/dd,HH:mm:ss") + "," + Environment.ProcessId.ToString() + ",N"
 					+ WindowsApi.GetCurrentThreadId() + "/M" + Thread.CurrentThread.ManagedThreadId.ToString() + "," + source + "," + eventTypeString + ",\"" + message + "\"";
 
 			// 書き込み（最大 MAX_WRITE_TRY 回試行する）
@@ -168,20 +164,19 @@ namespace Shinta
 		private TextWriter CreateTextWriter()
 		{
 			// StreamWriter オブジェクトの設定
-			StreamWriter aSW = new StreamWriter(LogFileName, true);
-			aSW.AutoFlush = true;
+			StreamWriter sw = new(LogFileName, true);
+			sw.AutoFlush = true;
 
 			if (ThreadSafe)
 			{
 				// スレッドセーフラッパを作成して返す
-				return TextWriter.Synchronized(aSW);
+				return TextWriter.Synchronized(sw);
 			}
 			else
 			{
 				// そのまま返す
-				return aSW;
+				return sw;
 			}
-
 		}
 
 		// --------------------------------------------------------------------
@@ -205,7 +200,7 @@ namespace Shinta
 			try
 			{
 				// ファイルサイズの調査
-				FileInfo aFI = new FileInfo(LogFileName);
+				FileInfo aFI = new(LogFileName);
 				if (aFI.Length <= MaxSize)
 				{
 					// ローテーション不要
