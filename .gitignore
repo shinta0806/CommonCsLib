@@ -284,6 +284,7 @@ __pycache__/
 !LinqUtils.cs
 !LogWriter.cs
 !ShintaCommon.cs
+!ShintaCommonWindows.cs
 !SimpleTraceListener.cs
 !SystemEnvironment.cs
 !UpdaterLauncher.cs
