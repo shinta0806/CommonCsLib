@@ -29,6 +29,7 @@
 //  1.17  | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
 //  1.18  | 2021/03/06 (Sat) |   DllImport 属性の関数のアクセスレベルを public から internal に変更。
 //  1.19  | 2021/03/06 (Sat) |   文字列を引数とする関数に CharSet.Unicode を指定。
+//  1.20  | 2021/03/27 (Sat) | GetVolumeInformation() を追加。
 // ============================================================================
 
 using System;
@@ -75,6 +76,35 @@ namespace Shinta
 		DBT_DEVTYP_OEM = 0x00000000,
 		DBT_DEVTYP_PORT = 0x00000003,
 		DBT_DEVTYP_VOLUME = 0x00000002,
+	}
+
+	// --------------------------------------------------------------------
+	// File System Flags
+	// --------------------------------------------------------------------
+	[Flags]
+	public enum FSF : UInt32
+	{
+		FILE_CASE_PRESERVED_NAMES = 2,
+		FILE_CASE_SENSITIVE_SEARCH = 1,
+		FILE_DAX_VOLUME = 0x20000000,
+		FILE_FILE_COMPRESSION = 0x10,
+		FILE_NAMED_STREAMS = 0x40000,
+		FILE_PERSISTENT_ACLS = 8,
+		FILE_READ_ONLY_VOLUME = 0x80000,
+		FILE_SEQUENTIAL_WRITE_ONCE = 0x100000,
+		FILE_SUPPORTS_ENCRYPTION = 0x20000,
+		FILE_SUPPORTS_EXTENDED_ATTRIBUTES = 0x00800000,
+		FILE_SUPPORTS_HARD_LINKS = 0x00400000,
+		FILE_SUPPORTS_OBJECT_IDS = 0x10000,
+		FILE_SUPPORTS_OPEN_BY_FILE_ID = 0x01000000,
+		FILE_SUPPORTS_REPARSE_POINTS = 0x80,
+		FILE_SUPPORTS_SPARSE_FILES = 0x40,
+		FILE_SUPPORTS_TRANSACTIONS = 0x200000,
+		FILE_SUPPORTS_USN_JOURNAL = 0x02000000,
+		FILE_UNICODE_ON_DISK = 4,
+		FILE_VOLUME_IS_COMPRESSED = 0x8000,
+		FILE_VOLUME_QUOTAS = 0x20,
+		FILE_SUPPORTS_BLOCK_REFCOUNTING = 0x08000000,
 	}
 
 	// --------------------------------------------------------------------
@@ -320,17 +350,17 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// FAILED (COM)
 		// --------------------------------------------------------------------
-		public static Boolean FAILED(HRESULT oHResult)
+		public static Boolean FAILED(HRESULT hResult)
 		{
-			return oHResult < 0;
+			return hResult < 0;
 		}
 
 		// --------------------------------------------------------------------
 		// SUCCEEDED (COM)
 		// --------------------------------------------------------------------
-		public static Boolean SUCCEEDED(HRESULT oHResult)
+		public static Boolean SUCCEEDED(HRESULT hResult)
 		{
-			return oHResult >= 0;
+			return hResult >= 0;
 		}
 
 		// ====================================================================
@@ -342,7 +372,7 @@ namespace Shinta
 		// BringWindowToTop
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
-		internal static extern Boolean BringWindowToTop(IntPtr oWnd);
+		internal static extern Boolean BringWindowToTop(IntPtr windowHandle);
 
 		// --------------------------------------------------------------------
 		// ChangeWindowMessageFilter
@@ -407,6 +437,14 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_OLE32_DLL)]
 		internal static extern Int32 GetRunningObjectTable(UInt32 oReserved, out IRunningObjectTable oPprot);
+
+		// --------------------------------------------------------------------
+		// GetVolumeInformation
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_KERNEL32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		internal static extern Boolean GetVolumeInformation(String rootPathName, StringBuilder? volumeNameBuffer, Int32 volumeNameSize,
+				out UInt32 volumeSerialNumber, out UInt32 maximumComponentLength, out FSF fileSystemFlags, StringBuilder? fileSystemNameBuffer, Int32 fileSystemNameSize);
 
 		// --------------------------------------------------------------------
 		// GetWindowLong

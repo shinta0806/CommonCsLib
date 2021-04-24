@@ -1,6 +1,6 @@
 ﻿// ============================================================================
 // 
-// よく使う一般的な定数や関数
+// よく使う一般的な定数や関数（OS に依存しないもの）
 // Copyright (C) 2014-2020 by SHINTA
 // 
 // ============================================================================
@@ -49,6 +49,8 @@
 // (3.55) | 2020/05/19 (Tue) |   Deserialize() スペースをデシリアライズできるようにした。
 // (3.56) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // (3.57) | 2020/11/15 (Sun) |   UserAppDataFolderPath() .NET 5 の単一ファイルに対応。
+// (3.58) | 2021/03/28 (Sun) |   一部の関数を ShintaCommonWindows に移管。
+// (3.59) | 2021/04/04 (Sun) |   ShallowCopy() 実体が派生クラスの場合もコピーできるようにした。
 // ============================================================================
 
 using System;
@@ -186,99 +188,6 @@ namespace Shinta
 		// ====================================================================
 
 		// --------------------------------------------------------------------
-		// ミューテックスを取得できない場合は、同名のプロセスのウィンドウをアクティベートする
-		// ＜返値＞ 既存プロセスが存在しミューテックスが取得できなかった場合：null
-		//          既存プロセスが存在せずミューテックスが取得できた場合：取得したミューテックス（使い終わった後で呼び出し元にて解放する必要がある）
-		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		public static Mutex? ActivateAnotherProcessWindowIfNeeded(String oMutexName)
-#else
-		public static Mutex ActivateAnotherProcessWindowIfNeeded(String oMutexName)
-#endif
-		{
-			// ミューテックスを取得する
-			Mutex aOwnedMutex = new(false, oMutexName);
-			try
-			{
-				if (aOwnedMutex.WaitOne(0))
-				{
-					// ミューテックスを取得できた
-					return aOwnedMutex;
-				}
-			}
-			catch (AbandonedMutexException)
-			{
-				// ミューテックスが放棄されていた場合にこの例外となるが、取得自体はできている
-				return aOwnedMutex;
-			}
-
-			// ミューテックスが取得できなかったため、同名プロセスを探し、そのウィンドウをアクティベートする
-			ActivateSameNameProcessWindow();
-			return null;
-		}
-
-		// --------------------------------------------------------------------
-		// 外部プロセスのウィンドウをアクティベートする
-		// --------------------------------------------------------------------
-		public static void ActivateExternalWindow(IntPtr oHWnd)
-		{
-			if (oHWnd == IntPtr.Zero)
-			{
-				return;
-			}
-
-			// ウィンドウが最小化されていれば元に戻す
-			if (WindowsApi.IsIconic(oHWnd))
-			{
-				WindowsApi.ShowWindowAsync(oHWnd, (Int32)ShowWindowCommands.SW_RESTORE);
-			}
-
-			// アクティベート
-			WindowsApi.SetForegroundWindow(oHWnd);
-		}
-
-		// --------------------------------------------------------------------
-		// 指定プロセスと同名プロセスのウィンドウをアクティベートする
-		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		public static void ActivateSameNameProcessWindow(Process? oSpecifyProcess = null)
-#else
-		public static void ActivateSameNameProcessWindow(Process oSpecifyProcess = null)
-#endif
-		{
-			List<Process> aSameNameProcesses = SameNameProcesses(oSpecifyProcess);
-			if (aSameNameProcesses.Count > 0)
-			{
-				ActivateExternalWindow(aSameNameProcesses[0].MainWindowHandle);
-			}
-		}
-
-		// --------------------------------------------------------------------
-		// ウィンドウがスクリーンから完全にはみ出している場合はスクリーン内に移動する
-		// --------------------------------------------------------------------
-		public static Rect AdjustWindowRect(Rect windowRect)
-		{
-			Rect screenRect = new Rect(0, 0, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
-
-			// ウィンドウとスクリーンがぴったりの場合は移動不要
-			if (screenRect == windowRect)
-			{
-				return windowRect;
-			}
-
-			// ウィンドウとスクリーンが一部重なっている場合は移動不要
-			// ※ウィンドウがスクリーンより完全に大きい場合を除く
-			Rect intersect = Rect.Intersect(screenRect, windowRect);
-			if (!intersect.IsEmpty && intersect != screenRect)
-			{
-				return windowRect;
-			}
-
-			// 移動の必要がある
-			return new Rect(0, 0, windowRect.Width, windowRect.Height);
-		}
-
-		// --------------------------------------------------------------------
 		// バージョン文字列を比較（大文字小文字は区別しない）
 		// --------------------------------------------------------------------
 		public static Int32 CompareVersionString(String oVerA, String oVerB)
@@ -392,36 +301,6 @@ namespace Shinta
 			return (T)clone;
 		}
 #endif
-
-		// --------------------------------------------------------------------
-		// ZoneID を削除
-		// ＜返値＞削除できたら true
-		// --------------------------------------------------------------------
-		public static Boolean DeleteZoneID(String oPath)
-		{
-			return WindowsApi.DeleteFile(oPath + STREAM_NAME_ZONE_ID);
-		}
-
-		// --------------------------------------------------------------------
-		// ZoneID を削除（フォルダ配下のすべてのファイル）
-		// ＜返値＞ファイル列挙で何らかのエラーが発生したら Error、削除できなくても Ok は返る
-		// --------------------------------------------------------------------
-		public static Boolean DeleteZoneID(String oFolder, SearchOption oOption)
-		{
-			try
-			{
-				String[] aFiles = Directory.GetFiles(oFolder, "*", oOption);
-				foreach (String aFile in aFiles)
-				{
-					DeleteZoneID(aFile);
-				}
-			}
-			catch
-			{
-				return false;
-			}
-			return true;
-		}
 
 #if USE_OBSOLETE
 		// --------------------------------------------------------------------
@@ -548,7 +427,7 @@ namespace Shinta
 
 			// 絶対パス
 			Uri baseUri = new(basePath);
-			Uri absoluteUri = new (baseUri, relativePath);
+			Uri absoluteUri = new(baseUri, relativePath);
 			String absolutePath = absoluteUri.LocalPath;
 
 			// "%25" を "%" に戻す
@@ -588,7 +467,7 @@ namespace Shinta
 			absolutePath = absolutePath.Replace("%", "%25");
 
 			// 相対パス
-			Uri baseUri = new (basePath);
+			Uri baseUri = new(basePath);
 			String relativePath = baseUri.MakeRelativeUri(new Uri(absolutePath)).ToString();
 
 			// 勝手に URL エンコードされるのでデコードする
@@ -727,8 +606,8 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static void Serialize(String path, Object obj)
 		{
-			XmlSerializer xmlSerializer = new (obj.GetType());
-			using StreamWriter streamWriter = new (path, false, new UTF8Encoding(false));
+			XmlSerializer xmlSerializer = new(obj.GetType());
+			using StreamWriter streamWriter = new(path, false, new UTF8Encoding(false));
 			xmlSerializer.Serialize(streamWriter, obj);
 		}
 #endif
@@ -739,12 +618,11 @@ namespace Shinta
 		// ApplicationSettingsBase 派生のクラスに対してはフィールドが取得できないためコピーできない
 		// （this[] は取得できないのか？）
 		// --------------------------------------------------------------------
-		public static void ShallowCopy<T>(T src, T dest)
+		public static void ShallowCopy<T>(T src, T dest) where T : notnull
 		{
-			FieldInfo[] fields = typeof(T).GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+			FieldInfo[] fields = src.GetType().GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 			foreach (FieldInfo field in fields)
 			{
-				//Debug.WriteLine("ShallowCopy() " + field.Name);
 				field.SetValue(dest, field.GetValue(src));
 			}
 		}
@@ -805,7 +683,6 @@ namespace Shinta
 
 		private const String COMPARE_VERSION_STRING_REGEX = @"Ver ([0-9]+\.[0-9]+)(.*)";
 		private const String REG_KEY_DOT_NET_45_VERSION = "SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\";
-		private const String STREAM_NAME_ZONE_ID = ":Zone.Identifier";
 
 		// ====================================================================
 		// private メンバー関数
@@ -819,13 +696,13 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		private static RijndaelManaged CreateRijndaelManaged(String oPassword, String oSalt)
 		{
-			RijndaelManaged aRijndael = new ();
+			RijndaelManaged aRijndael = new();
 
 			// salt をバイト化
 			Byte[] aSaltBytes = Encoding.Unicode.GetBytes(oSalt);
 
 			// パスワードから共有キーと初期化ベクタを作成する
-			Rfc2898DeriveBytes aDeriveBytes = new (oPassword, aSaltBytes);
+			Rfc2898DeriveBytes aDeriveBytes = new(oPassword, aSaltBytes);
 			aDeriveBytes.IterationCount = 1000;
 			aRijndael.Key = aDeriveBytes.GetBytes(aRijndael.KeySize / 8);
 			aRijndael.IV = aDeriveBytes.GetBytes(aRijndael.BlockSize / 8);
