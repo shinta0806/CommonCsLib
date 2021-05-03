@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ファイルをダウンロードするクラス（ログイン用に POST 機能あり）
-// Copyright (C) 2014-2020 by SHINTA
+// Copyright (C) 2014-2021 by SHINTA
 // 
 // ============================================================================
 
@@ -32,6 +32,7 @@
 //  1.60  | 2019/06/24 (Mon) | IDisposable を実装した。
 // (1.61) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.62) | 2020/05/05 (Tue) |   null 許容参照型を無効化できるようにした。
+// (1.63) | 2021/04/28 (Wed) |   WebRequestHandler 廃止。
 // ============================================================================
 
 using System;
@@ -102,7 +103,7 @@ namespace Shinta
 
 		// クッキー等を保持
 #if !NULLABLE_DISABLED
-		public HttpClientHandler? ClientHandler { get; private set; }
+		public SocketsHttpHandler? ClientHandler { get; private set; }
 #else
 		public HttpClientHandler ClientHandler { get; private set; }
 #endif
@@ -455,10 +456,9 @@ namespace Shinta
 			// ハンドラが作成されていない場合は作成する
 			if (ClientHandler == null)
 			{
-				WebRequestHandler aWebRequestHandler = new WebRequestHandler();
-				aWebRequestHandler.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
-				aWebRequestHandler.UseCookies = true;
-				ClientHandler = aWebRequestHandler;
+				SocketsHttpHandler socketsHttpHandler = new();
+				socketsHttpHandler.UseCookies = true;
+				ClientHandler = socketsHttpHandler;
 			}
 
 			// クライアントが作成されていない場合は作成する
@@ -472,6 +472,7 @@ namespace Shinta
 			mClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 			mClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 			mClient.DefaultRequestHeaders.Add("Accept-Language", "ja,en-us;q=0.7,en;q=0.3");
+			mClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache,no-store");
 			mClient.DefaultRequestHeaders.Add("Referer", oUrl);
 		}
 

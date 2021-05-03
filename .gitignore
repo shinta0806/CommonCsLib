@@ -268,6 +268,9 @@ __pycache__/
 *.old*
 *.new*
 
+# Folder
+obsolete
+
 # All C# files
 *.cs
 
@@ -275,8 +278,6 @@ __pycache__/
 
 !Behaviors/*.cs
 
-!ApplicationNameSettingsProvider.cs
-!ApplicationSettingsProviderBase.cs
 !CsvManager.cs
 !Downloader.cs
 !Haiku.cs
@@ -288,6 +289,5 @@ __pycache__/
 !SimpleTraceListener.cs
 !SystemEnvironment.cs
 !UpdaterLauncher.cs
-!VariableNameSettingsProvider.cs
 !WindowsApi.cs
 
