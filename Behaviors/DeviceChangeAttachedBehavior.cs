@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // リムーバブルメディアの着脱時にコマンドを発行する添付ビヘイビア
-// Copyright (C) 2019 by SHINTA
+// Copyright (C) 2019-2021 by SHINTA
 // 
 // ============================================================================
 
@@ -14,6 +14,7 @@
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
 // (1.01) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.02) | 2021/05/03 (Mon) |   CS8605 警告（null の可能性がある値をボックス化解除しています）に対処。
 // ============================================================================
 
 using System;
@@ -45,17 +46,17 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// コマンド添付プロパティー GET
 		// --------------------------------------------------------------------
-		public static ICommand GetCommand(DependencyObject oObject)
+		public static ICommand GetCommand(DependencyObject obj)
 		{
-			return (ICommand)oObject.GetValue(CommandProperty);
+			return (ICommand)obj.GetValue(CommandProperty);
 		}
 
 		// --------------------------------------------------------------------
 		// コマンド添付プロパティー SET
 		// --------------------------------------------------------------------
-		public static void SetCommand(DependencyObject oObject, ICommand oValue)
+		public static void SetCommand(DependencyObject obj, ICommand val)
 		{
-			oObject.SetValue(CommandProperty, oValue);
+			obj.SetValue(CommandProperty, val);
 		}
 
 		// ====================================================================
@@ -63,7 +64,7 @@ namespace Shinta.Behaviors
 		// ====================================================================
 
 		// WndProc
-		private static HwndSourceHook smWndProc = new HwndSourceHook(WndProc);
+		private static HwndSourceHook _wndProc = new(WndProc);
 
 		// ====================================================================
 		// private メンバー関数
@@ -72,14 +73,14 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// 設定されたコマンドが実行可能な場合にそのコマンドを返す
 		// --------------------------------------------------------------------
-		private static ICommand? ExecutableCommand(Object? oSender)
+		private static ICommand? ExecutableCommand(Object? sender)
 		{
-			if (oSender is UIElement aElement)
+			if (sender is UIElement element)
 			{
-				ICommand? aCommand = GetCommand(aElement);
-				if (aCommand != null && aCommand.CanExecute(null))
+				ICommand? command = GetCommand(element);
+				if (command != null && command.CanExecute(null))
 				{
-					return aCommand;
+					return command;
 				}
 			}
 
@@ -89,51 +90,51 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// ViewModel 側で Command が変更された
 		// --------------------------------------------------------------------
-		private static void SourceCommandChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if (!(oObject is Window aWindow))
+			if (!(obj is Window window))
 			{
 				return;
 			}
 
-			if (GetCommand(aWindow) != null)
+			if (GetCommand(window) != null)
 			{
 				// コマンドが設定された場合はイベントハンドラーを有効にする
-				WindowInteropHelper aHelper = new WindowInteropHelper(aWindow);
-				HwndSource aWndSource = HwndSource.FromHwnd(aHelper.Handle);
-				aWndSource.AddHook(smWndProc);
+				WindowInteropHelper helper = new WindowInteropHelper(window);
+				HwndSource aWndSource = HwndSource.FromHwnd(helper.Handle);
+				aWndSource.AddHook(_wndProc);
 			}
 			else
 			{
 				// コマンドが解除された場合はイベントハンドラーを無効にする
-				WindowInteropHelper aHelper = new WindowInteropHelper(aWindow);
-				HwndSource aWndSource = HwndSource.FromHwnd(aHelper.Handle);
-				aWndSource.RemoveHook(smWndProc);
+				WindowInteropHelper helper = new WindowInteropHelper(window);
+				HwndSource aWndSource = HwndSource.FromHwnd(helper.Handle);
+				aWndSource.RemoveHook(_wndProc);
 			}
 		}
 
 		// --------------------------------------------------------------------
 		// HWnd から Window を取得
 		// --------------------------------------------------------------------
-		private static Window? WindowFromHWnd(IntPtr oHWnd)
+		private static Window? WindowFromHWnd(IntPtr hWnd)
 		{
-			HwndSource aWndSource = HwndSource.FromHwnd(oHWnd);
-			return aWndSource.RootVisual as Window;
+			HwndSource wndSource = HwndSource.FromHwnd(hWnd);
+			return wndSource.RootVisual as Window;
 		}
 
 		// --------------------------------------------------------------------
 		// イベントハンドラー
 		// USB メモリ等の着脱により呼び出される
 		// --------------------------------------------------------------------
-		private static void WmDeviceChange(IntPtr oHWnd, IntPtr oWParam, IntPtr oLParam)
+		private static void WmDeviceChange(IntPtr hWnd, IntPtr wParam, IntPtr lParam)
 		{
-			ICommand? aCommand = ExecutableCommand(WindowFromHWnd(oHWnd));
-			if (aCommand == null)
+			ICommand? command = ExecutableCommand(WindowFromHWnd(hWnd));
+			if (command == null)
 			{
 				return;
 			}
 
-			switch ((DBT)oWParam.ToInt32())
+			switch ((DBT)wParam.ToInt32())
 			{
 				case DBT.DBT_DEVICEARRIVAL:
 				case DBT.DBT_DEVICEREMOVECOMPLETE:
@@ -141,53 +142,59 @@ namespace Shinta.Behaviors
 				default:
 					return;
 			}
-			if (oLParam == IntPtr.Zero)
+			if (lParam == IntPtr.Zero)
 			{
 				return;
 			}
 
-			WindowsApi.DEV_BROADCAST_HDR aHdr = (WindowsApi.DEV_BROADCAST_HDR)Marshal.PtrToStructure(oLParam, typeof(WindowsApi.DEV_BROADCAST_HDR));
-			if (aHdr.dbch_devicetype != (Int32)DBT_DEVTYP.DBT_DEVTYP_VOLUME)
+			if (Marshal.PtrToStructure(lParam, typeof(WindowsApi.DEV_BROADCAST_HDR)) is not WindowsApi.DEV_BROADCAST_HDR hdr)
+			{
+				return;
+			}
+			if (hdr.dbch_devicetype != (Int32)DBT_DEVTYP.DBT_DEVTYP_VOLUME)
 			{
 				return;
 			}
 
-			WindowsApi.DEV_BROADCAST_VOLUME aVolume = (WindowsApi.DEV_BROADCAST_VOLUME)Marshal.PtrToStructure(oLParam, typeof(WindowsApi.DEV_BROADCAST_VOLUME));
-			UInt32 aUnitMask = aVolume.dbcv_unitmask;
-			if (aUnitMask == 0)
+			if (Marshal.PtrToStructure(lParam, typeof(WindowsApi.DEV_BROADCAST_VOLUME)) is not WindowsApi.DEV_BROADCAST_VOLUME volume)
+			{
+				return;
+			}
+			UInt32 unitMask = volume.dbcv_unitmask;
+			if (unitMask == 0)
 			{
 				return;
 			}
 
-			Char aNumShift = (Char)0;
-			String aDriveLetter;
-			while (aUnitMask != 1)
+			Char numShift = (Char)0;
+			String driveLetter;
+			while (unitMask != 1)
 			{
-				aUnitMask >>= 1;
-				aNumShift++;
+				unitMask >>= 1;
+				numShift++;
 			}
-			aDriveLetter = new String((Char)('A' + aNumShift), 1) + ":";
+			driveLetter = new String((Char)('A' + numShift), 1) + ":";
 
 			// 着脱情報を引数としてコマンドを実行
-			DeviceChangeInfo aInfo = new DeviceChangeInfo();
-			aInfo.Kind = (DBT)oWParam.ToInt32();
-			aInfo.DriveLetter = aDriveLetter;
-			aCommand.Execute(aInfo);
+			DeviceChangeInfo info = new();
+			info.Kind = (DBT)wParam.ToInt32();
+			info.DriveLetter = driveLetter;
+			command.Execute(info);
 		}
 
 		// --------------------------------------------------------------------
 		// イベントハンドラー
 		// SD カード等の着脱により呼び出される
 		// --------------------------------------------------------------------
-		private static void WmShNotify(IntPtr oHWnd, IntPtr oWParam, IntPtr oLParam)
+		private static void WmShNotify(IntPtr hWnd, IntPtr wParam, IntPtr lParam)
 		{
-			ICommand? aCommand = ExecutableCommand(WindowFromHWnd(oHWnd));
-			if (aCommand == null)
+			ICommand? command = ExecutableCommand(WindowFromHWnd(hWnd));
+			if (command == null)
 			{
 				return;
 			}
 
-			switch ((SHCNE)oLParam)
+			switch ((SHCNE)lParam)
 			{
 				case SHCNE.SHCNE_MEDIAINSERTED:
 				case SHCNE.SHCNE_MEDIAREMOVED:
@@ -196,34 +203,37 @@ namespace Shinta.Behaviors
 					return;
 			}
 
-			WindowsApi.SHNOTIFYSTRUCT aShNotifyStruct = (WindowsApi.SHNOTIFYSTRUCT)Marshal.PtrToStructure(oWParam, typeof(WindowsApi.SHNOTIFYSTRUCT));
-			StringBuilder aDriveRoot = new StringBuilder();
-			WindowsApi.SHGetPathFromIDList((IntPtr)aShNotifyStruct.dwItem1, aDriveRoot);
-			String aDriveLetter = aDriveRoot.ToString().Substring(0, 2);
+			if (Marshal.PtrToStructure(wParam, typeof(WindowsApi.SHNOTIFYSTRUCT)) is not WindowsApi.SHNOTIFYSTRUCT shNotifyStruct)
+			{
+				return;
+			}
+			StringBuilder driveRoot = new();
+			WindowsApi.SHGetPathFromIDList((IntPtr)shNotifyStruct.dwItem1, driveRoot);
+			String driveLetter = driveRoot.ToString().Substring(0, 2);
 
 			// 着脱情報を引数としてコマンドを実行
-			DeviceChangeInfo aInfo = new DeviceChangeInfo();
-			aInfo.Kind = (SHCNE)oLParam == SHCNE.SHCNE_MEDIAINSERTED ? DBT.DBT_DEVICEARRIVAL : DBT.DBT_DEVICEREMOVECOMPLETE;
-			aInfo.DriveLetter = aDriveLetter;
-			aCommand.Execute(aInfo);
+			DeviceChangeInfo info = new();
+			info.Kind = (SHCNE)lParam == SHCNE.SHCNE_MEDIAINSERTED ? DBT.DBT_DEVICEARRIVAL : DBT.DBT_DEVICEREMOVECOMPLETE;
+			info.DriveLetter = driveLetter;
+			command.Execute(info);
 		}
 
 		// --------------------------------------------------------------------
 		// メッセージハンドラ
 		// --------------------------------------------------------------------
-		private static IntPtr WndProc(IntPtr oHWnd, Int32 oMsg, IntPtr oWParam, IntPtr oLParam, ref Boolean oHandled)
+		private static IntPtr WndProc(IntPtr hWnd, Int32 msg, IntPtr wParam, IntPtr lParam, ref Boolean handled)
 		{
 			try
 			{
-				switch ((UInt32)oMsg)
+				switch ((UInt32)msg)
 				{
 					case WindowsApi.WM_DEVICECHANGE:
-						WmDeviceChange(oHWnd, oWParam, oLParam);
-						oHandled = true;
+						WmDeviceChange(hWnd, wParam, lParam);
+						handled = true;
 						break;
 					case WindowsApi.WM_SHNOTIFY:
-						WmShNotify(oHWnd, oWParam, oLParam);
-						oHandled = true;
+						WmShNotify(hWnd, wParam, lParam);
+						handled = true;
 						break;
 				}
 			}

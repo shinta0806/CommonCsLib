@@ -15,6 +15,11 @@
 // （1 回 1 回 HttpClient を破棄するコードを書いたら、2 度目に HttpClientHandler にアクセスできなかった）
 // HttpClientHandler はクッキー情報の保持に必要なので、必然的に、HttpClient も
 // ずっと保持しておく必要が生じる
+// そもそも HttpClient は頻繁に破棄して良いものではない
+// ----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
+// ToDo: 根本的に作り直さないといけない気がする
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -33,31 +38,24 @@
 // (1.61) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.62) | 2020/05/05 (Tue) |   null 許容参照型を無効化できるようにした。
 // (1.63) | 2021/04/28 (Wed) |   WebRequestHandler 廃止。
+// (1.64) | 2021/05/03 (Mon) |   null 許容参照型が常に有効化されるようにした。
+// (1.65) | 2021/05/04 (Tue) |   リソースリークを修正。
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
-using System.Net.Cache;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if !NULLABLE_DISABLED
-#nullable enable
-#endif
-
 namespace Shinta
 {
-#if !NULLABLE_DISABLED
-	delegate Task<HttpResponseMessage>? CoreHttpDg(String oUrl, Object? oOption);
-#else
-	delegate Task<HttpResponseMessage> CoreHttpDg(String oUrl, Object oOption);
-#endif
+	delegate Task<HttpResponseMessage>? CoreHttpDg(String url, Object? option);
 
 	public class Downloader : IDisposable
 	{
@@ -102,11 +100,7 @@ namespace Shinta
 #endif
 
 		// クッキー等を保持
-#if !NULLABLE_DISABLED
 		public SocketsHttpHandler? ClientHandler { get; private set; }
-#else
-		public HttpClientHandler ClientHandler { get; private set; }
-#endif
 
 		// ====================================================================
 		// public メンバー関数
@@ -118,14 +112,14 @@ namespace Shinta
 		public String DefaultUserAgent()
 		{
 			// Firefox 30.0 の UA：Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0
-			String aUA = "Mozilla/5.0 (Windows NT";
-			SystemEnvironment aSE = new SystemEnvironment();
-			Double aOSVersion;
-			if (aSE.GetOSVersion(out aOSVersion))
+			String ua = "Mozilla/5.0 (Windows NT";
+			SystemEnvironment se = new();
+			Double osVersion;
+			if (se.GetOSVersion(out osVersion))
 			{
-				aUA += " " + aOSVersion.ToString();
+				ua += " " + osVersion.ToString();
 			}
-			aUA += "; ";
+			ua += "; ";
 
 			// OS が 64 ビットの場合は情報を付加（32 ビットの場合は何も付かない）
 			if (Environment.Is64BitOperatingSystem)
@@ -133,18 +127,18 @@ namespace Shinta
 				if (Environment.Is64BitProcess)
 				{
 					// ネイティブ 64 ビットアプリ
-					aUA += "Win64; ";
+					ua += "Win64; ";
 				}
 				else
 				{
 					// OS は 64 ビットだが、アプリ（自分自身）は 32 ビット
-					aUA += "WOW64; ";
+					ua += "WOW64; ";
 				}
 			}
 
-			aUA += "rv:30.0) Gecko/20100101";
+			ua += "rv:30.0) Gecko/20100101";
 
-			return aUA;
+			return ua;
 		}
 
 		// --------------------------------------------------------------------
@@ -160,48 +154,39 @@ namespace Shinta
 		// ダウンロード（文字列として取得）
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		public String Download(String oUrl, Encoding oEncoding)
+		public String Download(String url, Encoding encoding)
 		{
-			String aContents;
+			String contents;
 
-			using (MemoryStream aMemStream = new MemoryStream())
+			using (MemoryStream memStream = new())
 			{
-				Download(oUrl, aMemStream);
-				aContents = oEncoding.GetString(aMemStream.ToArray());
+				Download(url, memStream);
+				contents = encoding.GetString(memStream.ToArray());
 			}
-			return aContents;
+			return contents;
 		}
 
 		// --------------------------------------------------------------------
 		// ダウンロード（Stream 内にコピー）
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		public void Download(String oUrl, Stream oMemStream)
+		public void Download(String url, Stream memStream)
 		{
-			HttpResponseMessage aHrm = HttpMethod(oUrl, CoreHttpGet, null).Result;
-			Stream aStream = aHrm.Content.ReadAsStreamAsync().Result;
-			try
-			{
-				aStream.CopyTo(oMemStream);
-			}
-			finally
-			{
-				aStream.Dispose();
-			}
+			using HttpResponseMessage hrm = HttpMethod(url, CoreHttpGet, null).Result;
+			using Stream stream = hrm.Content.ReadAsStreamAsync().Result;
+			stream.CopyTo(memStream);
 		}
 
 		// --------------------------------------------------------------------
 		// ダウンロード（ファイルに保存）
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		public void Download(String oUrl, String oPath)
+		public void Download(String url, String path)
 		{
-			using (FileStream aFS = new FileStream(oPath, FileMode.Create))
-			{
-				HttpResponseMessage aHrm = HttpMethod(oUrl, CoreHttpGet, null).Result;
-				Byte[] aBytes = aHrm.Content.ReadAsByteArrayAsync().Result;
-				aFS.Write(aBytes, 0, aBytes.Length);
-			}
+			using FileStream fs = new FileStream(path, FileMode.Create);
+			using HttpResponseMessage hrm = HttpMethod(url, CoreHttpGet, null).Result;
+			Byte[] bytes = hrm.Content.ReadAsByteArrayAsync().Result;
+			fs.Write(bytes, 0, bytes.Length);
 		}
 
 		// --------------------------------------------------------------------
@@ -209,50 +194,42 @@ namespace Shinta
 		// ＜引数＞ oPost: Name=Value, oFiles: Name=Path
 		// ＜例外＞
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		public void Post(String oUrl, Dictionary<String, String?> oPost, Dictionary<String, String>? oFiles = null)
-#else
-		public void Post(String oUrl, Dictionary<String, String> oPost, Dictionary<String, String> oFiles = null)
-#endif
+		public void Post(String url, Dictionary<String, String?> post, Dictionary<String, String>? files = null)
 		{
-			if (oFiles == null || oFiles.Count == 0)
+			if (files == null || files.Count == 0)
 			{
 				// oPost のみを送信
-				HttpMethod(oUrl, CoreHttpPost, new FormUrlEncodedContent(oPost));
+				HttpMethod(url, CoreHttpPost, new FormUrlEncodedContent(post.Select(x => new KeyValuePair<String?, String?>(x.Key, x.Value))));
 				return;
 			}
 
-			using (MultipartFormDataContent aMultipart = new MultipartFormDataContent())
+			using (MultipartFormDataContent multipart = new())
 			{
 				// 文字列
-#if !NULLABLE_DISABLED
-				foreach (KeyValuePair<String, String?> aKVP in oPost)
-#else
-				foreach (KeyValuePair<String, String> aKVP in oPost)
-#endif
+				foreach (KeyValuePair<String, String?> kvp in post)
 				{
-					StringContent aStringContent = new StringContent(aKVP.Value);
-					aStringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+					StringContent stringContent = new(kvp.Value ?? String.Empty);
+					stringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
 					{
-						Name = aKVP.Key,
+						Name = kvp.Key,
 					};
-					aMultipart.Add(aStringContent);
+					multipart.Add(stringContent);
 				}
 
 				// ファイル
-				foreach (KeyValuePair<String, String> aKVP in oFiles)
+				foreach (KeyValuePair<String, String> kvp in files)
 				{
-					StreamContent aFileContent = new StreamContent(File.OpenRead(aKVP.Value));
-					aFileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue(/*"attachment"*/"form-data")
+					StreamContent fileContent = new(File.OpenRead(kvp.Value));
+					fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue(/*"attachment"*/"form-data")
 					{
-						Name = aKVP.Key,
-						FileName = Path.GetFileName(aKVP.Value),
+						Name = kvp.Key,
+						FileName = Path.GetFileName(kvp.Value),
 					};
-					aMultipart.Add(aFileContent);
+					multipart.Add(fileContent);
 				}
 
 				// POST で送信
-				HttpMethod(oUrl, CoreHttpPostWithFile, aMultipart);
+				HttpMethod(url, CoreHttpPostWithFile, multipart);
 			}
 		}
 
@@ -263,38 +240,23 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// リソース解放
 		// --------------------------------------------------------------------
-		protected virtual void Dispose(Boolean oIsDisposing)
+		protected virtual void Dispose(Boolean isDisposing)
 		{
-			if (mIsDisposed)
+			if (_isDisposed)
 			{
 				return;
 			}
 
 			// マネージドリソース解放
-			if (oIsDisposing)
+			if (isDisposing)
 			{
-				DisposeManagedResource(mClient);
+				_client?.Dispose();
 			}
 
 			// アンマネージドリソース解放
 			// 今のところ無し
 
-			mIsDisposed = true;
-		}
-
-		// --------------------------------------------------------------------
-		// マネージドリソース解放
-		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		protected void DisposeManagedResource(IDisposable? oResource)
-#else
-		protected void DisposeManagedResource(IDisposable oResource)
-#endif
-		{
-			if (oResource != null)
-			{
-				oResource.Dispose();
-			}
+			_isDisposed = true;
 		}
 
 		// ====================================================================
@@ -314,21 +276,17 @@ namespace Shinta
 		private const Int32 THREAD_SLEEP_INTERVAL = 100;
 
 		// スレッド中止時のエラーメッセージ
-		private const String ERROR_MESSAGE_THREAD_TERMINATED = "スレッドが中止されました。";
+		//private const String ERROR_MESSAGE_THREAD_TERMINATED = "スレッドが中止されました。";
 
 		// ====================================================================
 		// private メンバー変数
 		// ====================================================================
 
 		// http クライアント
-#if !NULLABLE_DISABLED
-		private HttpClient? mClient = null;
-#else
-		private HttpClient mClient = null;
-#endif
+		private HttpClient? _client;
 
 		// Dispose フラグ
-		private Boolean mIsDisposed = false;
+		private Boolean _isDisposed;
 
 		// ====================================================================
 		// private メンバー関数
@@ -337,27 +295,19 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：GET 用
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		private Task<HttpResponseMessage>? CoreHttpGet(String oUrl, Object? oOption)
-#else
-		private Task<HttpResponseMessage> CoreHttpGet(String oUrl, Object oOption)
-#endif
+		private Task<HttpResponseMessage>? CoreHttpGet(String url, Object? option)
 		{
-			return mClient?.GetAsync(oUrl);
+			return _client?.GetAsync(url);
 		}
 
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：POST 用
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		private Task<HttpResponseMessage>? CoreHttpPost(String oUrl, Object? oOption)
-#else
-		private Task<HttpResponseMessage> CoreHttpPost(String oUrl, Object oOption)
-#endif
+		private Task<HttpResponseMessage>? CoreHttpPost(String url, Object? option)
 		{
-			if (oOption is FormUrlEncodedContent aContent)
+			if (option is FormUrlEncodedContent content)
 			{
-				return mClient?.PostAsync(oUrl, aContent);
+				return _client?.PostAsync(url, content);
 			}
 
 			return null;
@@ -366,15 +316,11 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// httpMethod() で使うデリゲート関数：POST（ファイル送信）用
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		private Task<HttpResponseMessage>? CoreHttpPostWithFile(String oUrl, Object? oOption)
-#else
-		private Task<HttpResponseMessage> CoreHttpPostWithFile(String oUrl, Object oOption)
-#endif
+		private Task<HttpResponseMessage>? CoreHttpPostWithFile(String url, Object? option)
 		{
-			if (oOption is MultipartFormDataContent aContent)
+			if (option is MultipartFormDataContent content)
 			{
-				return mClient?.PostAsync(oUrl, aContent);
+				return _client?.PostAsync(url, content);
 			}
 
 			return null;
@@ -384,22 +330,13 @@ namespace Shinta
 		// http リクエストを処理する汎用関数
 		// ＜例外＞
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		private Task<HttpResponseMessage> HttpMethod(String oUrl, CoreHttpDg oCoreDg, Object? oCoreDgOption)
-#else
-		private Task<HttpResponseMessage> HttpMethod(String oUrl, CoreHttpDg oCoreDg, Object oCoreDgOption)
-#endif
+		private Task<HttpResponseMessage> HttpMethod(String url, CoreHttpDg coreDg, Object? coreDgOption)
 		{
-#if !NULLABLE_DISABLED
-			String? aErr = null;
-			Task<HttpResponseMessage>? aRes = null;
-#else
-			String aErr = null;
-			Task<HttpResponseMessage> aRes = null;
-#endif
+			String? err = null;
+			Task<HttpResponseMessage>? res = null;
 
 			// クライアントの設定
-			SetClient(oUrl);
+			SetClient(url);
 
 			// ダウンロード
 			for (Int32 i = 0; i < GET_RETRY_MAX; i++)
@@ -407,32 +344,32 @@ namespace Shinta
 				try
 				{
 					// http コアリクエスト（デリゲート）
-					aRes = oCoreDg(oUrl, oCoreDgOption);
-					if (aRes != null)
+					res = coreDg(url, coreDgOption);
+					if (res != null)
 					{
-						aRes.Wait();
+						res.Wait();
 						ThrowIfCancellationRequested();
 
 						// 成功したら関数から返る
-						if (aRes.Result.IsSuccessStatusCode)
+						if (res.Result.IsSuccessStatusCode)
 						{
-							return aRes;
+							return res;
 						}
 					}
 				}
-				catch (OperationCanceledException oExcep)
+				catch (OperationCanceledException)
 				{
 					// ユーザーからの中止指示の場合は、直ちに再スロー
-					throw oExcep;
+					throw;
 				}
-				catch (Exception oExcep)
+				catch (Exception excep)
 				{
 					// エラーメッセージを一旦設定するが、後のコードでリトライして、結果的に成功することはありえる
-					aErr = oExcep.Message;
+					err = excep.Message;
 				}
 
 				// 失敗した場合
-				if (aRes != null && aRes.Result.StatusCode == HttpStatusCode.RequestTimeout)
+				if (res != null && res.Result.StatusCode == HttpStatusCode.RequestTimeout)
 				{
 					// タイムアウトなら、一定時間後にリトライする
 					Wait(GET_RETRY_INTERVAL);
@@ -445,13 +382,13 @@ namespace Shinta
 			}
 
 			// リトライしても成功しなかったので、エラー確定
-			throw new Exception(aErr);
+			throw new Exception(err);
 		}
 
 		// --------------------------------------------------------------------
 		// http クライアントの設定
 		// --------------------------------------------------------------------
-		private void SetClient(String oUrl)
+		private void SetClient(String url)
 		{
 			// ハンドラが作成されていない場合は作成する
 			if (ClientHandler == null)
@@ -462,18 +399,18 @@ namespace Shinta
 			}
 
 			// クライアントが作成されていない場合は作成する
-			if (mClient == null)
+			if (_client == null)
 			{
-				mClient = new HttpClient(ClientHandler);
+				_client = new HttpClient(ClientHandler);
 			}
 
 			// リクエストヘッダーを設定
-			mClient.DefaultRequestHeaders.Clear();
-			mClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
-			mClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-			mClient.DefaultRequestHeaders.Add("Accept-Language", "ja,en-us;q=0.7,en;q=0.3");
-			mClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache,no-store");
-			mClient.DefaultRequestHeaders.Add("Referer", oUrl);
+			_client.DefaultRequestHeaders.Clear();
+			_client.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+			_client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+			_client.DefaultRequestHeaders.Add("Accept-Language", "ja,en-us;q=0.7,en;q=0.3");
+			_client.DefaultRequestHeaders.Add("Cache-Control", "no-cache,no-store");
+			_client.DefaultRequestHeaders.Add("Referer", url);
 		}
 
 		// --------------------------------------------------------------------
@@ -482,10 +419,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		private void ThrowIfCancellationRequested()
 		{
-			if (CancellationToken != null)
-			{
-				CancellationToken.ThrowIfCancellationRequested();
-			}
+			CancellationToken.ThrowIfCancellationRequested();
 #if USE_ITERMINATE_THREAD
 			if (OwnerThread != null && OwnerThread.TerminateRequested)
 			{
@@ -498,20 +432,16 @@ namespace Shinta
 		// 指定時間 [ms] スレッドを中断
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		private void Wait(Int32 oWaitMS)
+		private void Wait(Int32 waitMS)
 		{
-			Int32 aRestTime = 0;
+			Int32 restTime = 0;
 
-			while (aRestTime < oWaitMS)
+			while (restTime < waitMS)
 			{
 				Thread.Sleep(THREAD_SLEEP_INTERVAL);
-				aRestTime += THREAD_SLEEP_INTERVAL;
+				restTime += THREAD_SLEEP_INTERVAL;
 				ThrowIfCancellationRequested();
 			}
 		}
-
 	}
-	// public class Downloader ___END___
-
 }
-// namespace Shinta ___END___
