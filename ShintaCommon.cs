@@ -51,6 +51,7 @@
 // (3.57) | 2020/11/15 (Sun) |   UserAppDataFolderPath() .NET 5 の単一ファイルに対応。
 // (3.58) | 2021/03/28 (Sun) |   一部の関数を ShintaCommonWindows に移管。
 // (3.59) | 2021/04/04 (Sun) |   ShallowCopy() 実体が派生クラスの場合もコピーできるようにした。
+//  3.60  | 2021/05/24 (Mon) |   ShallowCopyProperties() を作成。
 // ============================================================================
 
 using System;
@@ -613,17 +614,38 @@ namespace Shinta
 #endif
 
 		// --------------------------------------------------------------------
-		// 全メンバを浅くコピーする
+		// 全フィールドを浅くコピーする
 		// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
-		// ApplicationSettingsBase 派生のクラスに対してはフィールドが取得できないためコピーできない
-		// （this[] は取得できないのか？）
+		// 基底クラスの private フィールドはコピーできない模様
 		// --------------------------------------------------------------------
-		public static void ShallowCopy<T>(T src, T dest) where T : notnull
+		public static void ShallowCopyFields<T>(T src, T dest) where T : notnull
 		{
+#if DEBUG
+			var a = typeof(T).Name;
+#endif
 			FieldInfo[] fields = src.GetType().GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 			foreach (FieldInfo field in fields)
 			{
 				field.SetValue(dest, field.GetValue(src));
+			}
+		}
+
+		// --------------------------------------------------------------------
+		// 全プロパティーを浅くコピーする
+		// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
+		// --------------------------------------------------------------------
+		public static void ShallowCopyProperties<T>(T src, T dest) where T : notnull
+		{
+			PropertyInfo[] propertyInfos = src.GetType().GetProperties(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+			foreach (PropertyInfo propertyInfo in propertyInfos)
+			{
+				try
+				{
+					propertyInfo.SetValue(dest, propertyInfo.GetValue(src));
+				}
+				catch (Exception)
+				{
+				}
 			}
 		}
 
