@@ -107,7 +107,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static Rect AdjustWindowRect(Rect windowRect)
 		{
-			Rect screenRect = new Rect(0, 0, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
+			Rect screenRect = new(0, 0, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
 
 			// ウィンドウとスクリーンがぴったりの場合は移動不要
 			if (screenRect == windowRect)

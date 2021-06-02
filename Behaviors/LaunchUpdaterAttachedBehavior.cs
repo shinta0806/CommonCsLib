@@ -23,8 +23,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 
-#nullable enable
-
 namespace Shinta.Behaviors
 {
 	public class LaunchUpdaterAttachedBehavior
@@ -84,7 +82,7 @@ namespace Shinta.Behaviors
 		// ====================================================================
 
 		// WndProc
-		private static HwndSourceHook smWndProc = new HwndSourceHook(WndProc);
+		private static readonly HwndSourceHook _wndProc = new(WndProc);
 
 		// ====================================================================
 		// private メンバー関数
@@ -112,8 +110,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			Window? window = obj as Window;
-			if (window == null)
+			if (obj is not Window window)
 			{
 				return;
 			}
@@ -121,16 +118,16 @@ namespace Shinta.Behaviors
 			if (GetCommand(window) != null)
 			{
 				// コマンドが設定された場合はイベントハンドラーを有効にする
-				WindowInteropHelper helper = new WindowInteropHelper(window);
+				WindowInteropHelper helper = new(window);
 				HwndSource wndSource = HwndSource.FromHwnd(helper.Handle);
-				wndSource.AddHook(smWndProc);
+				wndSource.AddHook(_wndProc);
 			}
 			else
 			{
 				// コマンドが解除された場合はイベントハンドラーを無効にする
-				WindowInteropHelper helper = new WindowInteropHelper(window);
+				WindowInteropHelper helper = new(window);
 				HwndSource aWndSource = HwndSource.FromHwnd(helper.Handle);
-				aWndSource.RemoveHook(smWndProc);
+				aWndSource.RemoveHook(_wndProc);
 			}
 		}
 
@@ -139,20 +136,18 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceUpdaterLauncherChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			Window? window = obj as Window;
-			if (window == null)
+			if (obj is not Window window)
 			{
 				return;
 			}
 
-			UpdaterLauncher? launcher = args.NewValue as UpdaterLauncher;
-			if (launcher == null)
+			if (args.NewValue is not UpdaterLauncher launcher)
 			{
 				return;
 			}
 
 			// ウィンドウハンドル設定
-			WindowInteropHelper helper = new WindowInteropHelper(window);
+			WindowInteropHelper helper = new(window);
 			launcher.NotifyHWnd = helper.Handle;
 
 			// ちょちょいと自動更新を起動
@@ -197,9 +192,5 @@ namespace Shinta.Behaviors
 
 			return IntPtr.Zero;
 		}
-
 	}
-	// public class LaunchUpdaterAttachedBehavior ___END___
-
 }
-// namespace Shinta.Behaviors ___END___

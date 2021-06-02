@@ -192,7 +192,7 @@ namespace Shinta.Behaviors
 			{
 				SelectedItem = dataGrid.SelectedItem;
 
-				List<Object> list = new List<Object>();
+				List<Object> list = new();
 				for (Int32 i = 0; i < dataGrid.SelectedItems.Count; i++)
 				{
 					Object? obj = dataGrid.SelectedItems[i];
@@ -238,12 +238,12 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceColumnsChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if (!(args.NewValue is ObservableCollection<DataGridColumn> newColumns))
+			if (args.NewValue is not ObservableCollection<DataGridColumn> newColumns)
 			{
 				return;
 			}
 
-			if (!(obj is DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
+			if ((obj is not DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
@@ -281,12 +281,12 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceCurrentCellChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if (!(obj is DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
+			if ((obj is not DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
 
-			if (!(args.NewValue is DataGridCellInfo newCellInfo) || thisObject.AssociatedObject.CurrentCell == newCellInfo)
+			if ((args.NewValue is not DataGridCellInfo newCellInfo) || thisObject.AssociatedObject.CurrentCell == newCellInfo)
 			{
 				return;
 			}
@@ -311,7 +311,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceCurrentCellLocationChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if (!(obj is DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
+			if ((obj is not DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
@@ -356,7 +356,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceSelectionChangedCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if (!(obj is DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
+			if ((obj is not DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
@@ -378,7 +378,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceSortingCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if (!(obj is DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
+			if ((obj is not DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
 			{
 				return;
 			}

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // CSV ファイルを管理するクラス
-// Copyright (C) 2015-2019 by SHINTA
+// Copyright (C) 2015-2021 by SHINTA
 // 
 // ============================================================================
 
@@ -22,16 +22,13 @@
 // (1.32) | 2018/05/20 (Sun) |   書き込み時に " をエスケープしていなかった不具合を修正。
 // (1.33) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.34) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
+// (1.35) | 2021/05/27 (Thu) |   null 許容参照型を必須にした。
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-
-#if !NULLABLE_DISABLED
-#nullable enable
-#endif
 
 namespace Shinta
 {
@@ -48,112 +45,109 @@ namespace Shinta
 		// 行番号を付ける場合、0 ベース。CSV が空行でも行番号列を作成する。
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-		public static List<List<String>> CsvStringToList(String oContents, Boolean oSkipTitleLine = false, Boolean oAddLineIndex = false)
+		public static List<List<String>> CsvStringToList(String contents, Boolean skipTitleLine = false, Boolean addLineIndex = false)
 		{
-			List<List<String>> aRecords = new List<List<String>>();
-			List<String> aFields = new List<String>();
+			List<List<String>> records = new();
+			List<String> fields = new();
 
 			// 改行コードを LF に統一
-			oContents = oContents.Replace("\r\n", "\n");
-			oContents = oContents.Replace("\r", "\n");
+			contents = contents.Replace("\r\n", "\n");
+			contents = contents.Replace("\r", "\n");
 
-			Int32 aBeginPos = 0;
-			Int32 aEndPos;
+			Int32 beginPos = 0;
+			Int32 endPos;
 
-			if (oSkipTitleLine)
+			if (skipTitleLine)
 			{
-				aBeginPos = SkipTitleLine(oContents);
+				beginPos = SkipTitleLine(contents);
 			}
 
-			if (oAddLineIndex)
+			if (addLineIndex)
 			{
-				aFields.Add(aRecords.Count.ToString());
+				fields.Add(records.Count.ToString());
 			}
 
-			while (aBeginPos < oContents.Length)
+			while (beginPos < contents.Length)
 			{
 				// 先頭のホワイトスペース読み飛ばし
-				SkipWhiteSpace(oContents, ref aBeginPos);
+				SkipWhiteSpace(contents, ref beginPos);
 
-				if (aBeginPos < oContents.Length && oContents[aBeginPos] == '"')
+				if (beginPos < contents.Length && contents[beginPos] == '"')
 				{
 					// ダブルクォートで囲まれている場合
-					aEndPos = FindPairQuotePos(oContents, aRecords.Count, aBeginPos);
+					endPos = FindPairQuotePos(contents, records.Count, beginPos);
 
 					// ダブルクォートの中身を抽出
-					String aField = oContents.Substring(aBeginPos + 1, aEndPos - aBeginPos - 1);
+					String field = contents.Substring(beginPos + 1, endPos - beginPos - 1);
 
 					// 連続するダブルクォート・\" を 1 つに戻してからフィールド追加
-					aFields.Add(aField.Replace("\"\"", "\"").Replace("\\\"", "\""));
+					fields.Add(field.Replace("\"\"", "\"").Replace("\\\"", "\""));
 
 					// 末尾のホワイトスペース読み飛ばし
-					aEndPos++;
-					SkipWhiteSpace(oContents, ref aEndPos);
-					if (aEndPos < oContents.Length && oContents[aEndPos] != ',' && oContents[aEndPos] != '\n')
+					endPos++;
+					SkipWhiteSpace(contents, ref endPos);
+					if (endPos < contents.Length && contents[endPos] != ',' && contents[endPos] != '\n')
 					{
-						throw new Exception((aRecords.Count + 1).ToString() + " レコード目のダブルクォートに文字列が続いています。");
+						throw new Exception((records.Count + 1).ToString() + " レコード目のダブルクォートに文字列が続いています。");
 					}
 				}
 				else
 				{
 					// ダブルクォートで囲まれていない場合
-					aEndPos = aBeginPos;
+					endPos = beginPos;
 
 					// 区切り文字を検索
-					while (aEndPos < oContents.Length && oContents[aEndPos] != ',' && oContents[aEndPos] != '\n')
+					while (endPos < contents.Length && contents[endPos] != ',' && contents[endPos] != '\n')
 					{
-						aEndPos++;
+						endPos++;
 					}
 
 					// 区切り文字までの文字を抽出（末尾のホワイトスペース除く）してフィールド追加
-					aFields.Add(oContents.Substring(aBeginPos, aEndPos - aBeginPos).TrimEnd());
+					//fields.Add(contents.Substring(beginPos, endPos - beginPos).TrimEnd());
+					fields.Add(contents[beginPos..endPos].TrimEnd());
 				}
 
 				// 行末ならレコード追加
-				if (aEndPos >= oContents.Length || oContents[aEndPos] == '\n')
+				if (endPos >= contents.Length || contents[endPos] == '\n')
 				{
-					aRecords.Add(aFields);
+					records.Add(fields);
 
 					// これまでの最大フィールド数＋αのメモリを確保しつつリストを初期化
-					aFields = new List<String>(aFields.Capacity);
-					if (oAddLineIndex)
+					fields = new List<String>(fields.Capacity);
+					if (addLineIndex)
 					{
-						aFields.Add(aRecords.Count.ToString());
+						fields.Add(records.Count.ToString());
 					}
 				}
 
-				aBeginPos = aEndPos + 1;
+				beginPos = endPos + 1;
 			}
 
-			return aRecords;
+			return records;
 		}
 
 		// --------------------------------------------------------------------
 		// 行列を CSV 文字列に統合
-		// oRemoveLineIndex に関わらず、oTitle には行番号列は無いものとする
+		// removeLineIndex に関わらず、title には行番号列は無いものとする
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		public static String ListToCsvString(List<List<String>> oRecords, String oCrCode, List<String>? oTitle = null, Boolean oRemoveLineIndex = false)
-#else
-		public static String ListToCsvString(List<List<String>> oRecords, String oCrCode, List<String> oTitle = null, Boolean oRemoveLineIndex = false)
-#endif
+		public static String ListToCsvString(List<List<String>> records, String crCode, List<String>? title = null, Boolean removeLineIndex = false)
 		{
-			StringBuilder aSB = new StringBuilder();
+			StringBuilder stringBuilder = new();
 
 			// タイトル行
-			if (oTitle != null)
+			if (title != null)
 			{
-				AddRecord(aSB, oTitle, 0, oCrCode);
+				AddRecord(stringBuilder, title, 0, crCode);
 			}
 
 			// 一般行
-			Int32 aStartColumnIndex = oRemoveLineIndex ? 1 : 0;
-			for (Int32 i = 0; i < oRecords.Count; i++)
+			Int32 aStartColumnIndex = removeLineIndex ? 1 : 0;
+			for (Int32 i = 0; i < records.Count; i++)
 			{
-				AddRecord(aSB, oRecords[i], aStartColumnIndex, oCrCode);
+				AddRecord(stringBuilder, records[i], aStartColumnIndex, crCode);
 			}
 
-			return aSB.ToString();
+			return stringBuilder.ToString();
 		}
 
 		// --------------------------------------------------------------------
@@ -169,13 +163,9 @@ namespace Shinta
 		// ファイルに CSV を書き込む
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		public static void SaveCsv(String oPath, List<List<String>> oRecords, String oCrCode, Encoding oEncoding, List<String>? oTitle = null, Boolean oRemoveLineIndex = false)
-#else
-		public static void SaveCsv(String oPath, List<List<String>> oRecords, String oCrCode, Encoding oEncoding, List<String> oTitle = null, Boolean oRemoveLineIndex = false)
-#endif
+		public static void SaveCsv(String path, List<List<String>> records, String crCode, Encoding encoding, List<String>? title = null, Boolean removeLineIndex = false)
 		{
-			File.WriteAllText(oPath, ListToCsvString(oRecords, oCrCode, oTitle, oRemoveLineIndex), oEncoding);
+			File.WriteAllText(path, ListToCsvString(records, crCode, title, removeLineIndex), encoding);
 		}
 
 		// ====================================================================
@@ -196,7 +186,8 @@ namespace Shinta
 			// 右側の列を追加
 			if (oRecord.Count - 1 >= oStartColumnIndex)
 			{
-				oSB.Append(Escape(oRecord[oRecord.Count - 1]) + oCrCode);
+				//oSB.Append(Escape(oRecord[oRecord.Count - 1]) + oCrCode);
+				oSB.Append(Escape(oRecord[^1]) + oCrCode);
 			}
 		}
 
@@ -281,17 +272,13 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 空白を読み飛ばす
 		// --------------------------------------------------------------------
-		private static void SkipWhiteSpace(String oContents, ref Int32 oPos)
+		private static void SkipWhiteSpace(String contents, ref Int32 pos)
 		{
-			while (oPos < oContents.Length && (oContents[oPos] == ' ' || oContents[oPos] == '\t'))
+			while (pos < contents.Length && (contents[pos] == ' ' || contents[pos] == '\t'))
 			{
-				oPos++;
+				pos++;
 			}
 		}
-
 	}
-	// public class CsvManager ___END___
-
 }
-// namespace Shinta ___END___
 

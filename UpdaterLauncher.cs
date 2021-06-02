@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ちょちょいと自動更新を起動する
-// Copyright (C) 2014-2020 by SHINTA
+// Copyright (C) 2014-2021 by SHINTA
 // 
 // ============================================================================
 
@@ -24,15 +24,12 @@
 // (1.11) | 2020/05/05 (Tue) |   SelfLaunch プロパティーをサポート。
 // (1.12) | 2020/11/15 (Sun) |   NotifyHWnd が空の場合に検出できない不具合を修正。
 // (1.13) | 2020/11/15 (Sun) |   .NET 5 の単一ファイルに対応。
+// (1.14) | 2021/05/28 (Fri) |   null 許容参照型を必須にした。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
-
-#if !NULLABLE_DISABLED
-#nullable enable
-#endif
 
 namespace Shinta
 {
@@ -141,11 +138,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 
 		// ログ
-#if !NULLABLE_DISABLED
 		public LogWriter? LogWriter { get; set; }
-#else
-		public LogWriter LogWriter { get; set; }
-#endif
 
 		// ====================================================================
 		// public メンバー関数
@@ -280,7 +273,7 @@ namespace Shinta
 					param += PARAM_STR_PID + " ";
 					if (PID == 0)
 					{
-						param += Process.GetCurrentProcess().Id.ToString();
+						param += Environment.ProcessId.ToString();
 
 					}
 					else
@@ -302,17 +295,13 @@ namespace Shinta
 			LogMessage(TraceEventType.Verbose, "UpdaterLauncher.Launch() aParam: " + param);
 
 			// 起動
-			ProcessStartInfo psInfo = new ProcessStartInfo();
+			ProcessStartInfo psInfo = new();
 			try
 			{
 				psInfo.FileName = Path.GetDirectoryName(ExePath()) + "\\" + FILE_NAME_CUPDATER;
 				psInfo.Arguments = param;
 
-#if !NULLABLE_DISABLED
 				Process? process;
-#else
-				Process process;
-#endif
 				process = Process.Start(psInfo);
 				process?.Dispose();
 				LogMessage(TraceEventType.Information, "ちょちょいと自動更新を起動しました。");

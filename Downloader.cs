@@ -106,6 +106,7 @@ namespace Shinta
 		// public メンバー関数
 		// ====================================================================
 
+#pragma warning disable CA1822
 		// --------------------------------------------------------------------
 		// 標準のユーザーエージェント
 		// --------------------------------------------------------------------
@@ -114,8 +115,7 @@ namespace Shinta
 			// Firefox 30.0 の UA：Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0
 			String ua = "Mozilla/5.0 (Windows NT";
 			SystemEnvironment se = new();
-			Double osVersion;
-			if (se.GetOSVersion(out osVersion))
+			if (se.GetOSVersion(out Double osVersion))
 			{
 				ua += " " + osVersion.ToString();
 			}
@@ -140,6 +140,7 @@ namespace Shinta
 
 			return ua;
 		}
+#pragma warning restore CA1822
 
 		// --------------------------------------------------------------------
 		// IDisposable.Dispose()
@@ -183,7 +184,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public void Download(String url, String path)
 		{
-			using FileStream fs = new FileStream(path, FileMode.Create);
+			using FileStream fs = new(path, FileMode.Create);
 			using HttpResponseMessage hrm = HttpMethod(url, CoreHttpGet, null).Result;
 			Byte[] bytes = hrm.Content.ReadAsByteArrayAsync().Result;
 			fs.Write(bytes, 0, bytes.Length);
@@ -203,34 +204,33 @@ namespace Shinta
 				return;
 			}
 
-			using (MultipartFormDataContent multipart = new())
+			using MultipartFormDataContent multipart = new();
+
+			// 文字列
+			foreach (KeyValuePair<String, String?> kvp in post)
 			{
-				// 文字列
-				foreach (KeyValuePair<String, String?> kvp in post)
+				StringContent stringContent = new(kvp.Value ?? String.Empty);
+				stringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
 				{
-					StringContent stringContent = new(kvp.Value ?? String.Empty);
-					stringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
-					{
-						Name = kvp.Key,
-					};
-					multipart.Add(stringContent);
-				}
-
-				// ファイル
-				foreach (KeyValuePair<String, String> kvp in files)
-				{
-					StreamContent fileContent = new(File.OpenRead(kvp.Value));
-					fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue(/*"attachment"*/"form-data")
-					{
-						Name = kvp.Key,
-						FileName = Path.GetFileName(kvp.Value),
-					};
-					multipart.Add(fileContent);
-				}
-
-				// POST で送信
-				HttpMethod(url, CoreHttpPostWithFile, multipart);
+					Name = kvp.Key,
+				};
+				multipart.Add(stringContent);
 			}
+
+			// ファイル
+			foreach (KeyValuePair<String, String> kvp in files)
+			{
+				StreamContent fileContent = new(File.OpenRead(kvp.Value));
+				fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue(/*"attachment"*/"form-data")
+				{
+					Name = kvp.Key,
+					FileName = Path.GetFileName(kvp.Value),
+				};
+				multipart.Add(fileContent);
+			}
+
+			// POST で送信
+			HttpMethod(url, CoreHttpPostWithFile, multipart);
 		}
 
 		// ====================================================================

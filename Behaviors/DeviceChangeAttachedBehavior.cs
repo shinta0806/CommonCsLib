@@ -64,7 +64,7 @@ namespace Shinta.Behaviors
 		// ====================================================================
 
 		// WndProc
-		private static HwndSourceHook _wndProc = new(WndProc);
+		private static readonly HwndSourceHook _wndProc = new(WndProc);
 
 		// ====================================================================
 		// private メンバー関数
@@ -92,7 +92,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if (!(obj is Window window))
+			if (obj is not Window window)
 			{
 				return;
 			}
@@ -100,14 +100,14 @@ namespace Shinta.Behaviors
 			if (GetCommand(window) != null)
 			{
 				// コマンドが設定された場合はイベントハンドラーを有効にする
-				WindowInteropHelper helper = new WindowInteropHelper(window);
+				WindowInteropHelper helper = new(window);
 				HwndSource aWndSource = HwndSource.FromHwnd(helper.Handle);
 				aWndSource.AddHook(_wndProc);
 			}
 			else
 			{
 				// コマンドが解除された場合はイベントハンドラーを無効にする
-				WindowInteropHelper helper = new WindowInteropHelper(window);
+				WindowInteropHelper helper = new(window);
 				HwndSource aWndSource = HwndSource.FromHwnd(helper.Handle);
 				aWndSource.RemoveHook(_wndProc);
 			}

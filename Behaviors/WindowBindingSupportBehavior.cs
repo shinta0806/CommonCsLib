@@ -19,14 +19,12 @@
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
+
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-
-#nullable enable
 
 namespace Shinta.Behaviors
 {
@@ -200,8 +198,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceClosingCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
-			if (thisObject == null || thisObject.AssociatedObject == null)
+			if ((obj is not WindowBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
@@ -223,8 +220,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceIsActiveChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
-			if (thisObject == null || thisObject.AssociatedObject == null)
+			if ((obj is not WindowBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
 			{
 				return;
 			}
@@ -263,7 +259,7 @@ namespace Shinta.Behaviors
 				return;
 			}
 
-			WindowInteropHelper helper = new WindowInteropHelper(AssociatedObject);
+			WindowInteropHelper helper = new(AssociatedObject);
 			Int64 style = (Int64)WindowsApi.GetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE);
 
 			if (MinimizeBox)
@@ -277,7 +273,4 @@ namespace Shinta.Behaviors
 		}
 
 	}
-	// public class WindowBindingSupportBehavior ___END___
-
 }
-// namespace Shinta.Behaviors ___END___

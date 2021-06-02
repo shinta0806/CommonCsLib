@@ -32,16 +32,22 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Management;
-using System.Reflection;
-
-#if !NULLABLE_DISABLED
-#nullable enable
-#endif
 
 namespace Shinta
 {
 	public class SystemEnvironment
 	{
+		// ====================================================================
+		// コンストラクター・デストラクター
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// コンストラクター
+		// --------------------------------------------------------------------
+		public SystemEnvironment()
+		{
+		}
+
 		// ====================================================================
 		// public 定数
 		// ====================================================================
@@ -53,21 +59,14 @@ namespace Shinta
 		// public メンバー関数
 		// ====================================================================
 
-		// --------------------------------------------------------------------
-		// コンストラクター
-		// --------------------------------------------------------------------
-		public SystemEnvironment()
-		{
-		}
-
+#pragma warning disable CA1822
 		// --------------------------------------------------------------------
 		// CLR バージョン名の取得（4.5 以降のみ対応）
 		// https://docs.microsoft.com/ja-jp/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed#net_d
 		// --------------------------------------------------------------------
 		public Boolean GetClrVersionName(out String clrVersion)
 		{
-			Int32 registry;
-			if (!GetClrVersionRegistryNumber(out registry))
+			if (!GetClrVersionRegistryNumber(out Int32 registry))
 			{
 				clrVersion = "4.5 or ealier";
 				return false;
@@ -211,26 +210,19 @@ namespace Shinta
 			try
 			{
 				// CPU 情報
-				Int32 numProcessors;
-				String cpuVendor;
-				String cpuName;
-				GetCpuBrandName(out cpuVendor, out cpuName);
-				GetNumLogicalProcessors(out numProcessors);
+				GetCpuBrandName(out String cpuVendor, out String cpuName);
+				GetNumLogicalProcessors(out Int32 numProcessors);
 				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CPU: " + cpuVendor
 						+ " / " + cpuName + " / " + numProcessors + " スレッド");
 
 				// OS 情報
-				Int32 osBit;
-				String osName;
-				GetOSName(out osName, out osBit);
+				GetOSName(out String osName, out Int32 osBit);
 				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "OS: " + osName
 						+ "（" + osBit.ToString() + " ビット）");
 
 				// .NET CLR 情報
-				Int32 clrVerNum;
-				GetClrVersionRegistryNumber(out clrVerNum);
-				String clrVerName;
-				GetClrVersionName(out clrVerName);
+				GetClrVersionRegistryNumber(out Int32 clrVerNum);
+				GetClrVersionName(out String clrVerName);
 				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CLR: " + Environment.Version.ToString()
 						+ " / " + clrVerNum.ToString() + " (" + clrVerName + ")");
 
@@ -275,6 +267,7 @@ namespace Shinta
 
 			return success;
 		}
+#pragma warning restore CA1822
 
 		// ====================================================================
 		// private 定数
@@ -284,15 +277,15 @@ namespace Shinta
 		private const String WMI_CLASS_PROCESSOR = "Win32_Processor";   // WMI CPU 情報取得
 
 		// ====================================================================
-		// private メンバー関数
+		// private static メンバー関数
 		// ====================================================================
 
 		// --------------------------------------------------------------------
 		// 指定された情報を取得
 		// --------------------------------------------------------------------
-		private String ManagementValue(String className, String propertyName)
+		private static String ManagementValue(String className, String propertyName)
 		{
-			ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT " + propertyName + " FROM " + className);
+			ManagementObjectSearcher searcher = new("SELECT " + propertyName + " FROM " + className);
 
 			// クエリの結果が 1 つのみであることを前提としている
 			foreach (ManagementObject obj in searcher.Get())
