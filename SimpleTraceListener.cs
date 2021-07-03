@@ -31,22 +31,36 @@
 // (1.32) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // (1.33) | 2020/11/15 (Sun) |   .NET 5 の単一ファイルに対応。
 // (1.34) | 2021/03/06 (Sat) |   TraceEvent() の表記を簡略化。
+// (1.35) | 2021/06/27 (Sun) |   Quote プロパティーを作成。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading;
-
-#if !NULLABLE_DISABLED
-#nullable enable
-#endif
 
 namespace Shinta
 {
 	public class SimpleTraceListener : TextWriterTraceListener
 	{
+		// ====================================================================
+		// コンストラクター・デストラクター
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// コンストラクター
+		// --------------------------------------------------------------------
+		public SimpleTraceListener()
+		{
+			// プロパティのデフォルト値
+			LogFileName = Common.UserAppDataFolderPath()
+					+ Path.ChangeExtension(Path.GetFileName(Environment.GetCommandLineArgs()[0]), Common.FILE_EXT_LOG);
+			MaxSize = MAX_LOG_SIZE_DEFAULT;
+			MaxOldGenerations = 3;
+			Quote = true;
+			ThreadSafe = false;
+		}
+
 		// ====================================================================
 		// public プロパティ
 		// ====================================================================
@@ -59,6 +73,18 @@ namespace Shinta
 
 		// ログファイルの旧版を何世代保存するか
 		public Int32 MaxOldGenerations { get; set; }
+
+		// メッセージ本体をダブルクオートで囲むか
+		private Boolean _quote;
+		public Boolean Quote
+		{
+			get => _quote;
+			set
+			{
+				_quote = value;
+				_quoteString = _quote ? "\"" : null;
+			}
+		}
 
 		// スレッドセーフ
 		public Boolean ThreadSafe { get; set; }
@@ -75,26 +101,13 @@ namespace Shinta
 		// ====================================================================
 
 		// --------------------------------------------------------------------
-		// コンストラクター
-		// --------------------------------------------------------------------
-		public SimpleTraceListener()
-		{
-			// プロパティのデフォルト値
-			LogFileName = Common.UserAppDataFolderPath()
-					+ Path.ChangeExtension(Path.GetFileName(Environment.GetCommandLineArgs()[0]), Common.FILE_EXT_LOG);
-			MaxSize = MAX_LOG_SIZE_DEFAULT;
-			MaxOldGenerations = 3;
-			ThreadSafe = false;
-		}
-
-		// --------------------------------------------------------------------
 		// 旧世代のログファイル名
 		// ＜引数＞ oGeneraion: 世代
 		// --------------------------------------------------------------------
-		public String OldLogFileName(Int32 oGeneraion)
+		public String OldLogFileName(Int32 generaion)
 		{
 			return Path.GetDirectoryName(LogFileName) + "\\"
-					+ Path.ChangeExtension(Path.GetFileNameWithoutExtension(LogFileName) + FILE_SUFFIX_OLD_LOG + oGeneraion.ToString("D2"), Common.FILE_EXT_LOG);
+					+ Path.ChangeExtension(Path.GetFileNameWithoutExtension(LogFileName) + FILE_SUFFIX_OLD_LOG + generaion.ToString("D2"), Common.FILE_EXT_LOG);
 		}
 
 		// --------------------------------------------------------------------
@@ -121,7 +134,7 @@ namespace Shinta
 				message = message.Replace("\n", BR_SYMBOL);
 			}
 			contents = DateTime.Now.ToString("yyyy/MM/dd,HH:mm:ss") + "," + Environment.ProcessId.ToString() + ",N"
-					+ WindowsApi.GetCurrentThreadId() + "/M" + Thread.CurrentThread.ManagedThreadId.ToString() + "," + source + "," + eventTypeString + ",\"" + message + "\"";
+					+ WindowsApi.GetCurrentThreadId() + "/M" + Thread.CurrentThread.ManagedThreadId.ToString() + "," + source + "," + eventTypeString + "," + _quoteString + message + _quoteString;
 
 			// 書き込み（最大 MAX_WRITE_TRY 回試行する）
 			for (Int32 i = 0; i < MAX_WRITE_TRY; i++)
@@ -153,6 +166,13 @@ namespace Shinta
 		private const Int32 MAX_WRITE_TRY = 3;
 		private const Int64 MAX_LOG_SIZE_DEFAULT = 2 * 1024 * 1024;
 		private const String BR_SYMBOL = "<br>";
+
+		// ====================================================================
+		// private メンバー変数
+		// ====================================================================
+
+		// 引用文字列
+		private String? _quoteString;
 
 		// ====================================================================
 		// private メンバー関数
@@ -200,8 +220,8 @@ namespace Shinta
 			try
 			{
 				// ファイルサイズの調査
-				FileInfo aFI = new(LogFileName);
-				if (aFI.Length <= MaxSize)
+				FileInfo fi = new(LogFileName);
+				if (fi.Length <= MaxSize)
 				{
 					// ローテーション不要
 					return true;
