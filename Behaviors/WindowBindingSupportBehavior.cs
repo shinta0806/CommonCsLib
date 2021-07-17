@@ -1,12 +1,12 @@
 ﻿// ============================================================================
 // 
 // Window のバインド可能なプロパティーを増やすためのビヘイビア
-// Copyright (C) 2019-2020 by SHINTA
+// Copyright (C) 2019-2021 by SHINTA
 // 
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 
+// AssociatedObject は null ではないことになっているが、実際には null があり得る（ViewModel 側での変更時にあり得る？）
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -16,6 +16,7 @@
 //  1.10  | 2019/06/29 (Sat) | IsCascade を実装。
 // (1.11) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.12) | 2020/03/29 (Sun) |   null 許容参照型の対応強化。
+//  1.20  | 2021/07/11 (Sun) | OwnedWindows を実装。
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
@@ -62,29 +63,55 @@ namespace Shinta.Behaviors
 			set => SetValue(MinimizeBoxProperty, value);
 		}
 
+		// Window.OwnedWindows をバインド可能にする
+		public WindowCollection OwnedWindows
+		{
+			get => (WindowCollection)GetValue(OwnedWindowsProperty);
+			set => SetValue(OwnedWindowsProperty, value);
+		}
+
+		// Window.OwnedWindows の更新要求
+		// ViewModel 側に false が伝播されないので、ViewModel 側は RaisePropertyChangedIfSet() ではなく
+		// RaisePropertyChanged() で強制発効する必要がある
+		public Boolean OwnedWindowsUpdateRequest
+		{
+			get => (Boolean)GetValue(OwnedWindowsUpdateRequestProperty);
+			set => SetValue(OwnedWindowsUpdateRequestProperty, value);
+		}
+
 		// ====================================================================
 		// public メンバー変数
 		// ====================================================================
 
-		// Window.Closing
+		// Window.Closing をコマンドで扱えるようにする
 		public static readonly DependencyProperty ClosingCommandProperty
-				= DependencyProperty.RegisterAttached("ClosingCommand", typeof(ICommand), typeof(WindowBindingSupportBehavior),
+				= DependencyProperty.RegisterAttached(nameof(ClosingCommand), typeof(ICommand), typeof(WindowBindingSupportBehavior),
 				new PropertyMetadata(null, SourceClosingCommandChanged));
 
 		// Window.IsActive は元々読み取り専用だが変更可能とするためにコールバックを登録する
 		public static readonly DependencyProperty IsActiveProperty =
-				DependencyProperty.Register("IsActive", typeof(Boolean), typeof(WindowBindingSupportBehavior),
+				DependencyProperty.Register(nameof(IsActive), typeof(Boolean), typeof(WindowBindingSupportBehavior),
 				new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceIsActiveChanged));
 
 		// オーナーウィンドウの位置に対してカスケードするかどうか
 		public static readonly DependencyProperty IsCascadeProperty =
-				DependencyProperty.Register("IsCascade", typeof(Boolean), typeof(WindowBindingSupportBehavior),
+				DependencyProperty.Register(nameof(IsCascade), typeof(Boolean), typeof(WindowBindingSupportBehavior),
 				new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceIsCascadeChanged));
 
 		// ウィンドウのキャプションバーに最小化ボタンを表示するかどうか
 		public static readonly DependencyProperty MinimizeBoxProperty =
-				DependencyProperty.Register("MinimizeBox", typeof(Boolean), typeof(WindowBindingSupportBehavior),
+				DependencyProperty.Register(nameof(MinimizeBox), typeof(Boolean), typeof(WindowBindingSupportBehavior),
 				new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceMinimizeBoxChanged));
+
+		// Window.OwnedWindows をバインド可能にする
+		public static readonly DependencyProperty OwnedWindowsProperty =
+				DependencyProperty.Register(nameof(OwnedWindows), typeof(WindowCollection), typeof(WindowBindingSupportBehavior),
+				new FrameworkPropertyMetadata(new WindowCollection(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+
+		// Window.OwnedWindows の更新要求
+		public static readonly DependencyProperty OwnedWindowsUpdateRequestProperty =
+				DependencyProperty.Register(nameof(OwnedWindowsUpdateRequest), typeof(Boolean), typeof(WindowBindingSupportBehavior),
+				new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceOwnedWindowsUpdateRequestChanged));
 
 		// ====================================================================
 		// protected メンバー関数
@@ -174,9 +201,8 @@ namespace Shinta.Behaviors
 		{
 			if (AssociatedObject != null && AssociatedObject.SizeToContent != SizeToContent.Manual)
 			{
-				// SizeToContent が WidthAndHeight の場合は SourceInitialized よりも Loaded が先に呼び出されるのでここで処理を行う
-				CascadeWindowIfNeeded();
-				UpdateMinimizeBox();
+				// SizeToContent が WidthAndHeight 等の場合は SourceInitialized よりも Loaded が先に呼び出されるのでここで処理を行う
+				Initialize();
 			}
 		}
 
@@ -188,9 +214,17 @@ namespace Shinta.Behaviors
 			if (AssociatedObject != null && AssociatedObject.SizeToContent == SizeToContent.Manual)
 			{
 				// SizeToContent が Manual の場合は Loaded よりも SourceInitialized が先に呼び出されるのでここで処理を行う
-				CascadeWindowIfNeeded();
-				UpdateMinimizeBox();
+				Initialize();
 			}
+		}
+
+		// --------------------------------------------------------------------
+		// Loaded または SourceInitialized 時の処理
+		// --------------------------------------------------------------------
+		private void Initialize()
+		{
+			CascadeWindowIfNeeded();
+			UpdateMinimizeBox();
 		}
 
 		// --------------------------------------------------------------------
@@ -236,8 +270,10 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceIsCascadeChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
-			thisObject?.CascadeWindowIfNeeded();
+			if (obj is WindowBindingSupportBehavior thisObject)
+			{
+				thisObject.CascadeWindowIfNeeded();
+			}
 		}
 
 		// --------------------------------------------------------------------
@@ -245,8 +281,24 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private static void SourceMinimizeBoxChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			WindowBindingSupportBehavior? thisObject = obj as WindowBindingSupportBehavior;
-			thisObject?.UpdateMinimizeBox();
+			if (obj is WindowBindingSupportBehavior thisObject)
+			{
+				thisObject.UpdateMinimizeBox();
+			}
+		}
+
+		// --------------------------------------------------------------------
+		// ViewModel 側で OwnedWindowsUpdateRequest が変更された
+		// --------------------------------------------------------------------
+		private static void SourceOwnedWindowsUpdateRequestChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
+		{
+			if ((obj is not WindowBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
+			{
+				return;
+			}
+
+			thisObject.OwnedWindows = thisObject.AssociatedObject.OwnedWindows;
+			thisObject.OwnedWindowsUpdateRequest = false;
 		}
 
 		// --------------------------------------------------------------------
@@ -271,6 +323,5 @@ namespace Shinta.Behaviors
 				WindowsApi.SetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(style & ~((Int64)WS.WS_MINIMIZEBOX)));
 			}
 		}
-
 	}
 }
