@@ -16,15 +16,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
-using System.Xml;
-using System.Xml.Serialization;
 
 namespace Shinta
 {
@@ -162,7 +155,6 @@ namespace Shinta
 		// ====================================================================
 
 		private const String STREAM_NAME_ZONE_ID = ":Zone.Identifier";
-
 	}
 }
 

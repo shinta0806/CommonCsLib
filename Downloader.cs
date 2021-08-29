@@ -40,6 +40,7 @@
 // (1.63) | 2021/04/28 (Wed) |   WebRequestHandler 廃止。
 // (1.64) | 2021/05/03 (Mon) |   null 許容参照型が常に有効化されるようにした。
 // (1.65) | 2021/05/04 (Tue) |   リソースリークを修正。
+// (1.66) | 2021/08/29 (Sun) |   標準のユーザーエージェントを更新。
 // ============================================================================
 
 using System;
@@ -113,6 +114,7 @@ namespace Shinta
 		public String DefaultUserAgent()
 		{
 			// Firefox 30.0 の UA：Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0
+			// Firefox 91.0 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0
 			String ua = "Mozilla/5.0 (Windows NT";
 			SystemEnvironment se = new();
 			if (se.GetOSVersion(out Double osVersion))
@@ -127,7 +129,7 @@ namespace Shinta
 				if (Environment.Is64BitProcess)
 				{
 					// ネイティブ 64 ビットアプリ
-					ua += "Win64; ";
+					ua += "Win64; x64; ";
 				}
 				else
 				{
@@ -136,7 +138,7 @@ namespace Shinta
 				}
 			}
 
-			ua += "rv:30.0) Gecko/20100101";
+			ua += "rv:91.0) Gecko/20100101 Firefox/91.0";
 
 			return ua;
 		}
