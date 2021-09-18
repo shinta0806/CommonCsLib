@@ -52,6 +52,8 @@
 // (3.58) | 2021/03/28 (Sun) |   一部の関数を ShintaCommonWindows に移管。
 // (3.59) | 2021/04/04 (Sun) |   ShallowCopy() 実体が派生クラスの場合もコピーできるようにした。
 //  3.60  | 2021/05/24 (Mon) |   ShallowCopyProperties() を作成。
+// (3.61) | 2021/09/04 (Sat) |   TempFolderPath() を作成。
+// (3.62) | 2021/09/04 (Sat) |   null 許容参照型を必須にした。
 // ============================================================================
 
 using System;
@@ -59,18 +61,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Windows;
 using System.Xml;
 using System.Xml.Serialization;
-
-#if !NULLABLE_DISABLED
-#nullable enable
-#endif
 
 namespace Shinta
 {
@@ -283,44 +278,6 @@ namespace Shinta
 			return Encoding.Unicode.GetString(aDecBytes);
 		}
 
-#if USE_OBSOLETE
-		// --------------------------------------------------------------------
-		// 深いコピーを行う
-		// 対象は SerializableAttribute が付いているクラス
-		// BinaryFormatter はセキュリティ上の理由で推奨されなくなった
-		// --------------------------------------------------------------------
-		public static T DeepClone<T>(T src)
-		{
-			Object clone;
-			using (MemoryStream stream = new MemoryStream())
-			{
-				BinaryFormatter formatter = new BinaryFormatter();
-				formatter.Serialize(stream, src);
-				stream.Position = 0;
-				clone = formatter.Deserialize(stream);
-			}
-			return (T)clone;
-		}
-#endif
-
-#if USE_OBSOLETE
-		// --------------------------------------------------------------------
-		// オブジェクトをデシリアライズして読み出し
-		// クラス継承に対応できないと思う
-		// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
-		// ＜例外＞ Exception
-		// --------------------------------------------------------------------
-		public static T Deserialize<T>(String oPath)
-		{
-			XmlSerializer aSerializer = new XmlSerializer(typeof(T));
-			using (StreamReader aSR = new StreamReader(oPath, new UTF8Encoding(false)))
-			{
-				return (T)aSerializer.Deserialize(aSR);
-			}
-		}
-#endif
-
-#if NETCOREAPP3_1 || NET5_0
 		// --------------------------------------------------------------------
 		// オブジェクトをデシリアライズして読み出し
 		// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
@@ -345,7 +302,6 @@ namespace Shinta
 			}
 			return (T)des;
 		}
-#endif
 
 		// --------------------------------------------------------------------
 		// 文字列を暗号化し、文字列（Base64）で返す
@@ -373,6 +329,23 @@ namespace Shinta
 		}
 
 		// --------------------------------------------------------------------
+		// テンポラリフォルダーを初期化
+		// ＜例外＞ Exception
+		// --------------------------------------------------------------------
+		public static void InitializeTempFolder()
+		{
+			String tempFolderPath = Common.TempFolderPath();
+			if (Directory.Exists(tempFolderPath))
+			{
+				// 偶然以前と同じ PID となり、かつ、以前異常終了してテンポラリフォルダーが削除されていない場合に削除
+				Directory.Delete(tempFolderPath, true);
+			}
+
+			// 空のフォルダーを作成
+			Directory.CreateDirectory(tempFolderPath);
+		}
+
+		// --------------------------------------------------------------------
 		// セクションのない ini ファイルからペアを読み取る
 		// ＜返値＞ ペア
 		// ＜例外＞ Exception
@@ -397,15 +370,11 @@ namespace Shinta
 		}
 
 		// --------------------------------------------------------------------
-		// oBase を基準とした oRelativePath の絶対パスを取得
+		// oBase を基準とした relativePath の絶対パスを取得
 		// ＜返値＞ 絶対パス
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
 		public static String MakeAbsolutePath(String? basePath, String? relativePath)
-#else
-		public static String MakeAbsolutePath(String basePath, String relativePath)
-#endif
 		{
 			if (basePath == null)
 			{
@@ -442,11 +411,7 @@ namespace Shinta
 		// ＜返値＞ 相対パス
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
 		public static String MakeRelativePath(String? basePath, String? absolutePath)
-#else
-		public static String MakeRelativePath(String basePath, String absolutePath)
-#endif
 		{
 			if (basePath == null)
 			{
@@ -574,11 +539,7 @@ namespace Shinta
 		// 指定されたプロセスと同じ名前のプロセス（指定されたプロセスを除く）を列挙する
 		// ＜返値＞ プロセス群（見つからない場合は空のリスト
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
 		public static List<Process> SameNameProcesses(Process? specifyProcess = null)
-#else
-		public static List<Process> SameNameProcesses(Process specifyProcess = null)
-#endif
 		{
 			// プロセスが指定されていない場合は実行中のプロセスが指定されたものとする
 			if (specifyProcess == null)
@@ -600,7 +561,6 @@ namespace Shinta
 			return sameNameProcesses;
 		}
 
-#if NETCOREAPP3_1 || NET5_0
 		// --------------------------------------------------------------------
 		// オブジェクトをシリアライズして保存
 		// ＜例外＞ Exception
@@ -611,7 +571,6 @@ namespace Shinta
 			using StreamWriter streamWriter = new(path, false, new UTF8Encoding(false));
 			xmlSerializer.Serialize(streamWriter, obj);
 		}
-#endif
 
 		// --------------------------------------------------------------------
 		// 全フィールドを浅くコピーする
@@ -620,9 +579,6 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static void ShallowCopyFields<T>(T src, T dest) where T : notnull
 		{
-#if DEBUG
-			var a = typeof(T).Name;
-#endif
 			FieldInfo[] fields = src.GetType().GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 			foreach (FieldInfo field in fields)
 			{
@@ -652,18 +608,14 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 文字列のうち、数値に見える部分を数値に変換
 		// --------------------------------------------------------------------
-#if !NULLABLE_DISABLED
-		public static Int32 StringToInt32(String? oString)
-#else
-		public static Int32 StringToInt32(String oString)
-#endif
+		public static Int32 StringToInt32(String? str)
 		{
-			if (String.IsNullOrEmpty(oString))
+			if (String.IsNullOrEmpty(str))
 			{
 				return 0;
 			}
 
-			Match aMatch = Regex.Match(oString, "-?[0-9]+");
+			Match aMatch = Regex.Match(str, "-?[0-9]+");
 			if (String.IsNullOrEmpty(aMatch.Value))
 			{
 				return 0;
@@ -674,11 +626,19 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 参照の入替
 		// --------------------------------------------------------------------
-		public static void Swap<T>(ref T oLhs, ref T oRhs)
+		public static void Swap<T>(ref T lhs, ref T rhs)
 		{
-			T aTemp = oLhs;
-			oLhs = oRhs;
-			oRhs = aTemp;
+			T aTemp = lhs;
+			lhs = rhs;
+			rhs = aTemp;
+		}
+
+		// --------------------------------------------------------------------
+		// テンポラリフォルダーのパス（末尾 '\\'）
+		// --------------------------------------------------------------------
+		public static String TempFolderPath()
+		{
+			return Path.GetTempPath() + Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]) + '\\' + Environment.ProcessId.ToString() + '\\';
 		}
 
 		// --------------------------------------------------------------------
@@ -716,20 +676,20 @@ namespace Shinta
 		// oSalt は 8 バイト以上（4 文字以上）である必要がある
 		// ＜例外＞
 		// --------------------------------------------------------------------
-		private static RijndaelManaged CreateRijndaelManaged(String oPassword, String oSalt)
+		private static RijndaelManaged CreateRijndaelManaged(String password, String salt)
 		{
-			RijndaelManaged aRijndael = new();
+			RijndaelManaged rijndael = new();
 
 			// salt をバイト化
-			Byte[] aSaltBytes = Encoding.Unicode.GetBytes(oSalt);
+			Byte[] saltBytes = Encoding.Unicode.GetBytes(salt);
 
 			// パスワードから共有キーと初期化ベクタを作成する
-			Rfc2898DeriveBytes aDeriveBytes = new(oPassword, aSaltBytes);
+			Rfc2898DeriveBytes aDeriveBytes = new(password, saltBytes);
 			aDeriveBytes.IterationCount = 1000;
-			aRijndael.Key = aDeriveBytes.GetBytes(aRijndael.KeySize / 8);
-			aRijndael.IV = aDeriveBytes.GetBytes(aRijndael.BlockSize / 8);
+			rijndael.Key = aDeriveBytes.GetBytes(rijndael.KeySize / 8);
+			rijndael.IV = aDeriveBytes.GetBytes(rijndael.BlockSize / 8);
 
-			return aRijndael;
+			return rijndael;
 		}
 
 #if USE_UNSAFE
