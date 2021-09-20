@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // DataGrid のバインド可能なプロパティーを増やすためのビヘイビア
-// Copyright (C) 2019-2020 by SHINTA
+// Copyright (C) 2019-2021 by SHINTA
 // 
 // ============================================================================
 
@@ -21,25 +21,21 @@
 // (1.03) | 2020/01/20 (Mon) |   SelectedItems をバインド可能にした。
 // (1.04) | 2020/01/21 (Tue) |   SelectionChangedCommand をバインド可能にした。
 // (1.05) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
+//  1.10  | 2021/09/20 (Mon) | SelectorBindingSupportBehavior の派生クラスにした。
 // ============================================================================
 
-using Microsoft.Xaml.Behaviors;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-#nullable enable
-
 namespace Shinta.Behaviors
 {
-	public class DataGridBindingSupportBehavior : Behavior<DataGrid>
+	public class DataGridBindingSupportBehavior : SelectorBindingSupportBehavior<DataGrid>
 	{
 		// ====================================================================
 		// public プロパティー
@@ -88,16 +84,6 @@ namespace Shinta.Behaviors
 			set => SetValue(SelectedCellsProperty, value);
 		}
 
-		// DataGrid.SelectedItem 設定時にスクロールする
-		public static readonly DependencyProperty SelectedItemProperty
-				= DependencyProperty.RegisterAttached("SelectedItem", typeof(Object), typeof(DataGridBindingSupportBehavior),
-				new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceSelectedItemChanged));
-		public Object SelectedItem
-		{
-			get => GetValue(SelectedItemProperty);
-			set => SetValue(SelectedItemProperty, value);
-		}
-
 		// DataGrid.SelectedItems をバインド可能にする
 		// DataGrid.SelectedItems は読み取り専用なのでコールバックは登録しない
 		public static readonly DependencyProperty SelectedItemsProperty
@@ -107,16 +93,6 @@ namespace Shinta.Behaviors
 		{
 			get => (List<Object>)GetValue(SelectedItemsProperty);
 			set => SetValue(SelectedItemsProperty, value);
-		}
-
-		// DataGrid.SelectionChanged をコマンドで扱えるようにする
-		public static readonly DependencyProperty SelectionChangedCommandProperty
-				= DependencyProperty.RegisterAttached("SelectionChangedCommand", typeof(ICommand), typeof(DataGridBindingSupportBehavior),
-				new PropertyMetadata(null, SourceSelectionChangedCommandChanged));
-		public ICommand SelectionChangedCommand
-		{
-			get => (ICommand)GetValue(SelectionChangedCommandProperty);
-			set => SetValue(SelectionChangedCommandProperty, value);
 		}
 
 		// DataGrid.Sorting をコマンドで扱えるようにする
@@ -137,6 +113,14 @@ namespace Shinta.Behaviors
 		// protected メンバー関数
 		// ====================================================================
 
+		// --------------------------------------------------------------------
+		// item の位置までスクロールさせる
+		// --------------------------------------------------------------------
+		protected override void ScrollIntoView(DataGrid dataGrid, Object item)
+		{
+			dataGrid.ScrollIntoView(item);
+		}
+
 		// ====================================================================
 		// protected メンバー関数
 		// ====================================================================
@@ -146,11 +130,15 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		protected override void OnAttached()
 		{
-			base.OnAttached();
-
 			AssociatedObject.CurrentCellChanged += ControlCurrentCellChanged;
 			AssociatedObject.SelectedCellsChanged += ControlSelectedCellsChanged;
 			AssociatedObject.SelectionChanged += ControlSelectionChanged;
+
+			// メインウィンドウで使用される際、フレームワークから呼ばれる XXXXChanged() では AssociatedObject が null になるため、ここで再度呼びだす
+			SourceSortingCommandChanged(this, new DependencyPropertyChangedEventArgs(SortingCommandProperty, null, SortingCommand));
+
+			// 基底の ControlSelectionChanged をここの ControlSelectionChanged より後に呼ばれるようにする（SelectedItems の更新が終わってから通知が飛ぶように）
+			base.OnAttached();
 		}
 
 		// ====================================================================
@@ -190,8 +178,6 @@ namespace Shinta.Behaviors
 		{
 			if (sender is DataGrid dataGrid)
 			{
-				SelectedItem = dataGrid.SelectedItem;
-
 				List<Object> list = new();
 				for (Int32 i = 0; i < dataGrid.SelectedItems.Count; i++)
 				{
@@ -203,20 +189,6 @@ namespace Shinta.Behaviors
 				}
 				SelectedItems = list;
 			}
-		}
-
-		// --------------------------------------------------------------------
-		// イベントハンドラー
-		// --------------------------------------------------------------------
-		private void OnSelectionChanged(Object sender, SelectionChangedEventArgs args)
-		{
-			if (SelectionChangedCommand == null || !SelectionChangedCommand.CanExecute(null))
-			{
-				return;
-			}
-
-			// イベント引数を引数としてコマンドを実行
-			SelectionChangedCommand.Execute(args);
 		}
 
 		// --------------------------------------------------------------------
@@ -335,45 +307,6 @@ namespace Shinta.Behaviors
 		}
 
 		// --------------------------------------------------------------------
-		// ViewModel 側で SelectedItem が変更された
-		// --------------------------------------------------------------------
-		private static void SourceSelectedItemChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
-		{
-			if (args.NewValue == null)
-			{
-				return;
-			}
-
-			if (obj is DataGridBindingSupportBehavior thisObject && thisObject.AssociatedObject != null)
-			{
-				thisObject.AssociatedObject.SelectedItem = args.NewValue;
-				thisObject.AssociatedObject.ScrollIntoView(args.NewValue);
-			}
-		}
-
-		// --------------------------------------------------------------------
-		// ViewModel 側で SelectionChangedCommand が変更された
-		// --------------------------------------------------------------------
-		private static void SourceSelectionChangedCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
-		{
-			if ((obj is not DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
-			{
-				return;
-			}
-
-			if (args.NewValue != null)
-			{
-				// コマンドが設定された場合はイベントハンドラーを有効にする
-				thisObject.AssociatedObject.SelectionChanged += thisObject.OnSelectionChanged;
-			}
-			else
-			{
-				// コマンドが解除された場合はイベントハンドラーを無効にする
-				thisObject.AssociatedObject.SelectionChanged -= thisObject.OnSelectionChanged;
-			}
-		}
-
-		// --------------------------------------------------------------------
 		// ViewModel 側で SortingCommand が変更された
 		// --------------------------------------------------------------------
 		private static void SourceSortingCommandChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
@@ -394,9 +327,5 @@ namespace Shinta.Behaviors
 				thisObject.AssociatedObject.Sorting -= thisObject.OnSorting;
 			}
 		}
-
 	}
-	// public class DataGridBindingSupportBehavior ___END___
-
 }
-// namespace Shinta.Behaviors ___END___
