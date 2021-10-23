@@ -51,9 +51,10 @@
 // (3.57) | 2020/11/15 (Sun) |   UserAppDataFolderPath() .NET 5 の単一ファイルに対応。
 // (3.58) | 2021/03/28 (Sun) |   一部の関数を ShintaCommonWindows に移管。
 // (3.59) | 2021/04/04 (Sun) |   ShallowCopy() 実体が派生クラスの場合もコピーできるようにした。
-//  3.60  | 2021/05/24 (Mon) |   ShallowCopyProperties() を作成。
-// (3.61) | 2021/09/04 (Sat) |   TempFolderPath() を作成。
-// (3.62) | 2021/09/04 (Sat) |   null 許容参照型を必須にした。
+//  3.60  | 2021/05/24 (Mon) | ShallowCopyProperties() を作成。
+//  3.70  | 2021/09/04 (Sat) | TempFolderPath() を作成。
+// (3.71) | 2021/09/04 (Sat) |   null 許容参照型を必須にした。
+//  3.80  | 2021/10/23 (Sat) | ShellExecute() を作成。
 // ============================================================================
 
 using System;
@@ -603,6 +604,20 @@ namespace Shinta
 				{
 				}
 			}
+		}
+
+		// --------------------------------------------------------------------
+		// 関連付けられたファイルを開く
+		// ＜例外＞ Exception
+		// --------------------------------------------------------------------
+		public static void ShellExecute(String path)
+		{
+			ProcessStartInfo psi = new()
+			{
+				FileName = path,
+				UseShellExecute = true,
+			};
+			Process.Start(psi);
 		}
 
 		// --------------------------------------------------------------------
