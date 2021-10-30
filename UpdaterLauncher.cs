@@ -10,11 +10,11 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2014/12/06 (Sat) | 作成開始。
 //  1.00  | 2014/12/07 (Sun) | オリジナルバージョン。
-// (1.01) | 2014/12/22 (Mon) | String 型のメンバー変数は Empty で初期化するようにした。
-// (1.02) | 2015/05/23 (Sat) | エラーメッセージをユーザーに表示できるようにした。
-// (1.03) | 2016/09/24 (Sat) | LogWriter を使用するように変更。
-// (1.04) | 2017/11/18 (Sat) | StatusT を廃止。
-// (1.05) | 2019/01/20 (Sun) | WPF アプリケーションでも使用可能にした。
+// (1.01) | 2014/12/22 (Mon) |   String 型のメンバー変数は Empty で初期化するようにした。
+// (1.02) | 2015/05/23 (Sat) |   エラーメッセージをユーザーに表示できるようにした。
+// (1.03) | 2016/09/24 (Sat) |   LogWriter を使用するように変更。
+// (1.04) | 2017/11/18 (Sat) |   StatusT を廃止。
+// (1.05) | 2019/01/20 (Sun) |   WPF アプリケーションでも使用可能にした。
 // (1.06) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.07) | 2020/03/29 (Sun) |   null 許容参照型の対応を強化。
 // (1.08) | 2020/03/29 (Sun) |   発行した場合を考慮し Relaunch を活用。
@@ -25,6 +25,8 @@
 // (1.12) | 2020/11/15 (Sun) |   NotifyHWnd が空の場合に検出できない不具合を修正。
 // (1.13) | 2020/11/15 (Sun) |   .NET 5 の単一ファイルに対応。
 // (1.14) | 2021/05/28 (Fri) |   null 許容参照型を必須にした。
+// (1.15) | 2021/10/30 (Sat) |   UpdaterExePath プロパティーをサポート。
+// (1.16) | 2021/10/30 (Sat) |   Verbose 時にも NotifyHWnd を渡すようにした。
 // ============================================================================
 
 using System;
@@ -35,6 +37,92 @@ namespace Shinta
 {
 	public class UpdaterLauncher
 	{
+		// ====================================================================
+		// コンストラクター・デストラクター
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// コンストラクター
+		// --------------------------------------------------------------------
+		public UpdaterLauncher()
+		{
+		}
+
+		// ====================================================================
+		// public プロパティ
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// 共通
+		// --------------------------------------------------------------------
+
+		// アプリの ID
+		public String ID { get; set; } = String.Empty;
+
+		// アプリの名前（表示用）
+		public String Name { get; set; } = String.Empty;
+
+		// 最新情報・更新が無くてもユーザーに通知
+		public Boolean ForceShow { get; set; }
+
+		// チェック開始までの待ち時間 [s]
+		public Int32 Wait { get; set; }
+
+		// アプリのメインウィンドウのハンドル
+		public IntPtr NotifyHWnd { get; set; }
+
+		// ちょちょいと自動更新自身による起動
+		public Boolean SelfLaunch { get; set; }
+
+		// ちょちょいと自動更新の実行ファイルパス
+		public String UpdaterExePath { get; set; } = String.Empty;
+
+		// --------------------------------------------------------------------
+		// 共通（オンリー系）
+		// --------------------------------------------------------------------
+
+		// バージョン情報ダイアログを表示するのみ
+		public Boolean Verbose { get; set; }
+
+		// 古い Updater.exe を削除するのみ（更新後の作業用）（未実装）
+		public Boolean DeleteOld { get; set; }
+
+		// --------------------------------------------------------------------
+		// 最新情報確認用
+		// --------------------------------------------------------------------
+
+		// 最新情報を保持している RSS の URL
+		public String LatestRss { get; set; } = String.Empty;
+
+		// --------------------------------------------------------------------
+		// 更新用
+		// --------------------------------------------------------------------
+
+		// 更新情報を保持している RSS の URL
+		public String UpdateRss { get; set; } = String.Empty;
+
+		// 更新対象アプリのバージョン
+		public String CurrentVer { get; set; } = String.Empty;
+
+		// 更新後に起動するアプリのパス（Launch() では自動設定）
+		public String Relaunch { get; set; } = String.Empty;
+
+		// 更新情報をクリア
+		public Boolean ClearUpdateCache { get; set; }
+
+		// 強制的にインストール
+		public Boolean ForceInstall { get; set; }
+
+		// Updater.exe を起動した依頼元アプリ（Launch() では自動設定）
+		public Int32 PID { get; set; }
+
+		// --------------------------------------------------------------------
+		// ログ
+		// --------------------------------------------------------------------
+
+		// ログ
+		public LogWriter? LogWriter { get; set; }
+
 		// ====================================================================
 		// public 定数
 		// ====================================================================
@@ -69,98 +157,8 @@ namespace Shinta
 		public const Int32 WM_UPDATER_LAUNCHED = WM_UPDATER_UI_DISPLAYED + 1;
 
 		// ====================================================================
-		// public プロパティ
-		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// 共通
-		// --------------------------------------------------------------------
-
-		// アプリの ID
-		public String ID { get; set; }
-
-		// アプリの名前（表示用）
-		public String Name { get; set; }
-
-		// 最新情報・更新が無くてもユーザーに通知
-		public Boolean ForceShow { get; set; }
-
-		// チェック開始までの待ち時間 [s]
-		public Int32 Wait { get; set; }
-
-		// アプリのメインウィンドウのハンドル
-		public IntPtr NotifyHWnd { get; set; }
-
-		// ちょちょいと自動更新自身による起動
-		public Boolean SelfLaunch { get; set; }
-
-		// --------------------------------------------------------------------
-		// 共通（オンリー系）
-		// --------------------------------------------------------------------
-
-		// バージョン情報ダイアログを表示するのみ
-		public Boolean Verbose { get; set; }
-
-		// 古い Updater.exe を削除するのみ（更新後の作業用）（未実装）
-		public Boolean DeleteOld { get; set; }
-
-		// --------------------------------------------------------------------
-		// 最新情報確認用
-		// --------------------------------------------------------------------
-
-		// 最新情報を保持している RSS の URL
-		public String LatestRss { get; set; }
-
-		// --------------------------------------------------------------------
-		// 更新用
-		// --------------------------------------------------------------------
-
-		// 更新情報を保持している RSS の URL
-		public String UpdateRss { get; set; }
-
-		// 更新対象アプリのバージョン
-		public String CurrentVer { get; set; }
-
-		// 更新後に起動するアプリのパス（Launch() では自動設定）
-		public String Relaunch { get; set; }
-
-		// 更新情報をクリア
-		public Boolean ClearUpdateCache { get; set; }
-
-		// 強制的にインストール
-		public Boolean ForceInstall { get; set; }
-
-		// Updater.exe を起動した依頼元アプリ（Launch() では自動設定）
-		public Int32 PID { get; set; }
-
-		// --------------------------------------------------------------------
-		// ログ
-		// --------------------------------------------------------------------
-
-		// ログ
-		public LogWriter? LogWriter { get; set; }
-
-		// ====================================================================
 		// public メンバー関数
 		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// コンストラクター
-		// --------------------------------------------------------------------
-		public UpdaterLauncher()
-		{
-			// 共通
-			ID = String.Empty;
-			Name = String.Empty;
-
-			// 最新情報確認用
-			LatestRss = String.Empty;
-
-			// 更新用
-			UpdateRss = String.Empty;
-			CurrentVer = String.Empty;
-			Relaunch = String.Empty;
-		}
 
 		// --------------------------------------------------------------------
 		// 最新情報確認をするか
@@ -230,6 +228,7 @@ namespace Shinta
 			{
 				// オンリー系
 				param += PARAM_STR_VERBOSE + " ";
+				AddNotifyHWndIfNeeded(ref param);
 			}
 			else if (DeleteOld)
 			{
@@ -252,19 +251,18 @@ namespace Shinta
 				{
 					param += PARAM_STR_WAIT + " " + Wait.ToString() + " ";
 				}
-				if (NotifyHWnd != IntPtr.Zero)
-				{
-					param += PARAM_STR_NOTIFY_HWND + " " + NotifyHWnd.ToString() + " ";
-				}
+				AddNotifyHWndIfNeeded(ref param);
 				if (SelfLaunch)
 				{
 					param += PARAM_STR_SELF_LAUNCH + " ";
 				}
+
 				// 最新情報確認
 				if (!String.IsNullOrEmpty(LatestRss))
 				{
 					param += PARAM_STR_LATEST_RSS + " \"" + LatestRss + "\" ";
 				}
+
 				// 更新
 				if (!String.IsNullOrEmpty(UpdateRss))
 				{
@@ -290,7 +288,6 @@ namespace Shinta
 						param += PARAM_STR_FORCE_INSTALL + " ";
 					}
 				}
-
 			}
 			LogMessage(TraceEventType.Verbose, "UpdaterLauncher.Launch() aParam: " + param);
 
@@ -298,7 +295,14 @@ namespace Shinta
 			ProcessStartInfo psInfo = new();
 			try
 			{
-				psInfo.FileName = Path.GetDirectoryName(ExePath()) + "\\" + FILE_NAME_CUPDATER;
+				if (String.IsNullOrEmpty(UpdaterExePath))
+				{
+					psInfo.FileName = Path.GetDirectoryName(ExePath()) + "\\" + FILE_NAME_CUPDATER;
+				}
+				else
+				{
+					psInfo.FileName = UpdaterExePath;
+				}
 				psInfo.Arguments = param;
 
 				Process? process;
@@ -338,6 +342,17 @@ namespace Shinta
 		// ====================================================================
 
 		// --------------------------------------------------------------------
+		// param に PARAM_STR_NOTIFY_HWND を付加
+		// --------------------------------------------------------------------
+		private void AddNotifyHWndIfNeeded(ref String param)
+		{
+			if (NotifyHWnd != IntPtr.Zero)
+			{
+				param += PARAM_STR_NOTIFY_HWND + " " + NotifyHWnd.ToString() + " ";
+			}
+		}
+
+		// --------------------------------------------------------------------
 		// Relaunch または EXE パスを返す
 		// --------------------------------------------------------------------
 		private String ExePath()
@@ -353,13 +368,9 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// ログ書き込み
 		// --------------------------------------------------------------------
-		private void LogMessage(TraceEventType oEventType, String oMessage)
+		private void LogMessage(TraceEventType eventType, String message)
 		{
-			LogWriter?.LogMessage(oEventType, oMessage);
+			LogWriter?.LogMessage(eventType, message);
 		}
-
 	}
-	// public class UpdaterLauncher ___END___
-
 }
-// namespace Shinta ___END___

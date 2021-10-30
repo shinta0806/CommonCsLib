@@ -284,9 +284,12 @@ obsolete
 !JulianDay.cs
 !LinqUtils.cs
 !LogWriter.cs
+!RssManager.cs
+!SerializableSettings.cs
 !ShintaCommon.cs
 !ShintaCommonWindows.cs
 !SimpleTraceListener.cs
+!StringUtils.cs
 !SystemEnvironment.cs
 !UpdaterLauncher.cs
 !WindowsApi.cs

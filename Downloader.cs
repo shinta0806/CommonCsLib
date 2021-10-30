@@ -30,14 +30,13 @@
 // (1.65) | 2021/05/04 (Tue) |   リソースリークを修正。
 // (1.66) | 2021/08/29 (Sun) |   標準のユーザーエージェントを更新。
 //  2.00  | 2021/08/30 (Mon) | 再構築。
+// (2.01) | 2021/10/28 (Thu) |   軽微なリファクタリング。
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -46,8 +45,6 @@ using System.Threading.Tasks;
 
 namespace Shinta
 {
-	//delegate Task<HttpResponseMessage>? CoreHttpDg(String url, Object? option);
-
 	public class Downloader
 	{
 		// ====================================================================
@@ -86,17 +83,11 @@ namespace Shinta
 		// public プロパティー
 		// ====================================================================
 
-		// ダウンロードバッファサイズ［バイト］（この単位でスレッド中止の制御を行うことに注意）
-		//public Int32 DownloadBufferSize { get; set; }
-
 		// ダウンロード時のユーザーエージェント
 		public String UserAgent { get; set; }
 
 		// 終了要求制御
 		public CancellationToken CancellationToken { get; set; }
-
-		// クッキー等を保持
-		//public SocketsHttpHandler? ClientHandler { get; private set; }
 
 		// ====================================================================
 		// public メンバー関数
@@ -158,7 +149,7 @@ namespace Shinta
 		public async Task<HttpResponseMessage> DownloadAsStreamAsync(String url, Stream toStream)
 		{
 			// リクエスト
-			HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+			HttpRequestMessage request = new(HttpMethod.Get, url);
 			AddHeaders(request, url);
 
 			// ダウンロード
@@ -189,7 +180,7 @@ namespace Shinta
 			if (files == null || files.Count == 0)
 			{
 				// リクエストは post パラメーターのみ
-				HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, url);
+				HttpRequestMessage postRequest = new(HttpMethod.Post, url);
 				postRequest.Content = new FormUrlEncodedContent(post.Select(x => new KeyValuePair<String?, String?>(x.Key, x.Value)));
 				AddHeaders(postRequest, url);
 
@@ -223,7 +214,7 @@ namespace Shinta
 			}
 
 			// リクエストは post パラメーターとファイル
-			HttpRequestMessage bothRequest = new HttpRequestMessage(HttpMethod.Post, url);
+			HttpRequestMessage bothRequest = new(HttpMethod.Post, url);
 			bothRequest.Content = multipart;
 			AddHeaders(bothRequest, url);
 
@@ -246,73 +237,12 @@ namespace Shinta
 			return (response, encoding.GetString(memStream.ToArray()));
 		}
 
-#if false
-		// --------------------------------------------------------------------
-		// Post
-		// ＜引数＞ oPost: Name=Value, oFiles: Name=Path
-		// ＜例外＞
-		// --------------------------------------------------------------------
-		public void Post(String url, Dictionary<String, String?> post, Dictionary<String, String>? files = null)
-		{
-			if (files == null || files.Count == 0)
-			{
-				// oPost のみを送信
-				HttpMethod(url, CoreHttpPost, new FormUrlEncodedContent(post.Select(x => new KeyValuePair<String?, String?>(x.Key, x.Value))));
-				return;
-			}
-
-			using MultipartFormDataContent multipart = new();
-
-			// 文字列
-			foreach (KeyValuePair<String, String?> kvp in post)
-			{
-				StringContent stringContent = new(kvp.Value ?? String.Empty);
-				stringContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
-				{
-					Name = kvp.Key,
-				};
-				multipart.Add(stringContent);
-			}
-
-			// ファイル
-			foreach (KeyValuePair<String, String> kvp in files)
-			{
-				StreamContent fileContent = new(File.OpenRead(kvp.Value));
-				fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue(/*"attachment"*/"form-data")
-				{
-					Name = kvp.Key,
-					FileName = Path.GetFileName(kvp.Value),
-				};
-				multipart.Add(fileContent);
-			}
-
-			// POST で送信
-			HttpMethod(url, CoreHttpPostWithFile, multipart);
-		}
-#endif
-
-		// ====================================================================
-		// private 定数
-		// ====================================================================
-
-		// ダウンロードバッファサイズのデフォルト値［バイト］
-		//private const Int32 DOWNLOAD_BUFFER_SIZE_DEFAULT = 100 * 1024;
-
-		// GET リクエストのリトライ時の間隔 [ms]
-		//private const Int32 GET_RETRY_INTERVAL = 5000;
-
-		// GET リクエストのリトライ回数
-		//private const Int32 GET_RETRY_MAX = 3;
-
-		// スレッドスリープの単位時間 [ms]
-		//private const Int32 THREAD_SLEEP_INTERVAL = 100;
-
 		// ====================================================================
 		// private メンバー変数
 		// ====================================================================
 
 		// 使用する http クライアント
-		private HttpClient _httpClient;
+		private readonly HttpClient _httpClient;
 
 		// 外部から指定されなかった場合に使用する http クライアント
 		// 複数インスタンスで使い回す
@@ -330,42 +260,6 @@ namespace Shinta
 			request.Headers.Add("User-Agent", UserAgent);
 			request.Headers.Add("Referer", url);
 		}
-
-#if false
-		// --------------------------------------------------------------------
-		// httpMethod() で使うデリゲート関数：GET 用
-		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage>? CoreHttpGet(String url, Object? option)
-		{
-			return _httpClient?.GetAsync(url);
-		}
-
-		// --------------------------------------------------------------------
-		// httpMethod() で使うデリゲート関数：POST 用
-		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage>? CoreHttpPost(String url, Object? option)
-		{
-			if (option is FormUrlEncodedContent content)
-			{
-				return _httpClient?.PostAsync(url, content);
-			}
-
-			return null;
-		}
-
-		// --------------------------------------------------------------------
-		// httpMethod() で使うデリゲート関数：POST（ファイル送信）用
-		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage>? CoreHttpPostWithFile(String url, Object? option)
-		{
-			if (option is MultipartFormDataContent content)
-			{
-				return _httpClient?.PostAsync(url, content);
-			}
-
-			return null;
-		}
-#endif
 
 		// --------------------------------------------------------------------
 		// ダウンロード（toStream 内にコピー：toStream.Position は末尾になる）
@@ -387,123 +281,5 @@ namespace Shinta
 			responseStream.CopyTo(toStream);
 			return response;
 		}
-
-#if false
-		// --------------------------------------------------------------------
-		// http リクエストを処理する汎用関数
-		// ＜例外＞
-		// --------------------------------------------------------------------
-		private Task<HttpResponseMessage> HttpMethod(String url, CoreHttpDg coreDg, Object? coreDgOption)
-		{
-			String? err = null;
-			Task<HttpResponseMessage>? res = null;
-
-			// クライアントの設定
-			SetClient(url);
-
-			// ダウンロード
-			for (Int32 i = 0; i < GET_RETRY_MAX; i++)
-			{
-				try
-				{
-					// http コアリクエスト（デリゲート）
-					res = coreDg(url, coreDgOption);
-					if (res != null)
-					{
-						res.Wait();
-						ThrowIfCancellationRequested();
-
-						// 成功したら関数から返る
-						if (res.Result.IsSuccessStatusCode)
-						{
-							return res;
-						}
-					}
-				}
-				catch (OperationCanceledException)
-				{
-					// ユーザーからの中止指示の場合は、直ちに再スロー
-					throw;
-				}
-				catch (Exception excep)
-				{
-					// エラーメッセージを一旦設定するが、後のコードでリトライして、結果的に成功することはありえる
-					err = excep.Message;
-				}
-
-				// 失敗した場合
-				if (res != null && res.Result.StatusCode == HttpStatusCode.RequestTimeout)
-				{
-					// タイムアウトなら、一定時間後にリトライする
-					Wait(GET_RETRY_INTERVAL);
-				}
-				else
-				{
-					// 直ちに失敗が確定
-					i = GET_RETRY_MAX;
-				}
-			}
-
-			// リトライしても成功しなかったので、エラー確定
-			throw new Exception(err);
-		}
-#endif
-
-#if false
-		// --------------------------------------------------------------------
-		// http クライアントの設定
-		// --------------------------------------------------------------------
-		private void SetClient(String url)
-		{
-			// ハンドラが作成されていない場合は作成する
-			if (ClientHandler == null)
-			{
-				SocketsHttpHandler socketsHttpHandler = new();
-				socketsHttpHandler.UseCookies = true;
-				ClientHandler = socketsHttpHandler;
-			}
-
-			// クライアントが作成されていない場合は作成する
-			if (_httpClient == null)
-			{
-				_httpClient = new HttpClient(ClientHandler);
-			}
-
-			// リクエストヘッダーを設定
-			_httpClient.DefaultRequestHeaders.Clear();
-			_httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
-			_httpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-			_httpClient.DefaultRequestHeaders.Add("Accept-Language", "ja,en-us;q=0.7,en;q=0.3");
-			_httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache,no-store");
-			_httpClient.DefaultRequestHeaders.Add("Referer", url);
-		}
-#endif
-
-#if false
-		// --------------------------------------------------------------------
-		// 中止指示があったら例外を発生させる
-		// ＜例外＞
-		// --------------------------------------------------------------------
-		private void ThrowIfCancellationRequested()
-		{
-			CancellationToken.ThrowIfCancellationRequested();
-		}
-
-		// --------------------------------------------------------------------
-		// 指定時間 [ms] スレッドを中断
-		// ＜例外＞
-		// --------------------------------------------------------------------
-		private void Wait(Int32 waitMS)
-		{
-			Int32 restTime = 0;
-
-			while (restTime < waitMS)
-			{
-				Thread.Sleep(THREAD_SLEEP_INTERVAL);
-				restTime += THREAD_SLEEP_INTERVAL;
-				ThrowIfCancellationRequested();
-			}
-		}
-#endif
 	}
 }
