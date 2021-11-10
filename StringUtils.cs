@@ -106,7 +106,7 @@ namespace Shinta
 			{
 				pos++;
 			}
-			if (!Double.TryParse(str.Substring(beginPos, pos - beginPos), out Double result))
+			if (!Double.TryParse(str[beginPos..pos], out Double result))
 			{
 				return 0.0;
 			}
@@ -125,7 +125,7 @@ namespace Shinta
 			{
 				pos++;
 			}
-			return str.Substring(beginPos, pos - beginPos);
+			return str[beginPos..pos];
 		}
 	}
 }

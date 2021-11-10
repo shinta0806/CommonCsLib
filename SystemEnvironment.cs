@@ -189,7 +189,7 @@ namespace Shinta
 		{
 			String aVerAndBuild = ManagementValue(WMI_CLASS_OS, "Version");
 
-			if (!Double.TryParse(aVerAndBuild.Substring(0, aVerAndBuild.LastIndexOf(".")), out osVersion))
+			if (!Double.TryParse(aVerAndBuild.AsSpan(0, aVerAndBuild.LastIndexOf(".")), out osVersion))
 			{
 				return false;
 			}
@@ -250,7 +250,7 @@ namespace Shinta
 						}
 						else
 						{
-							family += folderName.Substring(0, periPos);
+							family += folderName[0..periPos];
 						}
 					}
 					logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Family: " + family);

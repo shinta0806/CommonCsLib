@@ -71,7 +71,7 @@ namespace Shinta
 		// アプリのメインウィンドウのハンドル
 		public IntPtr NotifyHWnd { get; set; }
 
-		// ちょちょいと自動更新自身による起動
+		// ちょちょいと自動更新自身による起動かどうか（アプリから呼びだす際は false にしておく）
 		public Boolean SelfLaunch { get; set; }
 
 		// ちょちょいと自動更新の実行ファイルパス
@@ -353,16 +353,21 @@ namespace Shinta
 		}
 
 		// --------------------------------------------------------------------
-		// Relaunch または EXE パスを返す
+		// UpdaterExePath、Relaunch または EXE パスを返す
 		// --------------------------------------------------------------------
 		private String ExePath()
 		{
-			String exePath = Relaunch;
-			if (String.IsNullOrEmpty(exePath))
+			if (!String.IsNullOrEmpty(UpdaterExePath))
 			{
-				exePath = Path.ChangeExtension(Environment.GetCommandLineArgs()[0], Common.FILE_EXT_EXE);
+				return UpdaterExePath;
 			}
-			return exePath;
+
+			if (!String.IsNullOrEmpty(Relaunch))
+			{
+				return Relaunch;
+			}
+
+			return Path.ChangeExtension(Environment.GetCommandLineArgs()[0], Common.FILE_EXT_EXE);
 		}
 
 		// --------------------------------------------------------------------
