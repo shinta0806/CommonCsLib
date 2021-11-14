@@ -253,6 +253,7 @@ namespace Shinta
 			return String.Compare(aSuffixA, aSuffixB, true);
 		}
 
+#if USE_OBSOLETE
 		// --------------------------------------------------------------------
 		// Base64 エンコード済みの暗号化データを復号し、元の文字列を返す
 		// ＜例外＞ Exception
@@ -278,6 +279,7 @@ namespace Shinta
 
 			return Encoding.Unicode.GetString(aDecBytes);
 		}
+#endif
 
 		// --------------------------------------------------------------------
 		// オブジェクトをデシリアライズして読み出し
@@ -304,6 +306,7 @@ namespace Shinta
 			return (T)des;
 		}
 
+#if USE_OBSOLETE
 		// --------------------------------------------------------------------
 		// 文字列を暗号化し、文字列（Base64）で返す
 		// ＜例外＞ Exception
@@ -328,6 +331,7 @@ namespace Shinta
 			// Base64 エンコード
 			return Convert.ToBase64String(aEncBytes);
 		}
+#endif
 
 		// --------------------------------------------------------------------
 		// テンポラリフォルダーを初期化
@@ -685,6 +689,7 @@ namespace Shinta
 		// private メンバー関数
 		// ====================================================================
 
+#if USE_OBSOLETE
 		// --------------------------------------------------------------------
 		// 初期化済みラインダールオブジェクトを返す
 		// EncryptString / DecryptString で使用
@@ -706,6 +711,7 @@ namespace Shinta
 
 			return rijndael;
 		}
+#endif
 
 #if USE_UNSAFE
 		// --------------------------------------------------------------------
