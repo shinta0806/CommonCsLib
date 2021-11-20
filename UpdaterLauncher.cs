@@ -27,11 +27,13 @@
 // (1.14) | 2021/05/28 (Fri) |   null 許容参照型を必須にした。
 // (1.15) | 2021/10/30 (Sat) |   UpdaterExePath プロパティーをサポート。
 // (1.16) | 2021/10/30 (Sat) |   Verbose 時にも NotifyHWnd を渡すようにした。
+//  1.20  | 2021/11/20 (Sat) | LaunchAsync() を作成。
 // ============================================================================
 
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Shinta
 {
@@ -329,6 +331,17 @@ namespace Shinta
 			}
 
 			return true;
+		}
+
+		// --------------------------------------------------------------------
+		// ちょちょいと自動更新を起動
+		// --------------------------------------------------------------------
+		public async Task<Boolean> LaunchAsync(Boolean showError = false)
+		{
+			return await Task.Run(() =>
+			{
+				return Launch(showError);
+			});
 		}
 
 		// ====================================================================

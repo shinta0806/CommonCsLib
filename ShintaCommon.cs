@@ -55,6 +55,7 @@
 //  3.70  | 2021/09/04 (Sat) | TempFolderPath() を作成。
 // (3.71) | 2021/09/04 (Sat) |   null 許容参照型を必須にした。
 //  3.80  | 2021/10/23 (Sat) | ShellExecute() を作成。
+// (3.81) | 2021/11/14 (Sun) |   拡張子を追加。
 // ============================================================================
 
 using System;
@@ -149,6 +150,8 @@ namespace Shinta
 		public const String FILE_EXT_PNG = ".png";
 		public const String FILE_EXT_REG = ".reg";
 		public const String FILE_EXT_SQLITE3 = ".sqlite3";
+		public const String FILE_EXT_SQLITE3_SHM = ".sqlite3-shm";
+		public const String FILE_EXT_SQLITE3_WAL = ".sqlite3-wal";
 		public const String FILE_EXT_TIF = ".tif";
 		public const String FILE_EXT_TIFF = ".tiff";
 		public const String FILE_EXT_TPL = ".tpl";

@@ -17,6 +17,7 @@
 // (1.11) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
 // (1.12) | 2020/03/29 (Sun) |   null 許容参照型の対応強化。
 //  1.20  | 2021/07/11 (Sun) | OwnedWindows を実装。
+// (1.21) | 2021/11/20 (Sat) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
@@ -175,7 +176,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// View 側で Closing された
 		// --------------------------------------------------------------------
-		private void ControlClosing(Object sender, CancelEventArgs cancelEventArgs)
+		private void ControlClosing(Object? sender, CancelEventArgs cancelEventArgs)
 		{
 			if (ClosingCommand == null || !ClosingCommand.CanExecute(null))
 			{

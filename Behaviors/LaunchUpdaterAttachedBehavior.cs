@@ -19,6 +19,7 @@
 // ============================================================================
 
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -134,7 +135,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// ViewModel 側で UpdaterLauncher が変更された
 		// --------------------------------------------------------------------
-		private static void SourceUpdaterLauncherChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
+		private static async void SourceUpdaterLauncherChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
 			if (obj is not Window window)
 			{
@@ -151,7 +152,8 @@ namespace Shinta.Behaviors
 			launcher.NotifyHWnd = helper.Handle;
 
 			// ちょちょいと自動更新を起動
-			if (!launcher.Launch(launcher.ForceShow))
+			Boolean launched = await launcher.LaunchAsync(launcher.ForceShow);
+			if (!launched)
 			{
 				WMUpdaterUIDisplayed(launcher.NotifyHWnd);
 			}

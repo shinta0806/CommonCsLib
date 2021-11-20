@@ -209,7 +209,7 @@ namespace Shinta.Behaviors
 			}
 			StringBuilder driveRoot = new();
 			WindowsApi.SHGetPathFromIDList((IntPtr)shNotifyStruct.dwItem1, driveRoot);
-			String driveLetter = driveRoot.ToString().Substring(0, 2);
+			String driveLetter = driveRoot.ToString()[..2];
 
 			// 着脱情報を引数としてコマンドを実行
 			DeviceChangeInfo info = new();
