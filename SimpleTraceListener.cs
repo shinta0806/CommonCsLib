@@ -134,7 +134,7 @@ namespace Shinta
 				message = message.Replace("\n", BR_SYMBOL);
 			}
 			contents = DateTime.Now.ToString("yyyy/MM/dd,HH:mm:ss") + "," + Environment.ProcessId.ToString() + ",N"
-					+ WindowsApi.GetCurrentThreadId() + "/M" + Thread.CurrentThread.ManagedThreadId.ToString() + "," + source + "," + eventTypeString + "," + _quoteString + message + _quoteString;
+					+ WindowsApi.GetCurrentThreadId() + "/M" + Environment.CurrentManagedThreadId.ToString() + "," + source + "," + eventTypeString + "," + _quoteString + message + _quoteString;
 
 			// 書き込み（最大 MAX_WRITE_TRY 回試行する）
 			for (Int32 i = 0; i < MAX_WRITE_TRY; i++)
