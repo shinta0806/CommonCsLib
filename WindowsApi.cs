@@ -37,10 +37,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 
-#if !NULLABLE_DISABLED
-#nullable enable
-#endif
-
 namespace Shinta
 {
 	// ====================================================================
@@ -536,8 +532,5 @@ namespace Shinta
 		[return: MarshalAs(UnmanagedType.Bool)]
 		internal static extern Boolean ShowWindowAsync(IntPtr oHWnd, Int32 oCmdShow);
 	}
-	// public class WindowsApi ___END___
-
 }
-// namespace Shinta ___END___
 
