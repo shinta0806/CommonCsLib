@@ -151,7 +151,6 @@ namespace Shinta.Behaviors
 			Double newTop = AssociatedObject.Owner.Top + delta;
 
 			// ディスプレイからはみ出さないように調整
-			// ToDo: オーナーウィンドウと同じディスプレイからはみ出さないように調整
 			if (newLeft + AssociatedObject.ActualWidth > SystemParameters.VirtualScreenWidth)
 			{
 				newLeft = AssociatedObject.Owner.Left;
