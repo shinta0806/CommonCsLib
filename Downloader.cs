@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // ファイルをダウンロードするクラス（ログイン用に POST 機能あり）
-// Copyright (C) 2014-2021 by SHINTA
+// Copyright (C) 2014-2022 by SHINTA
 // 
 // ============================================================================
 
@@ -31,6 +31,7 @@
 // (1.66) | 2021/08/29 (Sun) |   標準のユーザーエージェントを更新。
 //  2.00  | 2021/08/30 (Mon) | 再構築。
 // (2.01) | 2021/10/28 (Thu) |   軽微なリファクタリング。
+// (2.02) | 2022/01/09 (Sun) |   DefaultUserAgent() を改善。
 // ============================================================================
 
 using System;
@@ -93,7 +94,6 @@ namespace Shinta
 		// public メンバー関数
 		// ====================================================================
 
-#pragma warning disable CA1822
 		// --------------------------------------------------------------------
 		// 標準のユーザーエージェント
 		// --------------------------------------------------------------------
@@ -101,13 +101,8 @@ namespace Shinta
 		{
 			// Firefox 30.0 の UA：Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0
 			// Firefox 91.0 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0
-			String ua = "Mozilla/5.0 (Windows NT";
-			SystemEnvironment se = new();
-			if (se.GetOSVersion(out Double osVersion))
-			{
-				ua += " " + osVersion.ToString();
-			}
-			ua += "; ";
+			Version osVersion = Environment.OSVersion.Version;
+			String ua = "Mozilla/5.0 (Windows NT " + osVersion.Major.ToString() + "." + osVersion.Minor.ToString() + "; ";
 
 			// OS が 64 ビットの場合は情報を付加（32 ビットの場合は何も付かない）
 			if (Environment.Is64BitOperatingSystem)
@@ -128,7 +123,6 @@ namespace Shinta
 
 			return ua;
 		}
-#pragma warning restore CA1822
 
 		// --------------------------------------------------------------------
 		// ダウンロード（ファイルとして保存）

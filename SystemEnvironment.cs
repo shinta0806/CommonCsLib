@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // 動作環境を取得する
-// Copyright (C) 2014-2020 by SHINTA
+// Copyright (C) 2014-2022 by SHINTA
 // 
 // ============================================================================
 
@@ -24,9 +24,8 @@
 // (1.34) | 2020/06/27 (Sat) |   null 許容参照型の対応強化。
 // (1.35) | 2020/06/27 (Sat) |   GetClrVersionName() の強化。
 // (1.36) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
+// (1.37) | 2022/01/09 (Sun) |   LogEnvironment() を改善。
 // ============================================================================
-
-using Microsoft.Win32;
 
 using System;
 using System.Diagnostics;
@@ -38,11 +37,11 @@ namespace Shinta
 	public class SystemEnvironment
 	{
 		// ====================================================================
-		// コンストラクター・デストラクター
+		// コンストラクター
 		// ====================================================================
 
 		// --------------------------------------------------------------------
-		// コンストラクター
+		// メインコンストラクター
 		// --------------------------------------------------------------------
 		public SystemEnvironment()
 		{
@@ -59,141 +58,13 @@ namespace Shinta
 		// public メンバー関数
 		// ====================================================================
 
-#pragma warning disable CA1822
-		// --------------------------------------------------------------------
-		// CLR バージョン名の取得（4.5 以降のみ対応）
-		// https://docs.microsoft.com/ja-jp/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed#net_d
-		// --------------------------------------------------------------------
-		public Boolean GetClrVersionName(out String clrVersion)
-		{
-			if (!GetClrVersionRegistryNumber(out Int32 registry))
-			{
-				clrVersion = "4.5 or ealier";
-				return false;
-			}
-
-			if (registry >= 528209)
-			{
-				clrVersion = "4.8 or later";
-			}
-			else if (registry >= 461808)
-			{
-				clrVersion = "4.7.2";
-			}
-			else if (registry >= 461308)
-			{
-				clrVersion = "4.7.1";
-			}
-			else if (registry >= 460798)
-			{
-				clrVersion = "4.7";
-			}
-			else if (registry >= 394802)
-			{
-				clrVersion = "4.6.2";
-			}
-			else if (registry >= 394254)
-			{
-				clrVersion = "4.6.1";
-			}
-			else if (registry >= 393295)
-			{
-				clrVersion = "4.6";
-			}
-			else if (registry >= 379893)
-			{
-				clrVersion = "4.5.2";
-			}
-			else if (registry >= 378675)
-			{
-				clrVersion = "4.5.1";
-			}
-			else if (registry >= 378389)
-			{
-				clrVersion = "4.5";
-			}
-			else
-			{
-				// 仕様上はここに到達することはない
-				clrVersion = "Unknown";
-				return false;
-			}
-			return true;
-		}
-
-		// --------------------------------------------------------------------
-		// CLR バージョンレジストリ番号の取得（4.5 以降のみ対応）
-		// https://docs.microsoft.com/ja-jp/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed#net_d
-		// --------------------------------------------------------------------
-		public Boolean GetClrVersionRegistryNumber(out Int32 clrVersion)
-		{
-			clrVersion = 0;
-			using RegistryKey? key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\");
-			if (key == null)
-			{
-				return false;
-			}
-			Object? value = key.GetValue("Release");
-			if (value == null)
-			{
-				return false;
-			}
-
-			clrVersion = (Int32)value;
-			return true;
-		}
-
 		// --------------------------------------------------------------------
 		// CPU 名の取得
+		// ＜返値＞ ベンダー文字列, CPU 名文字列
 		// --------------------------------------------------------------------
-		public Boolean GetCpuBrandName(out String vendorIdString, out String brandName)
+		public (String? vendorIdString, String? brandName) GetCpuBrandName()
 		{
-			vendorIdString = ManagementValue(WMI_CLASS_PROCESSOR, "Manufacturer");
-			brandName = ManagementValue(WMI_CLASS_PROCESSOR, "Name");
-			return true;
-		}
-
-		// --------------------------------------------------------------------
-		// 論理プロセッサ数（スレッド数）の取得
-		// --------------------------------------------------------------------
-		public Boolean GetNumLogicalProcessors(out Int32 numProcessors)
-		{
-			if (!Int32.TryParse(ManagementValue(WMI_CLASS_PROCESSOR, "NumberOfLogicalProcessors"), out numProcessors))
-			{
-				return false;
-			}
-			return true;
-		}
-
-		// --------------------------------------------------------------------
-		// OS 名の取得
-		// --------------------------------------------------------------------
-		public Boolean GetOSName(out String osName, out Int32 osBit)
-		{
-			osName = ManagementValue(WMI_CLASS_OS, "Caption");
-			if (Environment.Is64BitOperatingSystem)
-			{
-				osBit = 64;
-			}
-			else
-			{
-				osBit = 32;
-			}
-			return true;
-		}
-
-		// --------------------------------------------------------------------
-		// OS バージョン番号の取得
-		// --------------------------------------------------------------------
-		public Boolean GetOSVersion(out Double osVersion)
-		{
-			String aVerAndBuild = ManagementValue(WMI_CLASS_OS, "Version");
-
-			if (!Double.TryParse(aVerAndBuild.AsSpan(0, aVerAndBuild.LastIndexOf(".")), out osVersion))
-			{
-				return false;
-			}
-			return true;
+			return (ManagementValue(WMI_CLASS_PROCESSOR, "Manufacturer"), ManagementValue(WMI_CLASS_PROCESSOR, "Name"));
 		}
 
 		// --------------------------------------------------------------------
@@ -210,21 +81,25 @@ namespace Shinta
 			try
 			{
 				// CPU 情報
-				GetCpuBrandName(out String cpuVendor, out String cpuName);
-				GetNumLogicalProcessors(out Int32 numProcessors);
-				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CPU: " + cpuVendor
-						+ " / " + cpuName + " / " + numProcessors + " スレッド");
+				(String? cpuVendor, String? cpuName) = GetCpuBrandName();
+				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CPU: " + cpuVendor + " / " + cpuName
+						+ " / " + Environment.ProcessorCount + " スレッド");
 
 				// OS 情報
-				GetOSName(out String osName, out Int32 osBit);
-				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "OS: " + osName
+				Int32 osBit;
+				if (Environment.Is64BitOperatingSystem)
+				{
+					osBit = 64;
+				}
+				else
+				{
+					osBit = 32;
+				}
+				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "OS: " + Environment.OSVersion.VersionString
 						+ "（" + osBit.ToString() + " ビット）");
 
 				// .NET CLR 情報
-				GetClrVersionRegistryNumber(out Int32 clrVerNum);
-				GetClrVersionName(out String clrVerName);
-				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CLR: " + Environment.Version.ToString()
-						+ " / " + clrVerNum.ToString() + " (" + clrVerName + ")");
+				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CLR: " + Environment.Version.ToString());
 
 				// 自身のパス
 				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Path: " + Environment.GetCommandLineArgs()[0]);
@@ -267,7 +142,6 @@ namespace Shinta
 
 			return success;
 		}
-#pragma warning restore CA1822
 
 		// ====================================================================
 		// private 定数
@@ -280,26 +154,32 @@ namespace Shinta
 		// private static メンバー関数
 		// ====================================================================
 
+#pragma warning disable CA1822
 		// --------------------------------------------------------------------
 		// 指定された情報を取得
+		// ＜返値＞ 取得できなかった場合は null
 		// --------------------------------------------------------------------
-		private static String ManagementValue(String className, String propertyName)
+		private static String? ManagementValue(String className, String propertyName)
 		{
-			ManagementObjectSearcher searcher = new("SELECT " + propertyName + " FROM " + className);
-
-			// クエリの結果が 1 つのみであることを前提としている
-			foreach (ManagementObject obj in searcher.Get())
+			try
 			{
-				foreach (PropertyData property in obj.Properties)
+				ManagementObjectSearcher searcher = new("SELECT " + propertyName + " FROM " + className);
+
+				// クエリの結果が 1 つのみであることを前提としている
+				foreach (ManagementObject obj in searcher.Get())
 				{
-					return property.Value.ToString() ?? String.Empty;
+					foreach (PropertyData property in obj.Properties)
+					{
+						return property.Value.ToString();
+					}
 				}
 			}
-			return String.Empty;
+			catch (Exception)
+			{
+				// MSIX の x64 化がうまくいっていないと ManagementObjectSearcher を生成できない
+			}
+			return null;
 		}
+#pragma warning restore CA1822
 	}
-	// public class SystemEnvironment ___END___
-
 }
-// namespace Shinta ___END___
-
