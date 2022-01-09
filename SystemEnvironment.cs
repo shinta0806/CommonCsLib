@@ -25,6 +25,7 @@
 // (1.35) | 2020/06/27 (Sat) |   GetClrVersionName() の強化。
 // (1.36) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // (1.37) | 2022/01/09 (Sun) |   LogEnvironment() を改善。
+// (1.38) | 2022/01/10 (Mon) |   軽微なリファクタリング。
 // ============================================================================
 
 using System;
@@ -58,6 +59,7 @@ namespace Shinta
 		// public メンバー関数
 		// ====================================================================
 
+#pragma warning disable CA1822
 		// --------------------------------------------------------------------
 		// CPU 名の取得
 		// ＜返値＞ ベンダー文字列, CPU 名文字列
@@ -66,6 +68,7 @@ namespace Shinta
 		{
 			return (ManagementValue(WMI_CLASS_PROCESSOR, "Manufacturer"), ManagementValue(WMI_CLASS_PROCESSOR, "Name"));
 		}
+#pragma warning restore CA1822
 
 		// --------------------------------------------------------------------
 		// 環境をログに記録
@@ -154,7 +157,6 @@ namespace Shinta
 		// private static メンバー関数
 		// ====================================================================
 
-#pragma warning disable CA1822
 		// --------------------------------------------------------------------
 		// 指定された情報を取得
 		// ＜返値＞ 取得できなかった場合は null
@@ -180,6 +182,5 @@ namespace Shinta
 			}
 			return null;
 		}
-#pragma warning restore CA1822
 	}
 }
