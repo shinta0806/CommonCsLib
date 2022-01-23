@@ -26,6 +26,7 @@
 // (1.36) | 2020/11/15 (Sun) |   null 許容参照型の対応強化。
 // (1.37) | 2022/01/09 (Sun) |   LogEnvironment() を改善。
 // (1.38) | 2022/01/10 (Mon) |   軽微なリファクタリング。
+// (1.39) | 2022/01/23 (Sun) |   LOG_ITEM_NAME_PATH を定義。
 // ============================================================================
 
 using System;
@@ -54,6 +55,9 @@ namespace Shinta
 
 		// ログの動作環境表記
 		public const String LOG_PREFIX_SYSTEM_ENV = "［動作環境］";
+
+		// ログ項目名
+		public const String LOG_ITEM_NAME_PATH = "Path: ";
 
 		// ====================================================================
 		// public メンバー関数
@@ -105,7 +109,7 @@ namespace Shinta
 				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "CLR: " + Environment.Version.ToString());
 
 				// 自身のパス
-				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + "Path: " + Environment.GetCommandLineArgs()[0]);
+				logWriter.LogMessage(TraceEventType.Information, LOG_PREFIX_SYSTEM_ENV + LOG_ITEM_NAME_PATH + Environment.GetCommandLineArgs()[0]);
 
 				// ファミリー
 				try

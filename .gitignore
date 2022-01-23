@@ -280,8 +280,10 @@ obsolete
 
 !CsvManager.cs
 !Downloader.cs
+!ExecutableHistory.cs
 !Haiku.cs
 !JulianDay.cs
+!LatestInfoManager.cs
 !LinqUtils.cs
 !LogWriter.cs
 !RssManager.cs
