@@ -285,6 +285,23 @@ namespace Shinta
 #endif
 
 		// --------------------------------------------------------------------
+		// テンポラリフォルダーを削除
+		// --------------------------------------------------------------------
+		public static Boolean DeleteTempFolder()
+		{
+			Boolean result = false;
+			try
+			{
+				Directory.Delete(TempFolderPath(), true);
+				result = true;
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
+		// --------------------------------------------------------------------
 		// オブジェクトをデシリアライズして読み出し
 		// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
 		// ＜例外＞ Exception
@@ -338,19 +355,28 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// テンポラリフォルダーを初期化
-		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
-		public static void InitializeTempFolder()
+		public static Boolean InitializeTempFolder()
 		{
-			String tempFolderPath = Common.TempFolderPath();
-			if (Directory.Exists(tempFolderPath))
+			Boolean result = false;
+			try
 			{
-				// 偶然以前と同じ PID となり、かつ、以前異常終了してテンポラリフォルダーが削除されていない場合に削除
-				Directory.Delete(tempFolderPath, true);
-			}
+				String tempFolderPath = Common.TempFolderPath();
+				if (Directory.Exists(tempFolderPath))
+				{
+					// 偶然以前と同じ PID となり、かつ、以前異常終了してテンポラリフォルダーが削除されていない場合に削除
+					Directory.Delete(tempFolderPath, true);
+				}
 
-			// 空のフォルダーを作成
-			Directory.CreateDirectory(tempFolderPath);
+				// 空のフォルダーを作成
+				Directory.CreateDirectory(tempFolderPath);
+
+				result = true;
+			}
+			catch
+			{
+			}
+			return result;
 		}
 
 		// --------------------------------------------------------------------
