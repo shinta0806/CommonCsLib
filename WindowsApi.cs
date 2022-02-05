@@ -30,6 +30,8 @@
 //  1.18  | 2021/03/06 (Sat) |   DllImport 属性の関数のアクセスレベルを public から internal に変更。
 //  1.19  | 2021/03/06 (Sat) |   文字列を引数とする関数に CharSet.Unicode を指定。
 //  1.20  | 2021/03/27 (Sat) | GetVolumeInformation() を追加。
+//  1.21  | 2022/02/02 (Wed) |   EnumDisplayMonitors() を追加。
+//  1.22  | 2022/02/05 (Sat) |   GetWindowRect() を追加。
 // ============================================================================
 
 using System;
@@ -240,6 +242,12 @@ namespace Shinta
 	public class WindowsApi
 	{
 		// ====================================================================
+		// デリゲート
+		// ====================================================================
+
+		internal delegate Boolean EnumMonitorsDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+
+		// ====================================================================
 		// public 定数
 		// ====================================================================
 
@@ -316,6 +324,18 @@ namespace Shinta
 			public UInt32 dbcv_reserved;
 			public UInt32 dbcv_unitmask;
 			public UInt16 dbcv_flags;
+		}
+
+		// --------------------------------------------------------------------
+		// RECT
+		// --------------------------------------------------------------------
+		[StructLayout(LayoutKind.Sequential)]
+		public struct RECT
+		{
+			public Int32 left;
+			public Int32 top;
+			public Int32 right;
+			public Int32 bottom;
 		}
 
 		// --------------------------------------------------------------------
@@ -399,6 +419,13 @@ namespace Shinta
 		internal static extern Boolean DeleteFile(String fileName);
 
 		// --------------------------------------------------------------------
+		// EnumDisplayMonitors
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		internal static extern Boolean EnumDisplayMonitors(IntPtr hdc, IntPtr clip, EnumMonitorsDelegate lpfnEnum, IntPtr dwData);
+
+		// --------------------------------------------------------------------
 		// FindWindow
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
@@ -447,6 +474,13 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		internal static extern IntPtr GetWindowLong(IntPtr oHWnd, Int32 oIndex);
+
+		// --------------------------------------------------------------------
+		// GetWindowRect
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		internal static extern Boolean GetWindowRect(IntPtr hwnd, out RECT lpRect);
 
 		// --------------------------------------------------------------------
 		// GetWindowText

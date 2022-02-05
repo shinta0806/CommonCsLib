@@ -171,6 +171,13 @@ namespace Shinta
 		public const Int32 CODE_PAGE_UTF_16_BE = 1201;
 
 		// --------------------------------------------------------------------
+		// MessageKey
+		// --------------------------------------------------------------------
+
+		// ウィンドウを閉じる
+		public const String MESSAGE_KEY_WINDOW_CLOSE = "Close";
+
+		// --------------------------------------------------------------------
 		// その他
 		// --------------------------------------------------------------------
 
@@ -401,43 +408,6 @@ namespace Shinta
 				}
 			}
 			return keyValuePairs;
-		}
-
-		// --------------------------------------------------------------------
-		// basePath を基準とした relativePath の絶対パスを取得
-		// ＜返値＞ 絶対パス
-		// ＜例外＞ Exception
-		// --------------------------------------------------------------------
-		public static String MakeAbsolutePath(String? basePath, String? relativePath)
-		{
-			if (basePath == null)
-			{
-				basePath = String.Empty;
-			}
-			if (String.IsNullOrEmpty(relativePath))
-			{
-				return basePath;
-			}
-
-			// basePath の末尾が '\\' 1 つでないとうまく動作しない
-			if (String.IsNullOrEmpty(basePath) || basePath[^1] != '\\')
-			{
-				basePath += "\\";
-			}
-
-			// Uri クラスのコンストラクターが勝手にデコードするので、予め "%" を "%25" にしておく
-			basePath = basePath.Replace("%", "%25");
-			relativePath = relativePath.Replace("%", "%25");
-
-			// 絶対パス
-			Uri baseUri = new(basePath);
-			Uri absoluteUri = new(baseUri, relativePath);
-			String absolutePath = absoluteUri.LocalPath;
-
-			// "%25" を "%" に戻す
-			absolutePath = absolutePath.Replace("%25", "%");
-
-			return absolutePath;
 		}
 
 		// --------------------------------------------------------------------

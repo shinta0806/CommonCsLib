@@ -102,16 +102,16 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// ログ書き込みのみ（UI には表示しない）
 		// --------------------------------------------------------------------
-		public void LogMessage(TraceEventType oEventType, String oMessage)
+		public void LogMessage(TraceEventType oEventType, String message)
 		{
 			// メッセージが空の場合は何もしない
-			if (String.IsNullOrEmpty(oMessage))
+			if (String.IsNullOrEmpty(message))
 			{
 				return;
 			}
 
 			// ログファイルに記録
-			_traceSource.TraceEvent(oEventType, 0, oMessage);
+			_traceSource.TraceEvent(oEventType, 0, message);
 		}
 
 		// --------------------------------------------------------------------

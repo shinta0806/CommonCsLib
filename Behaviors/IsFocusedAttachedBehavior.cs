@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // IsFocused 添付ビヘイビア
-// Copyright (C) 2019 by SHINTA
+// Copyright (C) 2019-2022 by SHINTA
 // 
 // ============================================================================
 
@@ -16,45 +16,35 @@
 // ----------------------------------------------------------------------------
 //  1.00  | 2019/06/24 (Mon) | オリジナルバージョン。
 // (1.01) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.02) | 2022/02/05 (Sat) |   null 許容参照型の対応強化。
 // ============================================================================
 
 using System;
 using System.Windows;
-
-#nullable enable
 
 namespace Shinta.Behaviors
 {
 	public class IsFocusedAttachedBehavior
 	{
 		// ====================================================================
-		// public メンバー変数
+		// public プロパティー
 		// ====================================================================
 
-		// IsFocused 添付プロパティー
+		#region IsFocused 添付プロパティー
 		public static readonly DependencyProperty IsFocusedProperty =
 				DependencyProperty.RegisterAttached("IsFocused", typeof(Boolean), typeof(IsFocusedAttachedBehavior),
 				new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, SourceIsFocusedChanged));
 
-		// ====================================================================
-		// public メンバー関数
-		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// IsFocused 添付プロパティー GET
-		// --------------------------------------------------------------------
-		public static Boolean GetIsFocused(DependencyObject oObject)
+		public static Boolean GetIsFocused(DependencyObject obj)
 		{
-			return (Boolean)oObject.GetValue(IsFocusedProperty);
+			return (Boolean)obj.GetValue(IsFocusedProperty);
 		}
 
-		// --------------------------------------------------------------------
-		// IsFocused 添付プロパティー SET
-		// --------------------------------------------------------------------
-		public static void SetIsFocused(DependencyObject oObject, Boolean oValue)
+		public static void SetIsFocused(DependencyObject obj, Boolean value)
 		{
-			oObject.SetValue(IsFocusedProperty, oValue);
+			obj.SetValue(IsFocusedProperty, value);
 		}
+		#endregion
 
 		// ====================================================================
 		// private メンバー関数
@@ -63,18 +53,19 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// ViewModel 側で IsFocused が変更された
 		// --------------------------------------------------------------------
-		private static void SourceIsFocusedChanged(DependencyObject oObject, DependencyPropertyChangedEventArgs oArgs)
+		private static void SourceIsFocusedChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
-			if ((Boolean)oArgs.NewValue)
+			if ((Boolean)args.NewValue)
 			{
-				UIElement? aElement = oObject as UIElement;
-				aElement?.Focus();
+				if (obj is UIElement element)
+				{
+					element.Focus();
+				}
 
 				// 再度フォーカスを当てる際にイベント駆動するように false にしておく
-				SetIsFocused(oObject, false);
+				SetIsFocused(obj, false);
 			}
 		}
 	}
-	// public class IsFocusedAttachedBehavior ___END___
 }
-// namespace Shinta.Behaviors ___END___
+
