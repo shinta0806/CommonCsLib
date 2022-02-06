@@ -16,12 +16,12 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2022/02/06 (Sun) | 作成開始。
 //  1.00  | 2022/02/06 (Sun) | オリジナルバージョン。
+// (1.01) | 2022/02/06 (Sun) |   GetScaledMonitorRects() を作成。
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Windows;
 
 namespace Shinta
@@ -54,7 +54,7 @@ namespace Shinta
 		}
 
 		// --------------------------------------------------------------------
-		// マルチモニター環境で各モニターの領域を取得（各ディスプレイの拡大率に合わせて Width と Height をスケーリング）
+		// マルチモニター環境で各モニターの領域を取得（各ディスプレイの拡大率に合わせてスケーリング）
 		// --------------------------------------------------------------------
 		public List<Rect> GetScaledMonitorRects()
 		{
@@ -66,15 +66,12 @@ namespace Shinta
 			{
 				if (WindowsApi.FAILED(WindowsApi.GetDpiForMonitor(_monitorHandles[i], MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out UInt32 dpiX, out UInt32 dpiY)))
 				{
-#if DEBUG
-					MessageBox.Show("GetScaledMonitorRects() GetDpiForMonitor() failed: " + i);
-#endif
 					continue;
 				}
 
 				Double scaleX = Common.DEFAULT_DPI / dpiX;
 				Double scaleY = Common.DEFAULT_DPI / dpiY;
-				Rect rect = new Rect(_monitorRawRects[i].Left, _monitorRawRects[i].Top, _monitorRawRects[i].Width * scaleX, _monitorRawRects[i].Height * scaleY);
+				Rect rect = new Rect(_monitorRawRects[i].Left * scaleX, _monitorRawRects[i].Top * scaleY, _monitorRawRects[i].Width * scaleX, _monitorRawRects[i].Height * scaleY);
 				_monitorRawRects[i] = rect;
 			}
 			return _monitorRawRects;
