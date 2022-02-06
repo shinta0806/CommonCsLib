@@ -11,6 +11,7 @@
 //  -.--  | 2021/03/28 (Sun) | 作成開始。
 //  1.00  | 2021/03/28 (Sun) | ShintaCommon より移管。
 // (1.01) | 2022/02/02 (Wed) |   GetMonitorRects() を作成。
+// (1.02) | 2022/02/06 (Sun) |   GetMonitorRects() を廃止。
 // ============================================================================
 
 using System;
@@ -151,44 +152,11 @@ namespace Shinta
 			return true;
 		}
 
-		// --------------------------------------------------------------------
-		// マルチモニター環境で各モニターの領域を取得
-		// スレッドセーフではないことに注意
-		// --------------------------------------------------------------------
-		public static List<Rect> GetMonitorRects()
-		{
-			_monitorRects = new();
-			WindowsApi.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, GetMonitorRectsCallback, IntPtr.Zero);
-			return _monitorRects;
-		}
-
 		// ====================================================================
 		// private 定数
 		// ====================================================================
 
 		private const String STREAM_NAME_ZONE_ID = ":Zone.Identifier";
-
-		// ====================================================================
-		// private 変数
-		// ====================================================================
-
-		// GetMonitorRects() 用
-		private static List<Rect>? _monitorRects;
-
-		// ====================================================================
-		// private 関数
-		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// マルチモニター環境で各モニターの領域を取得（コールバック）
-		// --------------------------------------------------------------------
-		private static Boolean GetMonitorRectsCallback(IntPtr hMonitor, IntPtr hdcMonitor, ref WindowsApi.RECT lprcMonitor, IntPtr dwData)
-		{
-			Debug.Assert(_monitorRects != null, "GetMonitorRectsCallback() _monitorRects not allocated");
-			Rect rect = new Rect(lprcMonitor.left, lprcMonitor.top, lprcMonitor.right - lprcMonitor.left, lprcMonitor.bottom - lprcMonitor.top);
-			_monitorRects.Add(rect);
-			return true;
-		}
 	}
 }
 

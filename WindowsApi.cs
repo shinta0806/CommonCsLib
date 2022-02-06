@@ -32,6 +32,8 @@
 //  1.20  | 2021/03/27 (Sat) | GetVolumeInformation() を追加。
 //  1.21  | 2022/02/02 (Wed) |   EnumDisplayMonitors() を追加。
 //  1.22  | 2022/02/05 (Sat) |   GetWindowRect() を追加。
+//  1.23  | 2022/02/06 (Sun) |   GetDpiForMonitor() を追加。
+//  1.24  | 2022/02/06 (Sun) |   MoveWindow() を追加。
 // ============================================================================
 
 using System;
@@ -138,6 +140,17 @@ namespace Shinta
 		VFW_E_NO_CLOCK = unchecked((Int32)0x80040213),
 		VFW_E_NOT_STOPPED = unchecked((Int32)0x80040224),
 		VFW_E_TYPE_NOT_ACCEPTED = unchecked((Int32)0x8004022A),
+	}
+
+	// --------------------------------------------------------------------
+	// MONITOR_DPI_TYPE
+	// --------------------------------------------------------------------
+	public enum MONITOR_DPI_TYPE
+	{
+		MDT_EFFECTIVE_DPI = 0,
+		MDT_ANGULAR_DPI = 1,
+		MDT_RAW_DPI = 2,
+		MDT_DEFAULT
 	}
 
 	// --------------------------------------------------------------------
@@ -278,6 +291,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public const String FILE_NAME_KERNEL32_DLL = "kernel32.dll";
 		public const String FILE_NAME_OLE32_DLL = "ole32.dll";
+		public const String FILE_NAME_SHCORE_DLL = "SHCore.dll";
 		public const String FILE_NAME_SHELL32_DLL = "shell32.dll";
 		public const String FILE_NAME_USER32_DLL = "user32.dll";
 
@@ -450,6 +464,12 @@ namespace Shinta
 		internal static extern IntPtr GetCurrentThread();
 
 		// --------------------------------------------------------------------
+		// GetDpiForMonitor
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_SHCORE_DLL)]
+		internal static extern HRESULT GetDpiForMonitor(IntPtr hmonitor, MONITOR_DPI_TYPE dpiType, out UInt32 dpiX, out UInt32 dpiY);
+
+		// --------------------------------------------------------------------
 		// GetForegroundWindow
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
@@ -500,6 +520,13 @@ namespace Shinta
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		internal static extern Boolean IsIconic(IntPtr oHWnd);
+
+		// --------------------------------------------------------------------
+		// IsIconic
+		// --------------------------------------------------------------------
+		[DllImport(FILE_NAME_USER32_DLL)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		internal static extern Boolean MoveWindow(IntPtr hWnd, Int32 x, Int32 y, Int32 width, Int32 height, Boolean repaint);
 
 		// --------------------------------------------------------------------
 		// PostMessage

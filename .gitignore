@@ -277,6 +277,7 @@ obsolete
 # Add needed C# files
 
 !Behaviors/*.cs
+!ViewModels/*.cs
 
 !CsvManager.cs
 !Downloader.cs
@@ -286,6 +287,7 @@ obsolete
 !LatestInfoManager.cs
 !LinqUtils.cs
 !LogWriter.cs
+!MonitorManager.cs
 !RssManager.cs
 !SerializableSettings.cs
 !ShintaCommon.cs
