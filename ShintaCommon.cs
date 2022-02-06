@@ -190,6 +190,9 @@ namespace Shinta
 		// TraceSource のデフォルトリスナー
 		public const String TRACE_SOURCE_DEFAULT_LISTENER_NAME = "Default";
 
+		// DPI 標準値
+		public const Double DEFAULT_DPI = 96.0;
+
 		// ====================================================================
 		// public メンバー関数
 		// ====================================================================

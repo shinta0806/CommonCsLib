@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 
 namespace Shinta
@@ -43,24 +44,39 @@ namespace Shinta
 		// ====================================================================
 
 		// --------------------------------------------------------------------
-		// マルチモニター環境で各モニターの領域を取得
+		// マルチモニター環境で各モニターの領域を取得（API 値のままスケーリングしない）
 		// --------------------------------------------------------------------
-		public List<Rect> GetMonitorRects()
+		public List<Rect> GetRawMonitorRects()
 		{
-			_monitorRawRects = new();
-			_monitorHandles = new();
-			WindowsApi.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, GetMonitorRectsCallback, IntPtr.Zero);
-			Debug.Assert(_monitorRawRects.Count == _monitorHandles.Count, "GetMonitorRects() bad list counts");
+			GetMonitorRectsCore();
+			Debug.Assert(_monitorRawRects != null, "GetRawMonitorRects() _monitorRawRects null");
+			return _monitorRawRects;
+		}
 
-			// High DPI 換算
+		// --------------------------------------------------------------------
+		// マルチモニター環境で各モニターの領域を取得（各ディスプレイの拡大率に合わせて Width と Height をスケーリング）
+		// --------------------------------------------------------------------
+		public List<Rect> GetScaledMonitorRects()
+		{
+			GetMonitorRectsCore();
+			Debug.Assert(_monitorRawRects != null, "GetScaledMonitorRects() _monitorRawRects null");
+			Debug.Assert(_monitorHandles != null, "GetScaledMonitorRects() _monitorHandles null");
+
 			for (Int32 i = 0; i < _monitorRawRects.Count; i++)
 			{
-				WindowsApi.GetDpiForMonitor(_monitorHandles[i], MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out UInt32 dpiX, out UInt32 dpiY);
-#if DEBUGz
-				MessageBox.Show("GetMonitorRects() " + i + ": " + dpiX + ", " + dpiY);
+				if (WindowsApi.FAILED(WindowsApi.GetDpiForMonitor(_monitorHandles[i], MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out UInt32 dpiX, out UInt32 dpiY)))
+				{
+#if DEBUG
+					MessageBox.Show("GetScaledMonitorRects() GetDpiForMonitor() failed: " + i);
 #endif
-			}
+					continue;
+				}
 
+				Double scaleX = Common.DEFAULT_DPI / dpiX;
+				Double scaleY = Common.DEFAULT_DPI / dpiY;
+				Rect rect = new Rect(_monitorRawRects[i].Left, _monitorRawRects[i].Top, _monitorRawRects[i].Width * scaleX, _monitorRawRects[i].Height * scaleY);
+				_monitorRawRects[i] = rect;
+			}
 			return _monitorRawRects;
 		}
 
@@ -89,6 +105,17 @@ namespace Shinta
 			_monitorRawRects.Add(rect);
 			_monitorHandles.Add(hMonitor);
 			return true;
+		}
+
+		// --------------------------------------------------------------------
+		// マルチモニター環境で各モニターの領域を取得（基本部分）
+		// --------------------------------------------------------------------
+		private void GetMonitorRectsCore()
+		{
+			_monitorRawRects = new();
+			_monitorHandles = new();
+			WindowsApi.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, GetMonitorRectsCallback, IntPtr.Zero);
+			Debug.Assert(_monitorRawRects.Count == _monitorHandles.Count, "GetMonitorRectsCore() bad list counts");
 		}
 	}
 }
