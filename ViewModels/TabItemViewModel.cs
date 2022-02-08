@@ -53,7 +53,6 @@ namespace Shinta.ViewModels
 		public virtual void Initialize()
 		{
 			_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, GetType().Name + " 初期化中...");
-			SettingsToProperties();
 		}
 
 		// --------------------------------------------------------------------

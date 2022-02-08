@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 
@@ -91,7 +92,7 @@ namespace Shinta
 		public static void ActivateSameNameProcessWindow(Process? specifyProcess = null)
 		{
 			List<Process> sameNameProcesses = Common.SameNameProcesses(specifyProcess);
-			if (sameNameProcesses.Count > 0)
+			if (sameNameProcesses.Any())
 			{
 				ActivateExternalWindow(sameNameProcesses[0].MainWindowHandle);
 			}
