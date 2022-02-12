@@ -6,13 +6,14 @@
 
 // ----------------------------------------------------------------------------
 // ウィンドウではないため、BaseViewModel を継承しない
+// T はタブコントロールで扱いたい設定の型
 // ----------------------------------------------------------------------------
 
 using Livet;
 
 namespace Shinta.ViewModels
 {
-	internal class TabItemViewModel : ViewModel
+	internal class TabItemViewModel<T> : ViewModel
 	{
 		// ====================================================================
 		// コンストラクター
@@ -21,7 +22,7 @@ namespace Shinta.ViewModels
 		// --------------------------------------------------------------------
 		// メインコンストラクター
 		// --------------------------------------------------------------------
-		public TabItemViewModel(TabControlWindowViewModel tabControlWindowViewModel, LogWriter? logWriter = null)
+		public TabItemViewModel(TabControlWindowViewModel<T> tabControlWindowViewModel, LogWriter? logWriter = null)
 		{
 			_tabControlWindowViewModel = tabControlWindowViewModel;
 			_logWriter = logWriter;
@@ -58,14 +59,14 @@ namespace Shinta.ViewModels
 		// --------------------------------------------------------------------
 		// プロパティーから設定に反映
 		// --------------------------------------------------------------------
-		public virtual void PropertiesToSettings()
+		public virtual void PropertiesToSettings(T destSettings)
 		{
 		}
 
 		// --------------------------------------------------------------------
 		// 設定をプロパティーに反映
 		// --------------------------------------------------------------------
-		public virtual void SettingsToProperties()
+		public virtual void SettingsToProperties(T srcSettings)
 		{
 		}
 
@@ -74,7 +75,7 @@ namespace Shinta.ViewModels
 		// ====================================================================
 
 		// ウィンドウのビューモデル
-		protected TabControlWindowViewModel _tabControlWindowViewModel;
+		protected TabControlWindowViewModel<T> _tabControlWindowViewModel;
 
 		// ログ
 		protected LogWriter? _logWriter;

@@ -5,7 +5,7 @@
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 
+// T はタブコントロールで扱いたい設定の型
 // ----------------------------------------------------------------------------
 
 using System;
@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace Shinta.ViewModels
 {
-	internal abstract class TabControlWindowViewModel : BasicWindowViewModel
+	internal abstract class TabControlWindowViewModel<T> : BasicWindowViewModel
 	{
 		// ====================================================================
 		// コンストラクター
@@ -39,6 +39,7 @@ namespace Shinta.ViewModels
 
 		// --------------------------------------------------------------------
 		// 初期化
+		// srcSettings を定型化できないために SettingsToProperties() は派生クラスで呼びだすものとする
 		// --------------------------------------------------------------------
 		public override void Initialize()
 		{
@@ -50,8 +51,6 @@ namespace Shinta.ViewModels
 				{
 					_tabItemViewModels[i].Initialize();
 				}
-
-				SettingsToProperties();
 			}
 			catch (Exception ex)
 			{
@@ -65,7 +64,7 @@ namespace Shinta.ViewModels
 		// ====================================================================
 
 		// タブアイテムの ViewModel
-		protected readonly TabItemViewModel[] _tabItemViewModels;
+		protected readonly TabItemViewModel<T>[] _tabItemViewModels;
 
 		// ====================================================================
 		// protected 関数
@@ -86,27 +85,27 @@ namespace Shinta.ViewModels
 		// --------------------------------------------------------------------
 		// タブアイテムの ViewModel を生成
 		// --------------------------------------------------------------------
-		protected abstract TabItemViewModel[] CreateTabItemViewModels();
+		protected abstract TabItemViewModel<T>[] CreateTabItemViewModels();
 
 		// --------------------------------------------------------------------
 		// プロパティーから設定に反映
 		// --------------------------------------------------------------------
-		protected override void PropertiesToSettings()
+		protected virtual void PropertiesToSettings(T destSettings)
 		{
 			for (Int32 i = 0; i < _tabItemViewModels.Length; i++)
 			{
-				_tabItemViewModels[i].PropertiesToSettings();
+				_tabItemViewModels[i].PropertiesToSettings(destSettings);
 			}
 		}
 
 		// --------------------------------------------------------------------
 		// 設定をプロパティーに反映
 		// --------------------------------------------------------------------
-		protected override void SettingsToProperties()
+		protected virtual void SettingsToProperties(T srcSettings)
 		{
 			for (Int32 i = 0; i < _tabItemViewModels.Length; i++)
 			{
-				_tabItemViewModels[i].SettingsToProperties();
+				_tabItemViewModels[i].SettingsToProperties(srcSettings);
 			}
 		}
 	}

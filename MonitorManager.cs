@@ -71,7 +71,7 @@ namespace Shinta
 
 				Double scaleX = Common.DEFAULT_DPI / dpiX;
 				Double scaleY = Common.DEFAULT_DPI / dpiY;
-				Rect rect = new Rect(_monitorRawRects[i].Left * scaleX, _monitorRawRects[i].Top * scaleY, _monitorRawRects[i].Width * scaleX, _monitorRawRects[i].Height * scaleY);
+				Rect rect = new(_monitorRawRects[i].Left * scaleX, _monitorRawRects[i].Top * scaleY, _monitorRawRects[i].Width * scaleX, _monitorRawRects[i].Height * scaleY);
 				_monitorRawRects[i] = rect;
 			}
 			return _monitorRawRects;
@@ -98,7 +98,7 @@ namespace Shinta
 		{
 			Debug.Assert(_monitorRawRects != null, "GetMonitorRectsCallback() _monitorRawRects null");
 			Debug.Assert(_monitorHandles != null, "GetMonitorRectsCallback() _monitorHandles null");
-			Rect rect = new Rect(lprcMonitor.left, lprcMonitor.top, lprcMonitor.right - lprcMonitor.left, lprcMonitor.bottom - lprcMonitor.top);
+			Rect rect = new(lprcMonitor.left, lprcMonitor.top, lprcMonitor.right - lprcMonitor.left, lprcMonitor.bottom - lprcMonitor.top);
 			_monitorRawRects.Add(rect);
 			_monitorHandles.Add(hMonitor);
 			return true;
