@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // よく使う一般的な定数や関数（OS に依存しないもの）
-// Copyright (C) 2014-2021 by SHINTA
+// Copyright (C) 2014-2022 by SHINTA
 // 
 // ============================================================================
 
@@ -56,12 +56,17 @@
 // (3.71) | 2021/09/04 (Sat) |   null 許容参照型を必須にした。
 //  3.80  | 2021/10/23 (Sat) | ShellExecute() を作成。
 // (3.81) | 2021/11/14 (Sun) |   拡張子を追加。
+// (3.82) | 2022/02/20 (Sun) |   MessageKey を追加。
+//  3.90  | 2022/02/20 (Sun) | SelectFiles() を作成。
+//  4.00  | 2022/02/20 (Sun) | SelectFolder() を作成。
+//  4.10  | 2022/02/20 (Sun) | SelectFolders() を作成。
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -105,7 +110,6 @@ namespace Shinta
 		// よく使うフォルダ
 		// --------------------------------------------------------------------
 		public const String FOLDER_NAME_SHINTA = SHINTA + "\\";
-
 
 		// --------------------------------------------------------------------
 		// よく使うファイル
@@ -174,8 +178,17 @@ namespace Shinta
 		// MessageKey
 		// --------------------------------------------------------------------
 
+		// ウィンドウをアクティブ化する
+		public const String MESSAGE_KEY_WINDOW_ACTIVATE = "Activate";
+
 		// ウィンドウを閉じる
 		public const String MESSAGE_KEY_WINDOW_CLOSE = "Close";
+
+		// 開くダイアログを開く
+		public const String MESSAGE_KEY_OPEN_OPEN_FILE_DIALOG = "OpenOpenFileDialog";
+
+		// 保存ダイアログを開く
+		public const String MESSAGE_KEY_OPEN_SAVE_FILE_DIALOG = "OpenSaveFileDialog";
 
 		// --------------------------------------------------------------------
 		// その他
@@ -200,36 +213,36 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// バージョン文字列を比較（大文字小文字は区別しない）
 		// --------------------------------------------------------------------
-		public static Int32 CompareVersionString(String oVerA, String oVerB)
+		public static Int32 CompareVersionString(String verA, String verB)
 		{
 			// 最初に同じ文字列かどうか確認
-			if (String.Compare(oVerA, oVerB, true) == 0)
+			if (String.Compare(verA, verB, true) == 0)
 			{
 				return 0;
 			}
-			if (String.IsNullOrEmpty(oVerA) && String.IsNullOrEmpty(oVerB))
+			if (String.IsNullOrEmpty(verA) && String.IsNullOrEmpty(verB))
 			{
 				return 0;
 			}
 
 			// いずれかが IsNullOrEmpty() ならそちらが小さいとする
-			if (String.IsNullOrEmpty(oVerA))
+			if (String.IsNullOrEmpty(verA))
 			{
 				return -1;
 			}
-			if (String.IsNullOrEmpty(oVerB))
+			if (String.IsNullOrEmpty(verB))
 			{
 				return 1;
 			}
 
 			// 解析
-			Match aMatchA = Regex.Match(oVerA, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
-			Match aMatchB = Regex.Match(oVerB, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
+			Match aMatchA = Regex.Match(verA, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
+			Match aMatchB = Regex.Match(verB, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
 
 			if (!aMatchA.Success || !aMatchB.Success)
 			{
 				// バージョン文字列ではない場合は、通常の文字列比較
-				return String.Compare(oVerA, oVerB, true);
+				return String.Compare(verA, verB, true);
 			}
 
 			// バージョン番号部分の比較
@@ -569,6 +582,86 @@ namespace Shinta
 		}
 
 		// --------------------------------------------------------------------
+		// フォルダー・ファイル混じりのパスからファイルのみを取得
+		// --------------------------------------------------------------------
+		public static List<String> SelectFiles(String[] pathes)
+		{
+			List<String> files = new();
+			foreach (String path in pathes)
+			{
+				if (File.Exists(path))
+				{
+					files.Add(path);
+				}
+			}
+			return files;
+		}
+
+		// --------------------------------------------------------------------
+		// フォルダー・ファイル混じりのパスから指定された拡張子のファイルのみを取得
+		// ＜引数＞ exts: 小文字前提
+		// --------------------------------------------------------------------
+		public static List<String> SelectFiles(String[] pathes, IEnumerable<String> exts)
+		{
+			List<String> files = new();
+			foreach (String path in pathes)
+			{
+				if (!File.Exists(path))
+				{
+					continue;
+				}
+
+				if (exts.Contains(Path.GetExtension(path).ToLower()))
+				{
+					files.Add(path);
+				}
+			}
+			return files;
+		}
+
+		// --------------------------------------------------------------------
+		// フォルダー・ファイル混じりのパスからフォルダーを 1 つ取得
+		// フォルダーが 1 つもない場合は、ファイルのフォルダーを 1 つ取得
+		// --------------------------------------------------------------------
+		public static String? SelectFolder(String[] pathes)
+		{
+			String? folderFromFile = null;
+			foreach (String path in pathes)
+			{
+				if (Directory.Exists(path))
+				{
+					// フォルダーが見つかった場合は、そのフォルダーで確定する
+					return path;
+				}
+				if (String.IsNullOrEmpty(folderFromFile) && File.Exists(path))
+				{
+					// ファイルが見つかった場合は、そのファイルを含むフォルダーを候補とする
+					// フォルダーが見つかればフォルダー優先のため、ループは継続
+					folderFromFile = Path.GetDirectoryName(path);
+				}
+			}
+
+			// フォルダーが見つからなかった場合はファイルからのフォルダーを返す
+			return folderFromFile;
+		}
+
+		// --------------------------------------------------------------------
+		// フォルダー・ファイル混じりのパスからフォルダーのみを取得
+		// --------------------------------------------------------------------
+		public static List<String> SelectFolders(String[] pathes)
+		{
+			List<String> folders = new();
+			foreach (String path in pathes)
+			{
+				if (Directory.Exists(path))
+				{
+					folders.Add(path);
+				}
+			}
+			return folders;
+		}
+
+		// --------------------------------------------------------------------
 		// オブジェクトをシリアライズして保存
 		// ＜例外＞ Exception
 		// --------------------------------------------------------------------
@@ -649,9 +742,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static void Swap<T>(ref T lhs, ref T rhs)
 		{
-			T aTemp = lhs;
-			lhs = rhs;
-			rhs = aTemp;
+			(rhs, lhs) = (lhs, rhs);
 		}
 
 		// --------------------------------------------------------------------
@@ -685,7 +776,7 @@ namespace Shinta
 		// ====================================================================
 
 		private const String COMPARE_VERSION_STRING_REGEX = @"Ver ([0-9]+\.[0-9]+)(.*)";
-		private const String REG_KEY_DOT_NET_45_VERSION = "SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\";
+		//private const String REG_KEY_DOT_NET_45_VERSION = "SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\";
 
 		// ====================================================================
 		// private メンバー関数

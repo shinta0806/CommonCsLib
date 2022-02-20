@@ -8,6 +8,8 @@
 // T はタブコントロールで扱いたい設定の型
 // ----------------------------------------------------------------------------
 
+using Livet.Commands;
+
 using System;
 using System.Diagnostics;
 
@@ -32,6 +34,60 @@ namespace Shinta.ViewModels
 				CompositeDisposable.Add(_tabItemViewModels[i]);
 			}
 		}
+
+		// ====================================================================
+		// public プロパティー
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// View 通信用のプロパティー
+		// --------------------------------------------------------------------
+
+		// 選択されているタブ
+		// TabControl.SelectedIndex にバインドされる想定
+		private Int32 _selectedTabIndex;
+		public Int32 SelectedTabIndex
+		{
+			get => _selectedTabIndex;
+			set => RaisePropertyChangedIfSet(ref _selectedTabIndex, value);
+		}
+
+		// --------------------------------------------------------------------
+		// コマンド
+		// --------------------------------------------------------------------
+
+		#region ファイルドロップの制御
+		private ListenerCommand<String[]>? _tabControlFileDropCommand;
+
+		public ListenerCommand<String[]> TabControlFileDropCommand
+		{
+			get
+			{
+				if (_tabControlFileDropCommand == null)
+				{
+					_tabControlFileDropCommand = new ListenerCommand<String[]>(TabControlFileDrop);
+				}
+				return _tabControlFileDropCommand;
+			}
+		}
+
+		public void TabControlFileDrop(String[] pathes)
+		{
+			try
+			{
+				if (SelectedTabIndex < 0 || SelectedTabIndex >= _tabItemViewModels.Length)
+				{
+					return;
+				}
+				_tabItemViewModels[SelectedTabIndex].PathDropped(pathes);
+			}
+			catch (Exception excep)
+			{
+				_logWriter?.ShowLogMessage(TraceEventType.Error, "タブコントロールファイルドロップ時エラー：\n" + excep.Message);
+				_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+			}
+		}
+		#endregion
 
 		// ====================================================================
 		// public 関数

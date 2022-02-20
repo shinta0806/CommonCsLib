@@ -11,6 +11,8 @@
 
 using Livet;
 
+using System;
+
 namespace Shinta.ViewModels
 {
 	internal class TabItemViewModel<T> : ViewModel
@@ -57,6 +59,13 @@ namespace Shinta.ViewModels
 		}
 
 		// --------------------------------------------------------------------
+		// ファイルやフォルダーがドロップされた
+		// --------------------------------------------------------------------
+		public virtual void PathDropped(String[] pathes)
+		{
+		}
+
+		// --------------------------------------------------------------------
 		// プロパティーから設定に反映
 		// --------------------------------------------------------------------
 		public virtual void PropertiesToSettings(T destSettings)
@@ -79,5 +88,19 @@ namespace Shinta.ViewModels
 
 		// ログ
 		protected LogWriter? _logWriter;
+
+		// ====================================================================
+		// protected 関数
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// リソース解放
+		// --------------------------------------------------------------------
+		protected override void Dispose(Boolean isDisposing)
+		{
+			base.Dispose(isDisposing);
+
+			_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, GetType().Name + " 破棄中...");
+		}
 	}
 }

@@ -10,10 +10,12 @@
 
 using Livet;
 using Livet.Commands;
+using Livet.Messaging.IO;
 using Livet.Messaging.Windows;
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 
@@ -42,6 +44,7 @@ namespace Shinta.ViewModels
 		// --------------------------------------------------------------------
 
 		// ウィンドウタイトル（デフォルトが null だと実行時にエラーが発生するので Empty にしておく）
+		// Window.Title にバインドされる想定
 		private String _title = String.Empty;
 		public String Title
 		{
@@ -60,6 +63,7 @@ namespace Shinta.ViewModels
 		}
 
 		// ウィンドウ左端
+		// Window.Left に TwoWay でバインドされる想定
 		private Double _left;
 		public Double Left
 		{
@@ -68,6 +72,7 @@ namespace Shinta.ViewModels
 		}
 
 		// ウィンドウ上端
+		// Window.Top に TwoWay でバインドされる想定
 		private Double _top;
 		public Double Top
 		{
@@ -76,6 +81,7 @@ namespace Shinta.ViewModels
 		}
 
 		// ウィンドウ幅
+		// Window.Width に TwoWay でバインドされる想定
 		private Double _width;
 		public Double Width
 		{
@@ -84,6 +90,7 @@ namespace Shinta.ViewModels
 		}
 
 		// ウィンドウ高さ
+		// Window.Height に TwoWay でバインドされる想定
 		private Double _height;
 		public Double Height
 		{
@@ -92,6 +99,7 @@ namespace Shinta.ViewModels
 		}
 
 		// カーソル
+		// Window.Cursor にバインドされる想定
 		private Cursor? _cursor;
 		public Cursor? Cursor
 		{
@@ -192,6 +200,7 @@ namespace Shinta.ViewModels
 
 		// --------------------------------------------------------------------
 		// ウィンドウを閉じる
+		// ビューの InteractionMessageTrigger が設定されている必要がある
 		// --------------------------------------------------------------------
 		public virtual void Close()
 		{
@@ -205,6 +214,52 @@ namespace Shinta.ViewModels
 		public virtual void Initialize()
 		{
 			_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, GetType().Name + " 初期化中...");
+		}
+
+		// --------------------------------------------------------------------
+		// 開くダイアログを表示し、ファイルパスを取得
+		// ビューの InteractionMessageTrigger が設定されている必要がある
+		// --------------------------------------------------------------------
+		public String? PathByOpeningDialog(String title, String filter, String? path)
+		{
+			OpeningFileSelectionMessage message = new(Common.MESSAGE_KEY_OPEN_OPEN_FILE_DIALOG);
+			message.Title = title;
+			message.Filter = filter + ADDITIONAL_FILTER;
+			if (!String.IsNullOrEmpty(path))
+			{
+				message.InitialDirectory = Path.GetDirectoryName(path);
+				message.FileName = Path.GetFileName(path);
+			}
+			Messenger.Raise(message);
+			if (message.Response == null)
+			{
+				return null;
+			}
+
+			return message.Response[0];
+		}
+
+		// --------------------------------------------------------------------
+		// 保存ダイアログを表示し、ファイルパスを取得
+		// ビューの InteractionMessageTrigger が設定されている必要がある
+		// --------------------------------------------------------------------
+		public String? PathBySavingDialog(String title, String filter, String? path)
+		{
+			SavingFileSelectionMessage message = new(Common.MESSAGE_KEY_OPEN_SAVE_FILE_DIALOG);
+			message.Title = title;
+			message.Filter = filter + ADDITIONAL_FILTER;
+			if (!String.IsNullOrEmpty(path))
+			{
+				message.InitialDirectory = Path.GetDirectoryName(path);
+				message.FileName = Path.GetFileName(path);
+			}
+			Messenger.Raise(message);
+			if (message.Response == null)
+			{
+				return null;
+			}
+
+			return message.Response[0];
 		}
 
 		// ====================================================================
@@ -256,5 +311,12 @@ namespace Shinta.ViewModels
 		protected virtual void SettingsToProperties()
 		{
 		}
+
+		// ====================================================================
+		// protected 変数
+		// ====================================================================
+
+		// 開くダイアログ・保存ダイアログ用の追加フィルター
+		private const String ADDITIONAL_FILTER = "|すべてのファイル|*.*";
 	}
 }
