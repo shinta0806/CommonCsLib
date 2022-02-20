@@ -108,22 +108,6 @@ namespace Shinta.Behaviors
 		}
 
 		// ====================================================================
-		// public メンバー変数
-		// ====================================================================
-
-		// ====================================================================
-		// protected メンバー関数
-		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// item の位置までスクロールさせる
-		// --------------------------------------------------------------------
-		protected override void ScrollIntoView(DataGrid dataGrid, Object item)
-		{
-			dataGrid.ScrollIntoView(item);
-		}
-
-		// ====================================================================
 		// protected メンバー関数
 		// ====================================================================
 
@@ -143,6 +127,21 @@ namespace Shinta.Behaviors
 			base.OnAttached();
 		}
 
+		// --------------------------------------------------------------------
+		// item の位置までスクロールさせる
+		// --------------------------------------------------------------------
+		protected override void ScrollIntoView(DataGrid dataGrid, Object item)
+		{
+			dataGrid.ScrollIntoView(item);
+		}
+
+		// ====================================================================
+		// private メンバー変数
+		// ====================================================================
+
+		// ControlCurrentCellChanged の途中かどうか
+		private Boolean _isControlCurrentCellChanging;
+
 		// ====================================================================
 		// private メンバー関数
 		// ====================================================================
@@ -157,7 +156,9 @@ namespace Shinta.Behaviors
 				CurrentCell = dataGrid.CurrentCell;
 				if (CurrentCell.Column != null)
 				{
+					_isControlCurrentCellChanging = true;
 					CurrentCellLocation = new Point(CurrentCell.Column.DisplayIndex, dataGrid.Items.IndexOf(CurrentCell.Item));
+					_isControlCurrentCellChanging = false;
 				}
 			}
 		}
@@ -284,6 +285,11 @@ namespace Shinta.Behaviors
 		private static void SourceCurrentCellLocationChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
 		{
 			if ((obj is not DataGridBindingSupportBehavior thisObject) || thisObject.AssociatedObject == null)
+			{
+				return;
+			}
+
+			if (thisObject._isControlCurrentCellChanging)
 			{
 				return;
 			}
