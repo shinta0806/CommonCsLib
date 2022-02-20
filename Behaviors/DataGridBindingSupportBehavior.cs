@@ -25,9 +25,11 @@
 // ============================================================================
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -87,11 +89,11 @@ namespace Shinta.Behaviors
 		// DataGrid.SelectedItems をバインド可能にする
 		// DataGrid.SelectedItems は読み取り専用なのでコールバックは登録しない
 		public static readonly DependencyProperty SelectedItemsProperty
-				= DependencyProperty.RegisterAttached("SelectedItems", typeof(List<Object>), typeof(DataGridBindingSupportBehavior),
-				new FrameworkPropertyMetadata(new List<Object>(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
-		public List<Object> SelectedItems
+				= DependencyProperty.RegisterAttached("SelectedItems", typeof(IList), typeof(DataGridBindingSupportBehavior),
+				new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+		public IList SelectedItems
 		{
-			get => (List<Object>)GetValue(SelectedItemsProperty);
+			get => (IList)GetValue(SelectedItemsProperty);
 			set => SetValue(SelectedItemsProperty, value);
 		}
 
@@ -176,18 +178,16 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		private void ControlSelectionChanged(Object sender, SelectionChangedEventArgs selectionChangedEventArgs)
 		{
-			if (sender is DataGrid dataGrid)
+			if (SelectedItems != null)
 			{
-				List<Object> list = new();
-				for (Int32 i = 0; i < dataGrid.SelectedItems.Count; i++)
+				foreach (Object? addedItem in selectionChangedEventArgs.AddedItems)
 				{
-					Object? obj = dataGrid.SelectedItems[i];
-					if (obj != null)
-					{
-						list.Add(obj);
-					}
+					SelectedItems.Add(addedItem);
 				}
-				SelectedItems = list;
+				foreach (Object? removedItem in selectionChangedEventArgs.RemovedItems)
+				{
+					SelectedItems.Remove(removedItem);
+				}
 			}
 		}
 
