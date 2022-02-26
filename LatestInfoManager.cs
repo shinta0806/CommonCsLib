@@ -15,6 +15,7 @@
 //  -.--  | 2021/12/19 (Sun) | 作成開始。
 //  1.00  | 2021/12/19 (Sun) | オリジナルバージョン。
 // (1.01) | 2022/01/09 (Sun) |   軽微なリファクタリング。
+//  1.10  | 2022/02/26 (Sat) | アプリケーションバージョンによる選別機能を付けた。
 // ============================================================================
 
 using System;
@@ -35,11 +36,12 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// コンストラクター
 		// --------------------------------------------------------------------
-		public LatestInfoManager(String rssUrl, Boolean forceShow, Int32 wait, CancellationToken cancellationToken, LogWriter? logWriter = null, String? settingsPath = null)
+		public LatestInfoManager(String rssUrl, Boolean forceShow, Int32 wait, String appVer, CancellationToken cancellationToken, LogWriter? logWriter = null, String? settingsPath = null)
 		{
 			_rssUrl = rssUrl;
 			_forceShow = forceShow;
 			_wait = wait;
+			_appVer = appVer;
 			_cancellationToken = cancellationToken;
 			_logWriter = logWriter;
 			if (String.IsNullOrEmpty(settingsPath))
@@ -113,6 +115,9 @@ namespace Shinta
 
 		// チェック開始までの待ち時間 [s]
 		private readonly Int32 _wait;
+
+		// アプリのバージョン
+		private readonly String _appVer;
 
 		// 中断制御
 		private readonly CancellationToken _cancellationToken;
@@ -213,7 +218,7 @@ namespace Shinta
 
 			// RSS チェック
 			RssManager rssManager = CreateRssManager();
-			(Boolean result, String? errorMessage) = await rssManager.ReadLatestRssAsync(_rssUrl);
+			(Boolean result, String? errorMessage) = await rssManager.ReadLatestRssAsync(_rssUrl, _appVer);
 			if (!result)
 			{
 				throw new Exception(errorMessage);

@@ -225,13 +225,13 @@ namespace Shinta.Behaviors
 		{
 			try
 			{
-				switch ((UInt32)msg)
+				switch ((WM)msg)
 				{
-					case WindowsApi.WM_DEVICECHANGE:
+					case WM.WM_DEVICECHANGE:
 						WmDeviceChange(hWnd, wParam, lParam);
 						handled = true;
 						break;
-					case WindowsApi.WM_SHNOTIFY:
+					case WM.WM_SHNOTIFY:
 						WmShNotify(hWnd, wParam, lParam);
 						handled = true;
 						break;

@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // RSS を解析・管理するクラス
-// Copyright (C) 2014-2021 by SHINTA
+// Copyright (C) 2014-2022 by SHINTA
 // 
 // ============================================================================
 
@@ -23,6 +23,7 @@
 // (2.02) | 2021/09/01 (Wed) |   保存部分のみを SerializableSettings 派生とした。
 // (2.03) | 2021/09/04 (Sat) |   SerializableSettings の更新に対応。
 // (2.04) | 2021/10/28 (Thu) |   軽微なリファクタリング。
+//  2.10  | 2022/02/26 (Sat) | アプリケーションバージョンによる選別機能を付けた。
 // ============================================================================
 
 using System;
@@ -99,6 +100,8 @@ namespace Shinta
 		public const String NODE_NAME_TITLE = "title";
 
 		// XML 属性名
+		public const String ATTRIBUTE_NAME_APP_VER_MAX = "appvermax";
+		public const String ATTRIBUTE_NAME_APP_VER_MIN = "appvermin";
 		public const String ATTRIBUTE_NAME_MD5 = "md5";
 		public const String ATTRIBUTE_NAME_URL = "url";
 
@@ -112,18 +115,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public List<RssItem> GetAllItems()
 		{
-			List<RssItem> allItems = new();
-
-			foreach (RssItem rssItem in _latestRssItems)
-			{
-				// アイテム内に guid が無ければスキップ
-				if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
-				{
-					continue;
-				}
-
-				allItems.Add(rssItem);
-			}
+			List<RssItem> allItems = new(_latestRssItems);
 			return allItems;
 		}
 
@@ -143,7 +135,6 @@ namespace Shinta
 
 			foreach (RssItem rssItem in _latestRssItems)
 			{
-				// アイテム内に guid が無ければスキップ
 				if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
 				{
 					continue;
@@ -184,7 +175,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 最新 RSS のダウンロード
 		// --------------------------------------------------------------------
-		public async Task<(Boolean result, String? errorMessage)> ReadLatestRssAsync(String source)
+		public async Task<(Boolean result, String? errorMessage)> ReadLatestRssAsync(String source, String appVer)
 		{
 			Boolean result = false;
 			Stream? stream = null;
@@ -212,7 +203,7 @@ namespace Shinta
 					stream = new FileStream(source, FileMode.Open);
 				}
 
-				(result, errorMessage) = await ReadLatestRssCoreAsync(stream);
+				(result, errorMessage) = await ReadLatestRssCoreAsync(stream, appVer);
 				if (!result)
 				{
 					throw new Exception(errorMessage);
@@ -252,7 +243,6 @@ namespace Shinta
 			List<String> addGuids = new();
 			foreach (RssItem newItem in newItems)
 			{
-				// アイテム内に guid が無ければスキップ
 				if (!newItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
 				{
 					continue;
@@ -301,6 +291,34 @@ namespace Shinta
 		// ====================================================================
 
 		// --------------------------------------------------------------------
+		// 認識すべき RSS 項目か
+		// --------------------------------------------------------------------
+		private Boolean IsValidRssItem(String appVer, RssItem rssItem)
+		{
+			// アイテム内に guid が無ければ無効
+			if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
+			{
+				return false;
+			}
+
+			// appVer が appvermin 未満なら無効
+			if (rssItem.Elements.TryGetValue(NODE_NAME_GUID + RssItem.RSS_ITEM_NAME_DELIMITER + ATTRIBUTE_NAME_APP_VER_MIN, out String? appVerMin)
+					&& Common.CompareVersionString(appVer, appVerMin) < 0)
+			{
+				return false;
+			}
+
+			// appVer が appvermax 超過なら無効
+			if (rssItem.Elements.TryGetValue(NODE_NAME_GUID + RssItem.RSS_ITEM_NAME_DELIMITER + ATTRIBUTE_NAME_APP_VER_MAX, out String? appVerMax)
+					&& Common.CompareVersionString(appVer, appVerMax) > 0)
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		// --------------------------------------------------------------------
 		// cloud タグの処理（RSS サイト負荷監視用カウンターを回す（中身は読み捨てる））
 		// --------------------------------------------------------------------
 		private async Task<Boolean> LoadCloudAsync(XmlNode cloud)
@@ -333,7 +351,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// RSS を読み込む中心部分（解析）
 		// --------------------------------------------------------------------
-		private async Task<(Boolean result, String? errorMessage)> ReadLatestRssCoreAsync(Stream stream)
+		private async Task<(Boolean result, String? errorMessage)> ReadLatestRssCoreAsync(Stream stream, String appVer)
 		{
 			Boolean result = false;
 			String? errorMessage = null;
@@ -380,6 +398,11 @@ namespace Shinta
 					{
 						// 要素名と値
 						rssItem.Elements[leaf.Name] = leaf.InnerText;
+#if DEBUGz
+						if (leaf.Name == NODE_NAME_GUID)
+						{
+						}
+#endif
 
 						if (leaf.Attributes == null)
 						{
@@ -399,6 +422,12 @@ namespace Shinta
 					}
 					MessageBox.Show(DB);
 #endif
+
+					if (!IsValidRssItem(appVer, rssItem))
+					{
+						continue;
+					}
+
 					_latestRssItems.Add(rssItem);
 				}
 

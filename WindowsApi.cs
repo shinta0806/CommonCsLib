@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // Windows API を C# で使えるようにするための記述
-// Copyright (C) 2015-2021 by SHINTA
+// Copyright (C) 2015-2022 by SHINTA
 // 
 // ============================================================================
 
@@ -34,6 +34,8 @@
 //  1.22  | 2022/02/05 (Sat) |   GetWindowRect() を追加。
 //  1.23  | 2022/02/06 (Sun) |   GetDpiForMonitor() を追加。
 //  1.24  | 2022/02/06 (Sun) |   MoveWindow() を追加。
+//  1.25  | 2022/02/26 (Sat) |   WS_EX を追加。
+//  1.26  | 2022/02/26 (Sat) |   WM を列挙子に変更。
 // ============================================================================
 
 using System;
@@ -218,6 +220,30 @@ namespace Shinta
 	}
 
 	// --------------------------------------------------------------------
+	// ウィンドウメッセージ
+	// --------------------------------------------------------------------
+	public enum WM : UInt32
+	{
+		WM_APP = 0x8000,
+		WM_CLOSE = 0x0010,
+		WM_COPYDATA = 0x4A,
+		WM_DEVICECHANGE = 0x0219,
+		WM_PAINT = 0x000F,
+		WM_QUIT = 0x0012,
+		WM_SHNOTIFY = 0x0401,
+		WM_SYSCOMMAND = 0x0112,
+	}
+
+	// --------------------------------------------------------------------
+	// WM_SYSCOMMAND wParam
+	// --------------------------------------------------------------------
+	public enum WM_SYSCOMMAND_WPARAM : UInt32
+	{
+		SC_CLOSE = 0xF060,
+		SC_CONTEXTHELP = 0xF180,
+	}
+
+	// --------------------------------------------------------------------
 	// WS (Window Style)
 	// https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
 	// --------------------------------------------------------------------
@@ -248,6 +274,42 @@ namespace Shinta
 		WS_VSCROLL = 0x200000,
 	}
 
+	// --------------------------------------------------------------------
+	// WS_EX (Extended Window Styles)
+	// https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
+	// --------------------------------------------------------------------
+	[Flags]
+	public enum WS_EX : UInt32
+	{
+		WS_EX_ACCEPTFILES = 0x00000010,
+		WS_EX_APPWINDOW = 0x00040000,
+		WS_EX_CLIENTEDGE = 0x00000200,
+		WS_EX_COMPOSITED = 0x02000000,
+		WS_EX_CONTEXTHELP = 0x00000400,
+		WS_EX_CONTROLPARENT = 0x00010000,
+		WS_EX_DLGMODALFRAME = 0x00000001,
+		WS_EX_LAYERED = 0x00080000,
+		WS_EX_LAYOUTRTL = 0x00400000,
+		WS_EX_LEFT = 0x00000000,
+		WS_EX_LEFTSCROLLBAR = 0x00004000,
+		WS_EX_LTRREADING = WS_EX_LEFT,
+		WS_EX_MDICHILD = 0x00000040,
+		WS_EX_NOACTIVATE = 0x08000000,
+		WS_EX_NOINHERITLAYOUT = 0x00100000,
+		WS_EX_NOPARENTNOTIFY = 0x00000004,
+		WS_EX_NOREDIRECTIONBITMAP = 0x00200000,
+		WS_EX_OVERLAPPEDWINDOW = (WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE),
+		WS_EX_PALETTEWINDOW = (WS_EX_WINDOWEDGE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST),
+		WS_EX_RIGHT = 0x00001000,
+		WS_EX_RIGHTSCROLLBAR = WS_EX_LEFT,
+		WS_EX_RTLREADING = 0x00002000,
+		WS_EX_STATICEDGE = 0x00020000,
+		WS_EX_TOOLWINDOW = 0x00000080,
+		WS_EX_TOPMOST = 0x00000008,
+		WS_EX_TRANSPARENT = 0x00000020,
+		WS_EX_WINDOWEDGE = 0x00000100,
+	}
+
 	// ====================================================================
 	// Windows API
 	// ====================================================================
@@ -263,17 +325,6 @@ namespace Shinta
 		// ====================================================================
 		// public 定数
 		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// ウィンドウメッセージ
-		// --------------------------------------------------------------------
-		public const UInt32 WM_APP = 0x8000;
-		public const UInt32 WM_CLOSE = 0x0010;
-		public const UInt32 WM_COPYDATA = 0x4A;
-		public const UInt32 WM_DEVICECHANGE = 0x0219;
-		public const UInt32 WM_PAINT = 0x000F;
-		public const UInt32 WM_QUIT = 0x0012;
-		public const UInt32 WM_SHNOTIFY = 0x0401;
 
 		// --------------------------------------------------------------------
 		// ChangeWindowMessageFilter()

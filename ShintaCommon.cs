@@ -60,6 +60,7 @@
 //  3.90  | 2022/02/20 (Sun) | SelectFiles() を作成。
 //  4.00  | 2022/02/20 (Sun) | SelectFolder() を作成。
 //  4.10  | 2022/02/20 (Sun) | SelectFolders() を作成。
+//  4.20  | 2022/02/25 (Fri) | OpenMicrosoftStore() を作成。
 // ============================================================================
 
 using System;
@@ -212,6 +213,7 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// バージョン文字列を比較（大文字小文字は区別しない）
+		// ＜返値＞ -1: verA が小さい, 1: verA が大きい
 		// --------------------------------------------------------------------
 		public static Int32 CompareVersionString(String verA, String verB)
 		{
@@ -236,47 +238,47 @@ namespace Shinta
 			}
 
 			// 解析
-			Match aMatchA = Regex.Match(verA, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
-			Match aMatchB = Regex.Match(verB, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
+			Match matchA = Regex.Match(verA, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
+			Match matchB = Regex.Match(verB, COMPARE_VERSION_STRING_REGEX, RegexOptions.IgnoreCase);
 
-			if (!aMatchA.Success || !aMatchB.Success)
+			if (!matchA.Success || !matchB.Success)
 			{
 				// バージョン文字列ではない場合は、通常の文字列比較
 				return String.Compare(verA, verB, true);
 			}
 
 			// バージョン番号部分の比較
-			Double aVerNumA = Double.Parse(aMatchA.Groups[1].Value);
-			Double aVerNumB = Double.Parse(aMatchB.Groups[1].Value);
-			if (aVerNumA < aVerNumB)
+			Double verNumA = Double.Parse(matchA.Groups[1].Value);
+			Double verNumB = Double.Parse(matchB.Groups[1].Value);
+			if (verNumA < verNumB)
 			{
 				return -1;
 			}
-			if (aVerNumA > aVerNumB)
+			if (verNumA > verNumB)
 			{
 				return 1;
 			}
 
 			// 後続文字列（α, β）の比較
-			String aSuffixA = aMatchA.Groups[2].Value.Trim();
-			String aSuffixB = aMatchB.Groups[2].Value.Trim();
-			if (String.IsNullOrEmpty(aSuffixA) && String.IsNullOrEmpty(aSuffixB))
+			String suffixA = matchA.Groups[2].Value.Trim();
+			String suffixB = matchB.Groups[2].Value.Trim();
+			if (String.IsNullOrEmpty(suffixA) && String.IsNullOrEmpty(suffixB))
 			{
 				return 0;
 			}
 
 			// 片方に後続文字列がある場合は、後続文字列の無い方（正式版）が大きい
-			if (String.IsNullOrEmpty(aSuffixA))
+			if (String.IsNullOrEmpty(suffixA))
 			{
 				return 1;
 			}
-			if (String.IsNullOrEmpty(aSuffixB))
+			if (String.IsNullOrEmpty(suffixB))
 			{
 				return -1;
 			}
 
 			// 後続文字列同士を比較
-			return String.Compare(aSuffixA, aSuffixB, true);
+			return String.Compare(suffixA, suffixB, true);
 		}
 
 #if USE_OBSOLETE
@@ -554,6 +556,15 @@ namespace Shinta
 			return -1;
 		}
 #endif
+
+		// --------------------------------------------------------------------
+		// ストアアプリでアプリページを開く
+		// ＜例外＞ Exception
+		// --------------------------------------------------------------------
+		public static void OpenMicrosoftStore(String productId)
+		{
+			ShellExecute("ms-windows-store://pdp/?ProductId=" + productId);
+		}
 
 		// --------------------------------------------------------------------
 		// 指定されたプロセスと同じ名前のプロセス（指定されたプロセスを除く）を列挙する
