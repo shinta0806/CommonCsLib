@@ -220,7 +220,7 @@ namespace Shinta.ViewModels
 		// 開くダイアログを表示し、ファイルパスを取得
 		// ビューの InteractionMessageTrigger が設定されている必要がある
 		// --------------------------------------------------------------------
-		public String? PathByOpeningDialog(String title, String filter, String? path)
+		public virtual String? PathByOpeningDialog(String title, String filter, String? path)
 		{
 			OpeningFileSelectionMessage message = new(Common.MESSAGE_KEY_OPEN_OPEN_FILE_DIALOG);
 			message.Title = title;
@@ -243,7 +243,7 @@ namespace Shinta.ViewModels
 		// 保存ダイアログを表示し、ファイルパスを取得
 		// ビューの InteractionMessageTrigger が設定されている必要がある
 		// --------------------------------------------------------------------
-		public String? PathBySavingDialog(String title, String filter, String? path)
+		public virtual String? PathBySavingDialog(String title, String filter, String? path)
 		{
 			SavingFileSelectionMessage message = new(Common.MESSAGE_KEY_OPEN_SAVE_FILE_DIALOG);
 			message.Title = title;
@@ -313,10 +313,10 @@ namespace Shinta.ViewModels
 		}
 
 		// ====================================================================
-		// protected 変数
+		// protected 定数
 		// ====================================================================
 
 		// 開くダイアログ・保存ダイアログ用の追加フィルター
-		private const String ADDITIONAL_FILTER = "|すべてのファイル|*.*";
+		protected const String ADDITIONAL_FILTER = "|すべてのファイル|*.*";
 	}
 }

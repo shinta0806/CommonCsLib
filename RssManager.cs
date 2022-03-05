@@ -51,7 +51,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// コンストラクター（引数あり）
 		// --------------------------------------------------------------------
-		public RssManager(LogWriter? logWriter, String? settingsPath)
+		public RssManager(LogWriter? logWriter, String settingsPath)
 		{
 			_logWriter = logWriter;
 			_settingsPath = settingsPath;
@@ -281,7 +281,7 @@ namespace Shinta
 		private DateTime _latestDownloadDate;
 
 		// 保存パス
-		private readonly String? _settingsPath;
+		private readonly String _settingsPath;
 
 		// ログ
 		private readonly LogWriter? _logWriter;
@@ -293,7 +293,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 認識すべき RSS 項目か
 		// --------------------------------------------------------------------
-		private Boolean IsValidRssItem(String appVer, RssItem rssItem)
+		private static Boolean IsValidRssItem(String appVer, RssItem rssItem)
 		{
 			// アイテム内に guid が無ければ無効
 			if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
@@ -489,17 +489,19 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// コンストラクター（引数あり）
 		// --------------------------------------------------------------------
-		public RssSettings(LogWriter? logWriter, String? settingsPath)
-				: base(logWriter, settingsPath)
+		public RssSettings(LogWriter? logWriter, String settingsPath)
+				: base(logWriter)
 		{
+			_settingsPath = settingsPath;
 		}
 
 		// --------------------------------------------------------------------
 		// コンストラクター（引数なし：シリアライズに必要）
 		// --------------------------------------------------------------------
 		public RssSettings()
-				: base(null, null)
+				: base(null)
 		{
+			_settingsPath = String.Empty;
 		}
 
 		// ====================================================================
@@ -511,6 +513,25 @@ namespace Shinta
 
 		// 過去に読み込んだ既読アイテム（新しい項目が先頭、guid のみ）
 		public List<String> PastRssGuids { get; set; } = new();
+
+		// ====================================================================
+		// public 関数
+		// ====================================================================
+
+		// --------------------------------------------------------------------
+		// 保存パス
+		// --------------------------------------------------------------------
+		public override String SettingsPath()
+		{
+			return _settingsPath;
+		}
+
+		// ====================================================================
+		// private 変数
+		// ====================================================================
+
+		// 保存パス
+		private readonly String _settingsPath;
 	}
 }
 

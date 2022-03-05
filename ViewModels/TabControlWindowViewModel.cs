@@ -45,11 +45,18 @@ namespace Shinta.ViewModels
 
 		// 選択されているタブ
 		// TabControl.SelectedIndex にバインドされる想定
-		private Int32 _selectedTabIndex;
+		private Int32 _selectedTabIndex = -1;
 		public Int32 SelectedTabIndex
 		{
 			get => _selectedTabIndex;
-			set => RaisePropertyChangedIfSet(ref _selectedTabIndex, value);
+			set
+			{
+				Int32 prevSelectedTabIndex = _selectedTabIndex;
+				if (RaisePropertyChangedIfSet(ref _selectedTabIndex, value))
+				{
+					SelectedTabIndexChanged(prevSelectedTabIndex, _selectedTabIndex);
+				}
+			}
 		}
 
 		// --------------------------------------------------------------------
@@ -115,6 +122,14 @@ namespace Shinta.ViewModels
 			}
 		}
 
+		// --------------------------------------------------------------------
+		// 何番目のタブアイテムか
+		// --------------------------------------------------------------------
+		public Int32 TabIndexOf(TabItemViewModel<T> tabItemViewModel)
+		{
+			return Array.IndexOf(_tabItemViewModels, tabItemViewModel);
+		}
+
 		// ====================================================================
 		// protected 変数
 		// ====================================================================
@@ -151,6 +166,21 @@ namespace Shinta.ViewModels
 			for (Int32 i = 0; i < _tabItemViewModels.Length; i++)
 			{
 				_tabItemViewModels[i].PropertiesToSettings(destSettings);
+			}
+		}
+
+		// --------------------------------------------------------------------
+		// タブ選択が変更された
+		// --------------------------------------------------------------------
+		protected virtual void SelectedTabIndexChanged(Int32 prevIndex, Int32 newIndex)
+		{
+			if (0 <= prevIndex && prevIndex < _tabItemViewModels.Length)
+			{
+				_tabItemViewModels[prevIndex].Deselected();
+			}
+			if (0 <= newIndex && newIndex < _tabItemViewModels.Length)
+			{
+				_tabItemViewModels[newIndex].Selected();
 			}
 		}
 

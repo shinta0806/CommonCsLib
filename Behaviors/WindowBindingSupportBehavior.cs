@@ -457,7 +457,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// WM_SYSCOMMAND メッセージハンドラ
 		// --------------------------------------------------------------------
-		private void WmSysCommand(IntPtr hWnd, IntPtr wParam, IntPtr lParam, ref Boolean handled)
+		private void WmSysCommand(IntPtr _1, IntPtr wParam, IntPtr _2, ref Boolean handled)
 		{
 			switch ((WM_SYSCOMMAND_WPARAM)wParam)
 			{

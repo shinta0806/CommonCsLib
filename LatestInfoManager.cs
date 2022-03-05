@@ -126,7 +126,7 @@ namespace Shinta
 		private readonly LogWriter? _logWriter;
 
 		// 最新情報保存パス
-		private readonly String? _settingsPath;
+		private readonly String _settingsPath;
 
 		// 最新情報
 		private List<RssItem> _newItems = new();

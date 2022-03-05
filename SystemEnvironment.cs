@@ -154,8 +154,8 @@ namespace Shinta
 		// private 定数
 		// ====================================================================
 
-		private const String WMI_CLASS_OS = "Win32_OperatingSystem";    // WMI OS 情報取得
-		private const String WMI_CLASS_PROCESSOR = "Win32_Processor";   // WMI CPU 情報取得
+		// WMI CPU 情報取得
+		private const String WMI_CLASS_PROCESSOR = "Win32_Processor";   
 
 		// ====================================================================
 		// private static メンバー関数
