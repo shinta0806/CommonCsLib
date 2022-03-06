@@ -209,11 +209,11 @@ namespace Shinta
 					throw new Exception(errorMessage);
 				}
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				errorMessage = excep.Message;
+				errorMessage = ex.Message;
 #if DEBUG
-				var i = excep.InnerException;
+				var i = ex.InnerException;
 #endif
 			}
 			finally
@@ -436,9 +436,9 @@ namespace Shinta
 				_latestDownloadDate = DateTime.Now.Date;
 				result = true;
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				errorMessage = excep.Message;
+				errorMessage = ex.Message;
 			}
 			return (result, errorMessage);
 		}

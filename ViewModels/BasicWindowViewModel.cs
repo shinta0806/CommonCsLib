@@ -8,6 +8,15 @@
 // 基礎的な OK、キャンセル処理に対応
 // ----------------------------------------------------------------------------
 
+// ============================================================================
+//  Ver.  |      更新日      |                    更新内容
+// ----------------------------------------------------------------------------
+//  1.00  | 2022/02/06 (Sun) | オリジナルバージョン。
+//  1.10  | 2022/02/20 (Sun) | PathByOpeningDialog() を作成。
+//  1.20  | 2022/02/20 (Sun) | PathBySavingDialog を作成。
+// (1.21) | 2022/03/05 (Sat) |   PathByOpeningDialog() 等を仮想化。
+// ============================================================================
+
 using Livet;
 using Livet.Commands;
 using Livet.Messaging.IO;
@@ -169,10 +178,10 @@ namespace Shinta.ViewModels
 				Result = MessageBoxResult.OK;
 				Close();
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.ShowLogMessage(TraceEventType.Error, "OK ボタンクリック時エラー：\n" + excep.Message);
-				_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.ShowLogMessage(TraceEventType.Error, "OK ボタンクリック時エラー：\n" + ex.Message);
+				_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 		}
 		#endregion
@@ -191,10 +200,10 @@ namespace Shinta.ViewModels
 			{
 				IsActive = true;
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.ShowLogMessage(TraceEventType.Error, "アクティブ化時エラー：\n" + excep.Message);
-				_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.ShowLogMessage(TraceEventType.Error, "アクティブ化時エラー：\n" + ex.Message);
+				_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 		}
 

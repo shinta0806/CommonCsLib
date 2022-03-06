@@ -87,10 +87,10 @@ namespace Shinta
 					}
 					success = true;
 				}
-				catch (Exception excep)
+				catch (Exception ex)
 				{
-					_logWriter?.ShowLogMessage(TraceEventType.Error, "最新情報確認時エラー：\n" + excep.Message, !_forceShow);
-					_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+					_logWriter?.ShowLogMessage(TraceEventType.Error, "最新情報確認時エラー：\n" + ex.Message, !_forceShow);
+					_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 				}
 				return success;
 			});

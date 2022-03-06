@@ -53,10 +53,10 @@ namespace Shinta
 			{
 				AdjustBeforeLoad();
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "読み込み前設定調整時エラー：\n" + excep.Message);
-				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "読み込み前設定調整時エラー：\n" + ex.Message);
+				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 			try
 			{
@@ -69,19 +69,19 @@ namespace Shinta
 				SerializableSettings loaded = Common.Deserialize(SettingsPath(), this);
 				Common.ShallowCopyProperties(loaded, this);
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + " 設定読み込み時エラー：\n" + excep.Message);
-				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + " 設定読み込み時エラー：\n" + ex.Message);
+				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 			try
 			{
 				AdjustAfterLoad();
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "読み込み後設定調整時エラー：\n" + excep.Message);
-				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "読み込み後設定調整時エラー：\n" + ex.Message);
+				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 		}
 
@@ -102,28 +102,28 @@ namespace Shinta
 			{
 				AdjustBeforeSave();
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "保存前設定調整時エラー：\n" + excep.Message);
-				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "保存前設定調整時エラー：\n" + ex.Message);
+				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 			try
 			{
 				Common.Serialize(SettingsPath(), this);
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "設定保存時エラー：\n" + excep.Message);
-				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "設定保存時エラー：\n" + ex.Message);
+				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 			try
 			{
 				AdjustAfterSave();
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "保存後設定調整時エラー：\n" + excep.Message);
-				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "保存後設定調整時エラー：\n" + ex.Message);
+				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 		}
 

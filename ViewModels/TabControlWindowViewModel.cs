@@ -8,6 +8,17 @@
 // T はタブコントロールで扱いたい設定の型
 // ----------------------------------------------------------------------------
 
+// ============================================================================
+//  Ver.  |      更新日      |                    更新内容
+// ----------------------------------------------------------------------------
+//  1.00  | 2022/02/06 (Sun) | オリジナルバージョン。
+//  1.10  | 2022/02/13 (Sun) | ジェネリッククラスにした。
+//  1.20  | 2022/02/20 (Sun) | SelectedTabIndex を作成。
+//  1.30  | 2022/02/20 (Sun) | ファイルドロップに対応。
+//  1.40  | 2022/03/05 (Sat) | TabIndexOf() を作成。
+// (1.41) | 2022/03/06 (Sun) |   設定をクラスメンバーとして保持するようにした。
+// ============================================================================
+
 using Livet.Commands;
 
 using System;
@@ -24,7 +35,7 @@ namespace Shinta.ViewModels
 		// --------------------------------------------------------------------
 		// メインコンストラクター
 		// --------------------------------------------------------------------
-		public TabControlWindowViewModel(LogWriter? logWriter = null)
+		public TabControlWindowViewModel(T settings, LogWriter? logWriter = null)
 				: base(logWriter)
 		{
 			// タブアイテムの ViewModel 初期化
@@ -33,6 +44,9 @@ namespace Shinta.ViewModels
 			{
 				CompositeDisposable.Add(_tabItemViewModels[i]);
 			}
+
+			// 設定
+			_settings = settings;
 		}
 
 		// ====================================================================
@@ -88,10 +102,10 @@ namespace Shinta.ViewModels
 				}
 				_tabItemViewModels[SelectedTabIndex].PathDropped(pathes);
 			}
-			catch (Exception excep)
+			catch (Exception ex)
 			{
-				_logWriter?.ShowLogMessage(TraceEventType.Error, "タブコントロールファイルドロップ時エラー：\n" + excep.Message);
-				_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + excep.StackTrace);
+				_logWriter?.ShowLogMessage(TraceEventType.Error, "タブコントロールファイルドロップ時エラー：\n" + ex.Message);
+				_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
 			}
 		}
 		#endregion
@@ -102,7 +116,7 @@ namespace Shinta.ViewModels
 
 		// --------------------------------------------------------------------
 		// 初期化
-		// srcSettings を定型化できないために SettingsToProperties() は派生クラスで呼びだすものとする
+		// Initialize() との順序を制御するために SettingsToProperties() は派生クラスで呼びだすものとする
 		// --------------------------------------------------------------------
 		public override void Initialize()
 		{
@@ -137,6 +151,9 @@ namespace Shinta.ViewModels
 		// タブアイテムの ViewModel
 		protected readonly TabItemViewModel<T>[] _tabItemViewModels;
 
+		// 設定
+		protected T _settings;
+
 		// ====================================================================
 		// protected 関数
 		// ====================================================================
@@ -161,11 +178,11 @@ namespace Shinta.ViewModels
 		// --------------------------------------------------------------------
 		// プロパティーから設定に反映
 		// --------------------------------------------------------------------
-		protected virtual void PropertiesToSettings(T destSettings)
+		protected override void PropertiesToSettings()
 		{
 			for (Int32 i = 0; i < _tabItemViewModels.Length; i++)
 			{
-				_tabItemViewModels[i].PropertiesToSettings(destSettings);
+				_tabItemViewModels[i].PropertiesToSettings(_settings);
 			}
 		}
 
@@ -187,11 +204,11 @@ namespace Shinta.ViewModels
 		// --------------------------------------------------------------------
 		// 設定をプロパティーに反映
 		// --------------------------------------------------------------------
-		protected virtual void SettingsToProperties(T srcSettings)
+		protected override void SettingsToProperties()
 		{
 			for (Int32 i = 0; i < _tabItemViewModels.Length; i++)
 			{
-				_tabItemViewModels[i].SettingsToProperties(srcSettings);
+				_tabItemViewModels[i].SettingsToProperties(_settings);
 			}
 		}
 	}
