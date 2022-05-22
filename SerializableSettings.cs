@@ -18,6 +18,8 @@
 //  1.10  | 2021/12/19 (Sun) | SetLogWriter() 作成。
 // (1.11) | 2022/03/01 (Tue) |   SettingsPath() を public にした。
 // (1.12) | 2022/03/01 (Tue) |   _defaultSettingsPath を廃止。
+// (1.13) | 2022/05/22 (Sun) |   Load() / Save() の返値を Boolean にした。
+// (1.14) | 2022/05/22 (Sun) |   Load() でパスを指定できるようにした。
 // ============================================================================
 
 using System;
@@ -47,8 +49,10 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 読み込み
 		// --------------------------------------------------------------------
-		public void Load()
+		public Boolean Load(String? overridePath = null)
 		{
+			Boolean allSuccess = true;
+
 			try
 			{
 				AdjustBeforeLoad();
@@ -57,22 +61,25 @@ namespace Shinta
 			{
 				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "読み込み前設定調整時エラー：\n" + ex.Message);
 				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
+				allSuccess = false;
 			}
+			String path = overridePath ?? SettingsPath();
 			try
 			{
-				if (!File.Exists(SettingsPath()))
+				if (!File.Exists(path))
 				{
-					throw new Exception("設定が保存されていません：" + SettingsPath());
+					throw new Exception("設定が保存されていません：" + path);
 				}
 
 				// 直接 this に代入できないので全プロパティーをコピーする
-				SerializableSettings loaded = Common.Deserialize(SettingsPath(), this);
+				SerializableSettings loaded = Common.Deserialize(path, this);
 				Common.ShallowCopyProperties(loaded, this);
 			}
 			catch (Exception ex)
 			{
-				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + " 設定読み込み時エラー：\n" + ex.Message);
+				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + " 設定読み込み時エラー：\n" + ex.Message + "\n" + path);
 				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
+				allSuccess = false;
 			}
 			try
 			{
@@ -82,7 +89,10 @@ namespace Shinta
 			{
 				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "読み込み後設定調整時エラー：\n" + ex.Message);
 				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
+				allSuccess = false;
 			}
+
+			return allSuccess;
 		}
 
 		// --------------------------------------------------------------------
@@ -96,8 +106,10 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// 保存
 		// --------------------------------------------------------------------
-		public void Save()
+		public Boolean Save()
 		{
+			Boolean allSuccess = true;
+
 			try
 			{
 				AdjustBeforeSave();
@@ -106,6 +118,7 @@ namespace Shinta
 			{
 				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "保存前設定調整時エラー：\n" + ex.Message);
 				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
+				allSuccess = false;
 			}
 			try
 			{
@@ -115,6 +128,7 @@ namespace Shinta
 			{
 				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "設定保存時エラー：\n" + ex.Message);
 				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
+				allSuccess = false;
 			}
 			try
 			{
@@ -124,7 +138,10 @@ namespace Shinta
 			{
 				_logWriter?.LogMessage(TraceEventType.Error, GetType().Name + "保存後設定調整時エラー：\n" + ex.Message);
 				_logWriter?.LogMessage(Common.TRACE_EVENT_TYPE_STATUS, "　スタックトレース：\n" + ex.StackTrace);
+				allSuccess = false;
 			}
+
+			return allSuccess;
 		}
 
 		// --------------------------------------------------------------------

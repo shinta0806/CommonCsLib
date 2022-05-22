@@ -1,50 +1,33 @@
 ﻿// ============================================================================
 // 
 // TextBox がフォーカスを得たときに全選択するためのビヘイビア
-// Copyright (C) 2020 by SHINTA
+// Copyright (C) 2020-2022 by SHINTA
 // 
 // ============================================================================
 
 // ----------------------------------------------------------------------------
+//
 // ----------------------------------------------------------------------------
 
 // ============================================================================
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2020/06/01 (Mon) | オリジナルバージョン。
+// (1.01) | 2022/05/22 (Sun) |   マウスクリックでも全選択するようにした。
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-
-#nullable enable
 
 namespace Shinta.Behaviors
 {
 	public class TextBoxAutoSelectBehavior : Behavior<TextBox>
 	{
-		// ====================================================================
-		// public プロパティー
-		// ====================================================================
-
-		// ====================================================================
-		// public メンバー変数
-		// ====================================================================
-
-		// ====================================================================
-		// protected メンバー関数
-		// ====================================================================
-
 		// ====================================================================
 		// protected メンバー関数
 		// ====================================================================
@@ -57,6 +40,7 @@ namespace Shinta.Behaviors
 			base.OnAttached();
 
 			AssociatedObject.GotFocus += ControlGotFocus;
+			AssociatedObject.PreviewMouseLeftButtonDown += ControlLeftButtonDown;
 		}
 
 		// ====================================================================
@@ -66,7 +50,7 @@ namespace Shinta.Behaviors
 		// --------------------------------------------------------------------
 		// View 側でフォーカスが取得された
 		// --------------------------------------------------------------------
-		private void ControlGotFocus(Object sender, RoutedEventArgs e)
+		private static void ControlGotFocus(Object sender, RoutedEventArgs e)
 		{
 			if (sender is TextBox textBox)
 			{
@@ -74,10 +58,20 @@ namespace Shinta.Behaviors
 			}
 		}
 
-
-
+		// --------------------------------------------------------------------
+		// View 側でフォーカスが取得された
+		// --------------------------------------------------------------------
+		private static void ControlLeftButtonDown(Object sender, MouseButtonEventArgs e)
+		{
+			if (sender is TextBox textBox)
+			{
+				if (textBox.IsFocused)
+				{
+					return;
+				}
+				textBox.Focus();
+				e.Handled = true;
+			}
+		}
 	}
-	// public class TextBoxAutoSelectBehavior ___END___
-
 }
-// namespace Shinta.Behaviors ___END___

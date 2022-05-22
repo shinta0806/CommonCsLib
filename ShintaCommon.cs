@@ -61,6 +61,8 @@
 //  4.00  | 2022/02/20 (Sun) | SelectFolder() を作成。
 //  4.10  | 2022/02/20 (Sun) | SelectFolders() を作成。
 //  4.20  | 2022/02/25 (Fri) | OpenMicrosoftStore() を作成。
+// (4.21) | 2022/05/22 (Sun) |   拡張子を追加。
+//  4.30  | 2022/05/22 (Sun) | TempPath() を作成。
 // ============================================================================
 
 using System;
@@ -72,6 +74,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -141,8 +144,8 @@ namespace Shinta
 		public const String FILE_EXT_JXR = ".jxr";
 		public const String FILE_EXT_KRA = ".kra";
 		public const String FILE_EXT_LOCK = ".lock";
+		public const String FILE_EXT_LOG_ARCHIVE = ".lga";
 		public const String FILE_EXT_LOG = ".log";
-		public const String FILE_EXT_LGA = ".lga";
 		public const String FILE_EXT_LRC = ".lrc";
 		public const String FILE_EXT_M4A = ".m4a";
 		public const String FILE_EXT_MKV = ".mkv";
@@ -157,6 +160,7 @@ namespace Shinta
 		public const String FILE_EXT_SQLITE3 = ".sqlite3";
 		public const String FILE_EXT_SQLITE3_SHM = ".sqlite3-shm";
 		public const String FILE_EXT_SQLITE3_WAL = ".sqlite3-wal";
+		public const String FILE_EXT_SETTINGS_ARCHIVE = ".sta";
 		public const String FILE_EXT_TIF = ".tif";
 		public const String FILE_EXT_TIFF = ".tiff";
 		public const String FILE_EXT_TPL = ".tpl";
@@ -765,13 +769,23 @@ namespace Shinta
 		}
 
 		// --------------------------------------------------------------------
+		// テンポラリフォルダー配下のファイル・フォルダー名として使えるパス（呼びだす度に異なるファイル、拡張子なし）
+		// --------------------------------------------------------------------
+		public static String TempPath()
+		{
+			// マルチスレッドでも安全にインクリメント
+			Int32 counter = Interlocked.Increment(ref _tempPathCounter);
+			return TempFolderPath() + counter.ToString() + "_" + Environment.CurrentManagedThreadId.ToString();
+		}
+
+		// --------------------------------------------------------------------
 		// 設定保存用フォルダーのパス（末尾 '\\'）
 		// フォルダーが存在しない場合は作成する
 		// --------------------------------------------------------------------
 		public static String UserAppDataFolderPath()
 		{
 			String path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify)
-					+ "\\" + Common.FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]) + "\\";
+					+ "\\" + FOLDER_NAME_SHINTA + Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]) + "\\";
 			try
 			{
 				Directory.CreateDirectory(path);
@@ -788,6 +802,13 @@ namespace Shinta
 
 		private const String COMPARE_VERSION_STRING_REGEX = @"Ver ([0-9]+\.[0-9]+)(.*)";
 		//private const String REG_KEY_DOT_NET_45_VERSION = "SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\";
+
+		// ====================================================================
+		// private 変数
+		// ====================================================================
+
+		// TempPath() 用カウンター（同じスレッドでもファイル名が分かれるようにするため）
+		private static Int32 _tempPathCounter;
 
 		// ====================================================================
 		// private メンバー関数

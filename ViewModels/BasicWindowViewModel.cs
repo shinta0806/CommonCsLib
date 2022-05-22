@@ -42,6 +42,7 @@ namespace Shinta.ViewModels
 		public BasicWindowViewModel(LogWriter? logWriter = null)
 		{
 			_logWriter = logWriter;
+			_logWriter?.ShowLogMessage(Common.TRACE_EVENT_TYPE_STATUS, GetType().Name + " 生成中...");
 		}
 
 		// ====================================================================

@@ -17,6 +17,7 @@
 //  -.--  | 2022/02/06 (Sun) | 作成開始。
 //  1.00  | 2022/02/06 (Sun) | オリジナルバージョン。
 // (1.01) | 2022/02/06 (Sun) |   GetScaledMonitorRects() を作成。
+// (1.02) | 2022/05/14 (Sat) |   ログ機能を付けた。
 // ============================================================================
 
 using System;
@@ -35,8 +36,9 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		// メインコンストラクター
 		// --------------------------------------------------------------------
-		public MonitorManager()
+		public MonitorManager(LogWriter? logWriter = null)
 		{
+			_logWriter = logWriter;
 		}
 
 		// ====================================================================
@@ -73,6 +75,8 @@ namespace Shinta
 				Double scaleY = Common.DEFAULT_DPI / dpiY;
 				Rect rect = new(_monitorRawRects[i].Left * scaleX, _monitorRawRects[i].Top * scaleY, _monitorRawRects[i].Width * scaleX, _monitorRawRects[i].Height * scaleY);
 				_monitorRawRects[i] = rect;
+
+				_logWriter?.LogMessage(TraceEventType.Information, "モニター " + i.ToString() + ": (" + _monitorRawRects[i].ToString() + "), DPI: " + dpiX + ", " + dpiY);
 			}
 			return _monitorRawRects;
 		}
@@ -86,6 +90,9 @@ namespace Shinta
 
 		// ディスプレイハンドル格納用
 		private List<IntPtr>? _monitorHandles;
+
+		// ログ
+		private readonly LogWriter? _logWriter;
 
 		// ====================================================================
 		// private 関数
