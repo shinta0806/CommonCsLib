@@ -23,6 +23,7 @@
 // (1.31) | 2022/02/26 (Sat) |   ClosingCommand の実装を改善。
 //  1.40  | 2022/02/26 (Sat) | HelpBoxClickedCommand を実装。
 //  1.50  | 2022/02/26 (Sat) | HelpBoxClickedCommandParameter を実装。
+// (1.51) | 2022/05/31 (Tue) |   HelpBoxClickedCommand の動作を改善。
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
@@ -337,6 +338,11 @@ namespace Shinta.Behaviors
 			}
 
 			WindowInteropHelper helper = new(thisObject.AssociatedObject);
+			if (helper.Handle == IntPtr.Zero)
+			{
+				return;
+			}
+
 			HwndSource hwndSource = HwndSource.FromHwnd(helper.Handle);
 
 			// 二重登録されないように、いったんイベントハンドラーを無効にする
