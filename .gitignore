@@ -292,6 +292,7 @@ old
 !MonitorManager.cs
 !RssManager.cs
 !SerializableSettings.cs
+!SerilogUtils.cs
 !ShintaCommon.cs
 !ShintaCommonWindows.cs
 !SimpleTraceListener.cs

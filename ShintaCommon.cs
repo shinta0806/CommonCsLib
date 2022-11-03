@@ -339,8 +339,10 @@ namespace Shinta
 		{
 			XmlSerializer xmlSerializer = new(obj.GetType());
 			using StreamReader streamReader = new(path, new UTF8Encoding(false));
-			XmlDocument xmlDocument = new();
-			xmlDocument.PreserveWhitespace = true;
+			XmlDocument xmlDocument = new()
+			{
+				PreserveWhitespace = true
+			};
 			xmlDocument.Load(streamReader);
 			if (xmlDocument.DocumentElement == null)
 			{
