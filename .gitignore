@@ -278,8 +278,9 @@ old
 
 # Add needed C# files
 
-!Behaviors/*.cs
-!ViewModels/*.cs
+!Wpf/*.cs
+!Wpf/Behaviors/*.cs
+!Wpf/ViewModels/*.cs
 
 !CsvManager.cs
 !Downloader.cs

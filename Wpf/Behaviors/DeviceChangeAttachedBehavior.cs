@@ -26,7 +26,7 @@ using System.Windows.Interop;
 
 #nullable enable
 
-namespace Shinta.Behaviors
+namespace Shinta.Wpf.Behaviors
 {
 	public class DeviceChangeAttachedBehavior
 	{

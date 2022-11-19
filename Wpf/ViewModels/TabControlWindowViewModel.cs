@@ -24,7 +24,7 @@ using Livet.Commands;
 using System;
 using System.Diagnostics;
 
-namespace Shinta.ViewModels
+namespace Shinta.Wpf.ViewModels
 {
 	internal abstract class TabControlWindowViewModel<T> : BasicWindowViewModel
 	{

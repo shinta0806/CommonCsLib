@@ -22,7 +22,7 @@
 using System;
 using System.Windows;
 
-namespace Shinta.Behaviors
+namespace Shinta.Wpf.Behaviors
 {
 	public class IsFocusedAttachedBehavior
 	{

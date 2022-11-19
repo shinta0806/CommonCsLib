@@ -35,7 +35,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace Shinta.Behaviors
+namespace Shinta.Wpf.Behaviors
 {
 	public class DataGridBindingSupportBehavior : SelectorBindingSupportBehavior<DataGrid>
 	{

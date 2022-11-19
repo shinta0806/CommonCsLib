@@ -28,7 +28,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 
-namespace Shinta.ViewModels
+namespace Shinta.Wpf.ViewModels
 {
 	internal class BasicWindowViewModel : ViewModel
 	{

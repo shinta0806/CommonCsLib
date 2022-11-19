@@ -29,7 +29,7 @@ using System.Windows.Input;
 
 #nullable enable
 
-namespace Shinta.Behaviors
+namespace Shinta.Wpf.Behaviors
 {
 	public class FileDropAttachedBehavior
 	{

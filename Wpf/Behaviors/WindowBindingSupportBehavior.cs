@@ -35,7 +35,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 
-namespace Shinta.Behaviors
+namespace Shinta.Wpf.Behaviors
 {
 	public class WindowBindingSupportBehavior : Behavior<Window>
 	{

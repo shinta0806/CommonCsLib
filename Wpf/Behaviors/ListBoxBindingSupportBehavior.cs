@@ -18,7 +18,7 @@
 using System;
 using System.Windows.Controls;
 
-namespace Shinta.Behaviors
+namespace Shinta.Wpf.Behaviors
 {
 	public class ListBoxBindingSupportBehavior : SelectorBindingSupportBehavior<ListBox>
 	{

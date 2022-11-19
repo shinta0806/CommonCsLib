@@ -32,7 +32,7 @@ using System.Linq;
 using System.Threading;
 using System.Windows;
 
-namespace Shinta
+namespace Shinta.Wpf
 {
 	public class LogWriter
 	{

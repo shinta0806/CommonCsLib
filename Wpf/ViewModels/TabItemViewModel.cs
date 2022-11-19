@@ -23,7 +23,7 @@ using Livet;
 
 using System;
 
-namespace Shinta.ViewModels
+namespace Shinta.Wpf.ViewModels
 {
 	internal class TabItemViewModel<T> : ViewModel
 	{

@@ -34,7 +34,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Management;
 
-namespace Shinta
+namespace Shinta.Wpf
 {
 	public class SystemEnvironment
 	{

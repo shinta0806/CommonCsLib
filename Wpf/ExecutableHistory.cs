@@ -20,7 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Shinta
+namespace Shinta.Wpf
 {
 	internal class ExecutableHistory
 	{

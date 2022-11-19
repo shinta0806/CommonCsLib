@@ -26,7 +26,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace Shinta
+namespace Shinta.Wpf
 {
 	public abstract class SerializableSettings
 	{

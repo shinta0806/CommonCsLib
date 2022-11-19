@@ -25,7 +25,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 
-namespace Shinta
+namespace Shinta.Wpf
 {
 	internal class MonitorManager
 	{

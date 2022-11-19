@@ -40,7 +40,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
-namespace Shinta
+namespace Shinta.Wpf
 {
 	public class SimpleTraceListener : TextWriterTraceListener
 	{

@@ -25,7 +25,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
-namespace Shinta.Behaviors
+namespace Shinta.Wpf.Behaviors
 {
 	public abstract class SelectorBindingSupportBehavior<T> : Behavior<T> where T : Selector
 	{

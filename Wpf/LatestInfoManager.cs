@@ -25,7 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Shinta
+namespace Shinta.Wpf
 {
 	public class LatestInfoManager
 	{
