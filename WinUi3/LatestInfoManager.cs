@@ -19,19 +19,12 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2022/11/19 (Sat) | WPF 版を元に作成開始。
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
+// (1.01) | 2022/11/19 (Sat) |   軽微なリファクタリング。
 // ============================================================================
 
-using Microsoft.UI.Xaml;
 using Serilog;
 using Serilog.Events;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using Windows.Foundation;
+
 using Windows.UI.Popups;
 
 namespace Shinta.WinUi3
@@ -39,12 +32,19 @@ namespace Shinta.WinUi3
 	public class LatestInfoManager
 	{
 		// ====================================================================
-		// コンストラクター・デストラクター
+		// コンストラクター
 		// ====================================================================
 
-		// --------------------------------------------------------------------
-		// コンストラクター
-		// --------------------------------------------------------------------
+		/// <summary>
+		/// メインコンストラクター
+		/// </summary>
+		/// <param name="rssUrl"></param>
+		/// <param name="forceShow"></param>
+		/// <param name="wait"></param>
+		/// <param name="appVer"></param>
+		/// <param name="cancellationToken"></param>
+		/// <param name="window"></param>
+		/// <param name="settingsPath"></param>
 		public LatestInfoManager(String rssUrl, Boolean forceShow, Int32 wait, String appVer, CancellationToken cancellationToken, WindowEx window, String? settingsPath = null)
 		{
 			_rssUrl = rssUrl;
@@ -64,13 +64,13 @@ namespace Shinta.WinUi3
 		}
 
 		// ====================================================================
-		// public メンバー関数
+		// public 関数
 		// ====================================================================
 
-		// --------------------------------------------------------------------
-		// 最新情報の確認と、必要に応じて結果表示
-		// ＜返値＞ true: 成功, false: 失敗
-		// --------------------------------------------------------------------
+		/// <summary>
+		/// 最新情報の確認と、必要に応じて結果表示
+		/// </summary>
+		/// <returns>true: 成功, false: 失敗</returns>
 		public Task<Boolean> CheckAsync()
 		{
 			return Task.Run(async () =>
@@ -106,48 +106,67 @@ namespace Shinta.WinUi3
 		}
 
 		// ====================================================================
-		// private メンバー定数
+		// private 定数
 		// ====================================================================
 
-		// 最新情報保存ファイル名
+		/// <summary>
+		/// 最新情報保存ファイル名
+		/// </summary>
 		private const String FILE_NAME_LATEST_INFO = "LatestInfo" + Common.FILE_EXT_CONFIG;
 
 		// ====================================================================
-		// private メンバー変数
+		// private 変数
 		// ====================================================================
 
-		// 最新情報を保持している RSS の URL
+		/// <summary>
+		/// 最新情報を保持している RSS の URL
+		/// </summary>
 		private readonly String _rssUrl;
 
-		// 最新情報が無くてもユーザーに通知
+		/// <summary>
+		/// 最新情報が無くてもユーザーに通知
+		/// </summary>
 		private readonly Boolean _forceShow;
 
-		// チェック開始までの待ち時間 [s]
+		/// <summary>
+		/// チェック開始までの待ち時間 [s]
+		/// </summary>
 		private readonly Int32 _wait;
 
-		// アプリのバージョン
+		/// <summary>
+		/// アプリのバージョン
+		/// </summary>
 		private readonly String _appVer;
 
-		// 中断制御
+		/// <summary>
+		/// 中断制御
+		/// </summary>
 		private readonly CancellationToken _cancellationToken;
 
-		// 最新情報保存パス
+		/// <summary>
+		/// 最新情報保存パス
+		/// </summary>
 		private readonly String _settingsPath;
 
-		// 最新情報
+		/// <summary>
+		/// 最新情報
+		/// </summary>
 		private List<RssItem> _newItems = new();
 
-		// メッセージ表示用の親ウィンドウ
+		/// <summary>
+		/// メッセージ表示用の親ウィンドウ
+		/// </summary>
 		private WindowEx _window;
 
 		// ====================================================================
 		// private メンバー関数
 		// ====================================================================
 
-		// --------------------------------------------------------------------
-		// 最新情報の確認
-		// ＜例外＞ Exception
-		// --------------------------------------------------------------------
+		/// <summary>
+		/// 最新情報の確認
+		/// </summary>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
 		private async Task AskDisplayLatestAsync()
 		{
 			MessageDialog messageDialog = _window.CreateMessageDialog("最新情報が " + _newItems.Count.ToString() + " 件見つかりました。\n表示しますか？", "質問");
@@ -160,9 +179,10 @@ namespace Shinta.WinUi3
 			}
 		}
 
-		// --------------------------------------------------------------------
-		// RSS マネージャーを生成
-		// --------------------------------------------------------------------
+		/// <summary>
+		/// RSS マネージャーを生成
+		/// </summary>
+		/// <returns></returns>
 		private RssManager CreateRssManager()
 		{
 			RssManager rssManager = new(_settingsPath);
@@ -185,10 +205,10 @@ namespace Shinta.WinUi3
 			return rssManager;
 		}
 
-		// --------------------------------------------------------------------
-		// 最新情報の確認
-		// ＜例外＞ Exception
-		// --------------------------------------------------------------------
+		/// <summary>
+		/// 最新情報の確認
+		/// </summary>
+		/// <exception cref="Exception"></exception>
 		private void DisplayLatest()
 		{
 			Int32 numErrors = 0;
@@ -220,10 +240,11 @@ namespace Shinta.WinUi3
 			}
 		}
 
-		// --------------------------------------------------------------------
-		// 最新情報の確認と表示準備
-		// ＜例外＞ Exception
-		// --------------------------------------------------------------------
+		/// <summary>
+		/// 最新情報の確認と表示準備
+		/// </summary>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
 		private async Task PrepareLatestAsync()
 		{
 			Log.Information("最新情報を確認中...");
@@ -260,6 +281,5 @@ namespace Shinta.WinUi3
 				return Task.CompletedTask;
 			}
 		}
-
 	}
 }

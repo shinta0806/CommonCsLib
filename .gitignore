@@ -278,27 +278,18 @@ old
 
 # Add needed C# files
 
+!WinUi3/*
 !Wpf/*.cs
 !Wpf/Behaviors/*.cs
 !Wpf/ViewModels/*.cs
 
 !CsvManager.cs
 !Downloader.cs
-!ExecutableHistory.cs
-!Haiku.cs
 !JulianDay.cs
-!LatestInfoManager.cs
-!LinqUtils.cs
-!LogWriter.cs
-!MonitorManager.cs
-!RssManager.cs
-!SerializableSettings.cs
+!ResourceLoaderExtensions.cs
 !SerilogUtils.cs
 !ShintaCommon.cs
 !ShintaCommonWindows.cs
-!SimpleTraceListener.cs
 !StringUtils.cs
-!SystemEnvironment.cs
-!UpdaterLauncher.cs
 !WindowsApi.cs
 
