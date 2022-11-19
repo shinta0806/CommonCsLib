@@ -23,506 +23,582 @@
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
 // ============================================================================
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Xml;
 
-namespace Shinta.WinUi3
+namespace Shinta.WinUi3;
+
+// ========================================================================
+// 
+// RSS を解析・管理するクラス
+// 
+// ========================================================================
+
+public class RssManager
 {
-	// ========================================================================
-	// 
-	// RSS を解析・管理するクラス
-	// 
-	// ========================================================================
+	// ====================================================================
+	// コンストラクター
+	// ====================================================================
 
-	public class RssManager
+	/// <summary>
+	/// メインコンストラクター
+	/// </summary>
+	/// <param name="settingsPath"></param>
+	public RssManager(String settingsPath)
 	{
-		// ====================================================================
-		// コンストラクター・デストラクター
-		// ====================================================================
+		_settingsPath = settingsPath;
+	}
 
-		// --------------------------------------------------------------------
-		// コンストラクター（引数あり）
-		// --------------------------------------------------------------------
-		public RssManager(String settingsPath)
+	// ====================================================================
+	// public プロパティー
+	// ====================================================================
+
+	/// <summary>
+	/// 既読の RSS を取得した日付
+	/// </summary>
+	public DateTime PastDownloadDate
+	{
+		get;
+		set;
+	}
+
+	/// <summary>
+	/// 過去に読み込んだ既読アイテム（新しい項目が先頭、guid のみ）
+	/// </summary>
+	public List<String> PastRssGuids
+	{
+		get;
+		set;
+	} = new();
+
+	/// <summary>
+	/// 最新の RSS をダウンロードする間隔（日数）
+	/// </summary>
+	public Int32 CheckLatestInterval
+	{
+		get;
+		set;
+	} = CHECK_LATEST_INTERVAL_DEFAULT;
+
+	/// <summary>
+	/// 既読アイテム保持の最大数
+	/// </summary>
+	public Int32 PastRssGuidsCapacity
+	{
+		get;
+		set;
+	} = PAST_RSS_GUIDS_CAPACITY_DEFAULT;
+
+	/// <summary>
+	/// ユーザーエージェント
+	/// </summary>
+	public String UserAgent
+	{
+		get => _downloader.UserAgent;
+		set => _downloader.UserAgent = value;
+	}
+
+	/// <summary>
+	/// 終了要求制御
+	/// </summary>
+	public CancellationToken CancellationToken
+	{
+		get => _downloader.CancellationToken;
+		set => _downloader.CancellationToken = value;
+	}
+
+	// ====================================================================
+	// public 定数
+	// ====================================================================
+
+	/// <summary>
+	/// XML ノード名
+	/// </summary>
+	public const String NODE_NAME_CHANNEL = "channel";
+	public const String NODE_NAME_CLOUD = "cloud";
+	public const String NODE_NAME_GUID = "guid";
+	public const String NODE_NAME_ITEM = "item";
+	public const String NODE_NAME_LINK = "link";
+	public const String NODE_NAME_TITLE = "title";
+
+	/// <summary>
+	/// XML 属性名
+	/// </summary>
+	public const String ATTRIBUTE_NAME_APP_VER_MAX = "appvermax";
+	public const String ATTRIBUTE_NAME_APP_VER_MIN = "appvermin";
+	public const String ATTRIBUTE_NAME_MD5 = "md5";
+	public const String ATTRIBUTE_NAME_URL = "url";
+
+	// ====================================================================
+	// public 関数
+	// ====================================================================
+
+	/// <summary>
+	/// 読み込んだ RSS の全項目（RSS で最初に記述されている項目が先頭）
+	/// ただし、guid が無いものは除く
+	/// </summary>
+	/// <returns></returns>
+	public List<RssItem> GetAllItems()
+	{
+		List<RssItem> allItems = new(_latestRssItems);
+		return allItems;
+	}
+
+	/// <summary>
+	/// 最新 RSS で追加された項目を取得（RSS で最初に記述されている項目が先頭）
+	/// </summary>
+	/// <param name="forceFirst">過去にチェックを行っていない場合も追加項目を取得</param>
+	/// <returns></returns>
+	public List<RssItem> GetNewItems(Boolean forceFirst = false)
+	{
+		List<RssItem> newItems = new();
+
+		// 既読情報が無い（過去にチェックを行っていない）場合は、更新情報として扱わない
+		if (PastDownloadDate == DateTime.MinValue && !forceFirst)
 		{
-			_settingsPath = settingsPath;
-		}
-
-		// ====================================================================
-		// public プロパティー
-		// ====================================================================
-
-		// 既読の RSS を取得した日付
-		public DateTime PastDownloadDate { get; set; }
-
-		// 過去に読み込んだ既読アイテム（新しい項目が先頭、guid のみ）
-		public List<String> PastRssGuids { get; set; } = new();
-
-		// 最新の RSS をダウンロードする間隔（日数）
-		public Int32 CheckLatestInterval { get; set; } = CHECK_LATEST_INTERVAL_DEFAULT;
-
-		// 既読アイテム保持の最大数
-		public Int32 PastRssGuidsCapacity { get; set; } = PAST_RSS_GUIDS_CAPACITY_DEFAULT;
-
-		// ユーザーエージェント
-		public String UserAgent
-		{
-			get => _downloader.UserAgent;
-			set => _downloader.UserAgent = value;
-		}
-
-		// 終了要求制御
-		public CancellationToken CancellationToken
-		{
-			get => _downloader.CancellationToken;
-			set => _downloader.CancellationToken = value;
-		}
-
-		// ====================================================================
-		// public 定数
-		// ====================================================================
-
-		// XML ノード名
-		public const String NODE_NAME_CHANNEL = "channel";
-		public const String NODE_NAME_CLOUD = "cloud";
-		public const String NODE_NAME_GUID = "guid";
-		public const String NODE_NAME_ITEM = "item";
-		public const String NODE_NAME_LINK = "link";
-		public const String NODE_NAME_TITLE = "title";
-
-		// XML 属性名
-		public const String ATTRIBUTE_NAME_APP_VER_MAX = "appvermax";
-		public const String ATTRIBUTE_NAME_APP_VER_MIN = "appvermin";
-		public const String ATTRIBUTE_NAME_MD5 = "md5";
-		public const String ATTRIBUTE_NAME_URL = "url";
-
-		// ====================================================================
-		// public メンバー関数
-		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// 読み込んだ RSS の全項目（RSS で最初に記述されている項目が先頭）
-		// ただし、guid が無いものは除く
-		// --------------------------------------------------------------------
-		public List<RssItem> GetAllItems()
-		{
-			List<RssItem> allItems = new(_latestRssItems);
-			return allItems;
-		}
-
-		// --------------------------------------------------------------------
-		// 最新 RSS で追加された項目を取得（RSS で最初に記述されている項目が先頭）
-		// ＜引数＞ forceFirst: 過去にチェックを行っていない場合も追加項目を取得
-		// --------------------------------------------------------------------
-		public List<RssItem> GetNewItems(Boolean forceFirst = false)
-		{
-			List<RssItem> newItems = new();
-
-			// 既読情報が無い（過去にチェックを行っていない）場合は、更新情報として扱わない
-			if (PastDownloadDate == DateTime.MinValue && !forceFirst)
-			{
-				return newItems;
-			}
-
-			foreach (RssItem rssItem in _latestRssItems)
-			{
-				if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
-				{
-					continue;
-				}
-
-				// 既読の guid と一致しなければ新しい
-				if (!PastRssGuids.Contains(guid))
-				{
-					newItems.Add(rssItem);
-				}
-			}
-
 			return newItems;
 		}
 
-		// --------------------------------------------------------------------
-		// 最新 RSS のダウンロードおよび更新通知が必要か
-		// --------------------------------------------------------------------
-		public Boolean IsDownloadNeeded()
+		foreach (RssItem rssItem in _latestRssItems)
 		{
-			TimeSpan diffDate = new(CheckLatestInterval, 0, 0, 0);
-			return (PastDownloadDate == DateTime.MinValue)
-					|| (DateTime.Now.Date - PastDownloadDate.Date >= diffDate);
-		}
-
-		// --------------------------------------------------------------------
-		// 過去の RSS 管理情報を読み込む
-		// --------------------------------------------------------------------
-		public void Load()
-		{
-			RssSettings rssSettings = new(_settingsPath);
-			rssSettings.Load();
-
-			PastDownloadDate = rssSettings.PastDownloadDate;
-			PastRssGuids = rssSettings.PastRssGuids;
-		}
-
-		// --------------------------------------------------------------------
-		// 最新 RSS のダウンロード
-		// --------------------------------------------------------------------
-		public async Task<(Boolean result, String? errorMessage)> ReadLatestRssAsync(String source, String appVer)
-		{
-			Boolean result = false;
-			Stream? stream = null;
-			String? errorMessage = null;
-
-			try
+			if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
 			{
-				if (String.Compare(source, 0, "http://", 0, 7) == 0
-						|| String.Compare(source, 0, "https://", 0, 8) == 0
-						|| String.Compare(source, 0, "ftp://", 0, 6) == 0
-						|| String.Compare(source, 0, "file://", 0, 7) == 0)
-				{
-					// URL 形式のソースからダウンロードしたストリームを作成
-					stream = new MemoryStream();
-					HttpResponseMessage response = await _downloader.DownloadAsStreamAsync(source, stream);
-					if (!response.IsSuccessStatusCode)
-					{
-						throw new Exception(response.StatusCode.ToString());
-					}
-					stream.Position = 0;
-				}
-				else
-				{
-					// パスで指定されたファイルでストリームを作成
-					stream = new FileStream(source, FileMode.Open);
-				}
-
-				(result, errorMessage) = await ReadLatestRssCoreAsync(stream, appVer);
-				if (!result)
-				{
-					throw new Exception(errorMessage);
-				}
+				continue;
 			}
-			catch (Exception ex)
+
+			// 既読の guid と一致しなければ新しい
+			if (!PastRssGuids.Contains(guid))
 			{
-				errorMessage = ex.Message;
+				newItems.Add(rssItem);
+			}
+		}
+
+		return newItems;
+	}
+
+	/// <summary>
+	/// 最新 RSS のダウンロードおよび更新通知が必要か
+	/// </summary>
+	/// <returns></returns>
+	public Boolean IsDownloadNeeded()
+	{
+		TimeSpan diffDate = new(CheckLatestInterval, 0, 0, 0);
+		return (PastDownloadDate == DateTime.MinValue)
+				|| (DateTime.Now.Date - PastDownloadDate.Date >= diffDate);
+	}
+
+	/// <summary>
+	/// 過去の RSS 管理情報を読み込む
+	/// </summary>
+	public void Load()
+	{
+		RssSettings rssSettings = new(_settingsPath);
+		rssSettings.Load();
+
+		PastDownloadDate = rssSettings.PastDownloadDate;
+		PastRssGuids = rssSettings.PastRssGuids;
+	}
+
+	/// <summary>
+	/// 最新 RSS のダウンロード
+	/// </summary>
+	/// <param name="source"></param>
+	/// <param name="appVer"></param>
+	/// <returns></returns>
+	public async Task<(Boolean result, String? errorMessage)> ReadLatestRssAsync(String source, String appVer)
+	{
+		Boolean result = false;
+		Stream? stream = null;
+		String? errorMessage = null;
+
+		try
+		{
+			if (String.Compare(source, 0, "http://", 0, 7) == 0
+					|| String.Compare(source, 0, "https://", 0, 8) == 0
+					|| String.Compare(source, 0, "ftp://", 0, 6) == 0
+					|| String.Compare(source, 0, "file://", 0, 7) == 0)
+			{
+				// URL 形式のソースからダウンロードしたストリームを作成
+				stream = new MemoryStream();
+				HttpResponseMessage response = await _downloader.DownloadAsStreamAsync(source, stream);
+				if (!response.IsSuccessStatusCode)
+				{
+					throw new Exception(response.StatusCode.ToString());
+				}
+				stream.Position = 0;
+			}
+			else
+			{
+				// パスで指定されたファイルでストリームを作成
+				stream = new FileStream(source, FileMode.Open);
+			}
+
+			(result, errorMessage) = await ReadLatestRssCoreAsync(stream, appVer);
+			if (!result)
+			{
+				throw new Exception(errorMessage);
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = ex.Message;
 #if DEBUG
-				var i = ex.InnerException;
+			var i = ex.InnerException;
 #endif
-			}
-			finally
+		}
+		finally
+		{
+			stream?.Close();
+		}
+		return (result, errorMessage);
+	}
+
+	/// <summary>
+	/// RSS 管理情報を保存
+	/// </summary>
+	public void Save()
+	{
+		RssSettings rssSettings = new(_settingsPath);
+		rssSettings.PastDownloadDate = PastDownloadDate;
+		rssSettings.PastRssGuids = PastRssGuids;
+		rssSettings.Save();
+	}
+
+	/// <summary>
+	/// 最新 RSS で追加された項目を既読にする
+	/// </summary>
+	public void UpdatePastRss()
+	{
+		List<RssItem> newItems = GetNewItems(true);
+		List<String> addGuids = new();
+		foreach (RssItem newItem in newItems)
+		{
+			if (!newItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
 			{
-				stream?.Close();
+				continue;
 			}
-			return (result, errorMessage);
+
+			addGuids.Add(guid);
+		}
+		PastRssGuids.InsertRange(0, addGuids);
+		Truncate();
+
+		// 取得日を更新
+		PastDownloadDate = _latestDownloadDate;
+	}
+
+	// ====================================================================
+	// private 定数
+	// ====================================================================
+
+	/// <summary>
+	/// n 日ごとに RSS を確認するのデフォルト値
+	/// </summary>
+	private const Int32 CHECK_LATEST_INTERVAL_DEFAULT = 3;
+
+	/// <summary>
+	/// 既読アイテム保持の最大数のデフォルト値
+	/// </summary>
+	private const Int32 PAST_RSS_GUIDS_CAPACITY_DEFAULT = 10;
+
+	// ====================================================================
+	// private 変数
+	// ====================================================================
+
+	/// <summary>
+	/// RSS ダウンローダー
+	/// </summary>
+	private readonly Downloader _downloader = new();
+
+	/// <summary>
+	/// 最新の RSS に含まれるアイテム（新しい項目が先頭）
+	/// </summary>
+	private readonly List<RssItem> _latestRssItems = new();
+
+	/// <summary>
+	/// 最新の RSS を取得した時点の日付（ゆくゆくは PastDownloadDate をこの値で上書きすることになる）
+	/// </summary>
+	private DateTime _latestDownloadDate;
+
+	/// <summary>
+	/// 保存パス
+	/// </summary>
+	private readonly String _settingsPath;
+
+	// ====================================================================
+	// private 関数
+	// ====================================================================
+
+	/// <summary>
+	/// 認識すべき RSS 項目か
+	/// </summary>
+	/// <param name="appVer"></param>
+	/// <param name="rssItem"></param>
+	/// <returns></returns>
+	private static Boolean IsValidRssItem(String appVer, RssItem rssItem)
+	{
+		// アイテム内に guid が無ければ無効
+		if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
+		{
+			return false;
 		}
 
-		// --------------------------------------------------------------------
-		// RSS 管理情報を保存
-		// --------------------------------------------------------------------
-		public void Save()
+		// appVer が appvermin 未満なら無効
+		if (rssItem.Elements.TryGetValue(NODE_NAME_GUID + RssItem.RSS_ITEM_NAME_DELIMITER + ATTRIBUTE_NAME_APP_VER_MIN, out String? appVerMin)
+				&& Common.CompareVersionString(appVer, appVerMin) < 0)
 		{
-			RssSettings rssSettings = new(_settingsPath);
-			rssSettings.PastDownloadDate = PastDownloadDate;
-			rssSettings.PastRssGuids = PastRssGuids;
-			rssSettings.Save();
+			return false;
 		}
 
-		// --------------------------------------------------------------------
-		// 最新 RSS で追加された項目を既読にする
-		// --------------------------------------------------------------------
-		public void UpdatePastRss()
+		// appVer が appvermax 超過なら無効
+		if (rssItem.Elements.TryGetValue(NODE_NAME_GUID + RssItem.RSS_ITEM_NAME_DELIMITER + ATTRIBUTE_NAME_APP_VER_MAX, out String? appVerMax)
+				&& Common.CompareVersionString(appVer, appVerMax) > 0)
 		{
-			List<RssItem> newItems = GetNewItems(true);
-			List<String> addGuids = new();
-			foreach (RssItem newItem in newItems)
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// cloud タグの処理（RSS サイト負荷監視用カウンターを回す（中身は読み捨てる））
+	/// </summary>
+	/// <param name="cloud"></param>
+	/// <returns></returns>
+	private async Task<Boolean> LoadCloudAsync(XmlNode cloud)
+	{
+		Boolean result = false;
+
+		try
+		{
+			XmlAttributeCollection? attrs = cloud.Attributes;
+			if (attrs == null)
 			{
-				if (!newItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
+				return false;
+			}
+			XmlAttribute? url = attrs[ATTRIBUTE_NAME_URL];
+			if (url == null)
+			{
+				return false;
+			}
+			using MemoryStream memoryStream = new();
+			await _downloader.DownloadAsStreamAsync(url.Value, memoryStream);
+			result = true;
+		}
+		catch (Exception)
+		{
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// RSS を読み込む中心部分（解析）
+	/// </summary>
+	/// <param name="stream"></param>
+	/// <param name="appVer"></param>
+	/// <returns></returns>
+	private async Task<(Boolean result, String? errorMessage)> ReadLatestRssCoreAsync(Stream stream, String appVer)
+	{
+		Boolean result = false;
+		String? errorMessage = null;
+
+		try
+		{
+#if DEBUGz
+			await Task.Delay(3000);
+#endif
+			_latestRssItems.Clear();
+
+			// パーサーに読み込ませる
+			XmlDocument xml = new();
+			xml.Load(stream);
+
+			// ルートとチャンネル
+			if (xml.DocumentElement == null)
+			{
+				throw new Exception("ルート要素がありません。");
+			}
+			XmlNode? channel = xml.DocumentElement.FirstChild;
+			if (channel == null || channel.Name != NODE_NAME_CHANNEL)
+			{
+				throw new Exception(NODE_NAME_CHANNEL + " 要素がありません。");
+			}
+
+			// アイテムを取り出す
+			foreach (XmlNode item in channel.ChildNodes)
+			{
+				if (item.Name == NODE_NAME_CLOUD)
+				{
+					// RSS 負荷監視（エラー発生でも続行）
+					await LoadCloudAsync(item);
+					continue;
+				}
+				else if (item.Name != NODE_NAME_ITEM)
 				{
 					continue;
 				}
 
-				addGuids.Add(guid);
-			}
-			PastRssGuids.InsertRange(0, addGuids);
-			Truncate();
-
-			// 取得日を更新
-			PastDownloadDate = _latestDownloadDate;
-		}
-
-		// ====================================================================
-		// private 定数
-		// ====================================================================
-
-		// n 日ごとに RSS を確認するのデフォルト値
-		private const Int32 CHECK_LATEST_INTERVAL_DEFAULT = 3;
-
-		// 既読アイテム保持の最大数のデフォルト値
-		private const Int32 PAST_RSS_GUIDS_CAPACITY_DEFAULT = 10;
-
-		// ====================================================================
-		// private メンバー変数
-		// ====================================================================
-
-		// RSS ダウンローダー
-		private readonly Downloader _downloader = new();
-
-		// 最新の RSS に含まれるアイテム（新しい項目が先頭）
-		private readonly List<RssItem> _latestRssItems = new();
-
-		// 最新の RSS を取得した時点の日付（ゆくゆくは PastDownloadDate をこの値で上書きすることになる）
-		private DateTime _latestDownloadDate;
-
-		// 保存パス
-		private readonly String _settingsPath;
-
-		// ====================================================================
-		// private メンバー関数
-		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// 認識すべき RSS 項目か
-		// --------------------------------------------------------------------
-		private static Boolean IsValidRssItem(String appVer, RssItem rssItem)
-		{
-			// アイテム内に guid が無ければ無効
-			if (!rssItem.Elements.TryGetValue(NODE_NAME_GUID, out String? guid) || String.IsNullOrEmpty(guid))
-			{
-				return false;
-			}
-
-			// appVer が appvermin 未満なら無効
-			if (rssItem.Elements.TryGetValue(NODE_NAME_GUID + RssItem.RSS_ITEM_NAME_DELIMITER + ATTRIBUTE_NAME_APP_VER_MIN, out String? appVerMin)
-					&& Common.CompareVersionString(appVer, appVerMin) < 0)
-			{
-				return false;
-			}
-
-			// appVer が appvermax 超過なら無効
-			if (rssItem.Elements.TryGetValue(NODE_NAME_GUID + RssItem.RSS_ITEM_NAME_DELIMITER + ATTRIBUTE_NAME_APP_VER_MAX, out String? appVerMax)
-					&& Common.CompareVersionString(appVer, appVerMax) > 0)
-			{
-				return false;
-			}
-
-			return true;
-		}
-
-		// --------------------------------------------------------------------
-		// cloud タグの処理（RSS サイト負荷監視用カウンターを回す（中身は読み捨てる））
-		// --------------------------------------------------------------------
-		private async Task<Boolean> LoadCloudAsync(XmlNode cloud)
-		{
-			Boolean result = false;
-
-			try
-			{
-				XmlAttributeCollection? attrs = cloud.Attributes;
-				if (attrs == null)
+				// アイテムタグの処理
+				RssItem rssItem = new();
+				foreach (XmlNode leaf in item.ChildNodes)
 				{
-					return false;
-				}
-				XmlAttribute? url = attrs[ATTRIBUTE_NAME_URL];
-				if (url == null)
-				{
-					return false;
-				}
-				using MemoryStream memoryStream = new();
-				await _downloader.DownloadAsStreamAsync(url.Value, memoryStream);
-				result = true;
-			}
-			catch (Exception)
-			{
-			}
-
-			return result;
-		}
-
-		// --------------------------------------------------------------------
-		// RSS を読み込む中心部分（解析）
-		// --------------------------------------------------------------------
-		private async Task<(Boolean result, String? errorMessage)> ReadLatestRssCoreAsync(Stream stream, String appVer)
-		{
-			Boolean result = false;
-			String? errorMessage = null;
-
-			try
-			{
+					// 要素名と値
+					rssItem.Elements[leaf.Name] = leaf.InnerText;
 #if DEBUGz
-				await Task.Delay(3000);
-#endif
-				_latestRssItems.Clear();
-
-				// パーサーに読み込ませる
-				XmlDocument xml = new();
-				xml.Load(stream);
-
-				// ルートとチャンネル
-				if (xml.DocumentElement == null)
-				{
-					throw new Exception("ルート要素がありません。");
-				}
-				XmlNode? channel = xml.DocumentElement.FirstChild;
-				if (channel == null || channel.Name != NODE_NAME_CHANNEL)
-				{
-					throw new Exception(NODE_NAME_CHANNEL + " 要素がありません。");
-				}
-
-				// アイテムを取り出す
-				foreach (XmlNode item in channel.ChildNodes)
-				{
-					if (item.Name == NODE_NAME_CLOUD)
+					if (leaf.Name == NODE_NAME_GUID)
 					{
-						// RSS 負荷監視（エラー発生でも続行）
-						await LoadCloudAsync(item);
-						continue;
 					}
-					else if (item.Name != NODE_NAME_ITEM)
+#endif
+
+					if (leaf.Attributes == null)
 					{
 						continue;
 					}
-
-					// アイテムタグの処理
-					RssItem rssItem = new();
-					foreach (XmlNode leaf in item.ChildNodes)
+					foreach (XmlNode attr in leaf.Attributes)
 					{
-						// 要素名と値
-						rssItem.Elements[leaf.Name] = leaf.InnerText;
+						// 属性と値
+						rssItem.Elements[leaf.Name + RssItem.RSS_ITEM_NAME_DELIMITER + attr.Name] = attr.Value ?? String.Empty;
+					}
+				}
 #if DEBUGz
-						if (leaf.Name == NODE_NAME_GUID)
-						{
-						}
+				String DB = String.Empty;
+				foreach (KeyValuePair<String, String> DB1 in aRSSItem.Elements)
+				{
+					DB += DB1.Key + "=" + DB1.Value + "\n";
+				}
+				MessageBox.Show(DB);
 #endif
 
-						if (leaf.Attributes == null)
-						{
-							continue;
-						}
-						foreach (XmlNode attr in leaf.Attributes)
-						{
-							// 属性と値
-							rssItem.Elements[leaf.Name + RssItem.RSS_ITEM_NAME_DELIMITER + attr.Name] = attr.Value ?? String.Empty;
-						}
-					}
-#if DEBUGz
-					String DB = String.Empty;
-					foreach (KeyValuePair<String, String> DB1 in aRSSItem.Elements)
-					{
-						DB += DB1.Key + "=" + DB1.Value + "\n";
-					}
-					MessageBox.Show(DB);
-#endif
-
-					if (!IsValidRssItem(appVer, rssItem))
-					{
-						continue;
-					}
-
-					_latestRssItems.Add(rssItem);
+				if (!IsValidRssItem(appVer, rssItem))
+				{
+					continue;
 				}
 
+				_latestRssItems.Add(rssItem);
+			}
 
-				// 日付更新
-				_latestDownloadDate = DateTime.Now.Date;
-				result = true;
-			}
-			catch (Exception ex)
-			{
-				errorMessage = ex.Message;
-			}
-			return (result, errorMessage);
+
+			// 日付更新
+			_latestDownloadDate = DateTime.Now.Date;
+			result = true;
 		}
-
-		// --------------------------------------------------------------------
-		// 最大値を超えた既読アイテムを捨てる
-		// --------------------------------------------------------------------
-		private void Truncate()
+		catch (Exception ex)
 		{
-			if (PastRssGuids.Count > PastRssGuidsCapacity)
-			{
-				PastRssGuids.RemoveRange(PastRssGuidsCapacity, PastRssGuids.Count - PastRssGuidsCapacity);
-			}
+			errorMessage = ex.Message;
 		}
+		return (result, errorMessage);
 	}
 
-	// ========================================================================
-	// 
-	// 1 つの RSS に詰め込まれている情報群を保持しておくためのクラス
-	// 
-	// ========================================================================
-
-	public class RssItem
+	/// <summary>
+	/// 最大値を超えた既読アイテムを捨てる
+	/// </summary>
+	private void Truncate()
 	{
-		// ====================================================================
-		// public プロパティー
-		// ====================================================================
-
-		// 要素情報（[要素名/属性名] = 値）
-		public Dictionary<String, String> Elements { get; set; } = new();
-
-		// ====================================================================
-		// public 定数
-		// ====================================================================
-
-		// RssItem の要素名と属性の区切り
-		public const String RSS_ITEM_NAME_DELIMITER = "/";
+		if (PastRssGuids.Count > PastRssGuidsCapacity)
+		{
+			PastRssGuids.RemoveRange(PastRssGuidsCapacity, PastRssGuids.Count - PastRssGuidsCapacity);
+		}
 	}
+}
 
-	// ========================================================================
-	// 
-	// RSS 管理情報を保存するためのクラス
-	// 
-	// ========================================================================
+// ========================================================================
+// 
+// 1 つの RSS に詰め込まれている情報群を保持しておくためのクラス
+// 
+// ========================================================================
 
-	public class RssSettings : SerializableSettings
+public class RssItem
+{
+	// ====================================================================
+	// public プロパティー
+	// ====================================================================
+
+	/// <summary>
+	/// 要素情報（[要素名/属性名] = 値）
+	/// </summary>
+	public Dictionary<String, String> Elements { get; set; } = new();
+
+	// ====================================================================
+	// public 定数
+	// ====================================================================
+
+	/// <summary>
+	/// RssItem の要素名と属性の区切り
+	/// </summary>
+	public const String RSS_ITEM_NAME_DELIMITER = "/";
+}
+
+// ========================================================================
+// 
+// RSS 管理情報を保存するためのクラス
+// 
+// ========================================================================
+
+public class RssSettings : SerializableSettings
+{
+	// ====================================================================
+	// コンストラクター
+	// ====================================================================
+
+	/// <summary>
+	/// メインコンストラクター（引数あり）
+	/// </summary>
+	/// <param name="settingsPath"></param>
+	public RssSettings(String settingsPath)
 	{
-		// --------------------------------------------------------------------
-		// コンストラクター（引数あり）
-		// --------------------------------------------------------------------
-		public RssSettings(String settingsPath)
-		{
-			_settingsPath = settingsPath;
-		}
-
-		// --------------------------------------------------------------------
-		// コンストラクター（引数なし：シリアライズに必要）
-		// --------------------------------------------------------------------
-		public RssSettings()
-		{
-			_settingsPath = String.Empty;
-		}
-
-		// ====================================================================
-		// public プロパティー
-		// ====================================================================
-
-		// 既読の RSS を取得した日付
-		public DateTime PastDownloadDate { get; set; }
-
-		// 過去に読み込んだ既読アイテム（新しい項目が先頭、guid のみ）
-		public List<String> PastRssGuids { get; set; } = new();
-
-		// ====================================================================
-		// public 関数
-		// ====================================================================
-
-		// --------------------------------------------------------------------
-		// 保存パス
-		// --------------------------------------------------------------------
-		public override String SettingsPath()
-		{
-			return _settingsPath;
-		}
-
-		// ====================================================================
-		// private 変数
-		// ====================================================================
-
-		// 保存パス
-		private readonly String _settingsPath;
+		_settingsPath = settingsPath;
 	}
+
+	/// <summary>
+	/// シリアライズ用コンストラクター（引数なし）
+	/// </summary>
+	public RssSettings()
+	{
+		_settingsPath = String.Empty;
+	}
+
+	// ====================================================================
+	// public プロパティー
+	// ====================================================================
+
+	/// <summary>
+	/// 既読の RSS を取得した日付
+	/// </summary>
+	public DateTime PastDownloadDate
+	{
+		get;
+		set;
+	}
+
+	/// <summary>
+	/// 過去に読み込んだ既読アイテム（新しい項目が先頭、guid のみ）
+	/// </summary>
+	public List<String> PastRssGuids
+	{
+		get;
+		set;
+	} = new();
+
+	// ====================================================================
+	// public 関数
+	// ====================================================================
+
+	/// <summary>
+	/// 保存パス
+	/// </summary>
+	/// <returns></returns>
+	public override String SettingsPath()
+	{
+		return _settingsPath;
+	}
+
+	// ====================================================================
+	// private 変数
+	// ====================================================================
+
+	/// <summary>
+	/// 保存パス
+	/// </summary>
+	private readonly String _settingsPath;
 }
 
