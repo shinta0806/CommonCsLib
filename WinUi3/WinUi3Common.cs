@@ -26,6 +26,7 @@ using Serilog.Events;
 
 using Windows.Foundation;
 using Windows.UI.Popups;
+using WinUIEx;
 
 namespace Shinta.WinUi3;
 
