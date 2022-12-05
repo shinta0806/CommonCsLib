@@ -26,6 +26,7 @@ using Serilog.Events;
 
 using Windows.Foundation;
 using Windows.UI.Popups;
+
 using WinUIEx;
 
 namespace Shinta.WinUi3;
@@ -47,7 +48,4 @@ internal class WinUi3Common
 		Log.Write(logEventLevel, message);
 		return window.CreateMessageDialog(message, logEventLevel.ToString().ToLocalized()).ShowAsync();
 	}
-
-
-
 }

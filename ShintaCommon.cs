@@ -63,18 +63,13 @@
 //  4.20  | 2022/02/25 (Fri) | OpenMicrosoftStore() を作成。
 // (4.21) | 2022/05/22 (Sun) |   拡張子を追加。
 //  4.30  | 2022/05/22 (Sun) | TempPath() を作成。
+// (4.31) | 2022/12/04 (Sun) |   拡張子を追加。
 // ============================================================================
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -141,6 +136,7 @@ namespace Shinta
 		public const String FILE_EXT_INI = ".ini";
 		public const String FILE_EXT_JPEG = ".jpeg";
 		public const String FILE_EXT_JPG = ".jpg";
+		public const String FILE_EXT_JSON = ".json";
 		public const String FILE_EXT_JXR = ".jxr";
 		public const String FILE_EXT_KRA = ".kra";
 		public const String FILE_EXT_LOCK = ".lock";
