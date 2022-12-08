@@ -5,43 +5,50 @@
 // 
 // ============================================================================
 
+// ----------------------------------------------------------------------------
+// 以下のパッケージで使用可能になるものは除外
+//   PInvoke.*
+// ----------------------------------------------------------------------------
+
 // ============================================================================
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  -.--  | 2015/02/21 (Sat) | 作成開始。
 //  1.00  | 2015/02/21 (Sat) | オリジナルバージョン。
-//  1.01  | 2015/03/15 (Sun) |   DeleteFile() を追加。
-//  1.02  | 2015/05/24 (Sun) |   GetCurrentThreadId() を追加。
-//  1.03  | 2016/01/31 (Sun) |   GetRunningObjectTable() を追加。
-//  1.04  | 2016/01/31 (Sun) |   CreateItemMoniker() を追加。
-//  1.05  | 2016/02/06 (Sat) |   HRESULT を追加。
-//  1.06  | 2016/06/10 (Fri) |   FAILED() を追加。
-//  1.07  | 2016/06/11 (Sat) |   SUCCEEDED() を追加。
-//  1.08  | 2017/06/28 (Wed) |   GetWindowText() を追加。
-//  1.09  | 2018/03/23 (Fri) |   SHChangeNotifyRegister() を追加。
-//  1.10  | 2018/08/10 (Fri) | IsIconic() を追加。
-//  1.11  | 2018/08/10 (Fri) |   ShowWindowAsync() を追加。
-//  1.12  | 2018/08/10 (Fri) |   SetForegroundWindow() を追加。
-//  1.13  | 2019/02/09 (Sat) |   GetWindowLong() を追加。
-//  1.14  | 2019/02/09 (Sat) |   SetWindowLong() を追加。
-//  1.15  | 2019/10/08 (Tue) |   CopyMemory() を追加。
-//  1.16  | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
-//  1.17  | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
-//  1.18  | 2021/03/06 (Sat) |   DllImport 属性の関数のアクセスレベルを public から internal に変更。
-//  1.19  | 2021/03/06 (Sat) |   文字列を引数とする関数に CharSet.Unicode を指定。
-//  1.20  | 2021/03/27 (Sat) | GetVolumeInformation() を追加。
-//  1.21  | 2022/02/02 (Wed) |   EnumDisplayMonitors() を追加。
-//  1.22  | 2022/02/05 (Sat) |   GetWindowRect() を追加。
-//  1.23  | 2022/02/06 (Sun) |   GetDpiForMonitor() を追加。
-//  1.24  | 2022/02/06 (Sun) |   MoveWindow() を追加。
-//  1.25  | 2022/02/26 (Sat) |   WS_EX を追加。
-//  1.26  | 2022/02/26 (Sat) |   WM を列挙子に変更。
+// (1.01) | 2015/03/15 (Sun) |   DeleteFile() を追加。
+// (1.02) | 2015/05/24 (Sun) |   GetCurrentThreadId() を追加。
+// (1.03) | 2016/01/31 (Sun) |   GetRunningObjectTable() を追加。
+// (1.04) | 2016/01/31 (Sun) |   CreateItemMoniker() を追加。
+// (1.05) | 2016/02/06 (Sat) |   HRESULT を追加。
+// (1.06) | 2016/06/10 (Fri) |   FAILED() を追加。
+// (1.07) | 2016/06/11 (Sat) |   SUCCEEDED() を追加。
+// (1.08) | 2017/06/28 (Wed) |   GetWindowText() を追加。
+// (1.09) | 2018/03/23 (Fri) |   SHChangeNotifyRegister() を追加。
+//  1.10  | 2018/08/10 (Fri) | マイナーバージョンアップの積み重ね。
+//                               IsIconic() を追加。
+// (1.11) | 2018/08/10 (Fri) |   ShowWindowAsync() を追加。
+// (1.12) | 2018/08/10 (Fri) |   SetForegroundWindow() を追加。
+// (1.13) | 2019/02/09 (Sat) |   GetWindowLong() を追加。
+// (1.14) | 2019/02/09 (Sat) |   SetWindowLong() を追加。
+// (1.15) | 2019/10/08 (Tue) |   CopyMemory() を追加。
+// (1.16) | 2019/12/07 (Sat) |   null 許容参照型を有効化した。
+// (1.17) | 2019/12/22 (Sun) |   null 許容参照型を無効化できるようにした。
+// (1.18) | 2021/03/06 (Sat) |   DllImport 属性の関数のアクセスレベルを public から internal に変更。
+// (1.19) | 2021/03/06 (Sat) |   文字列を引数とする関数に CharSet.Unicode を指定。
+//  1.20  | 2021/03/27 (Sat) | マイナーバージョンアップの積み重ね。
+//                               GetVolumeInformation() を追加。
+// (1.21) | 2022/02/02 (Wed) |   EnumDisplayMonitors() を追加。
+// (1.22) | 2022/02/05 (Sat) |   GetWindowRect() を追加。
+// (1.23) | 2022/02/06 (Sun) |   GetDpiForMonitor() を追加。
+// (1.24) | 2022/02/06 (Sun) |   MoveWindow() を追加。
+// (1.25) | 2022/02/26 (Sat) |   WS_EX を追加。
+// (1.26) | 2022/02/26 (Sat) |   WM を列挙子に変更。
+//  2.00  | 2022/12/08 (Thu) | PInvoke パッケージと重複するものを除外。
+// (2.01) | 2022/12/08 (Thu) |   SetWindowSubclass() を追加。
+// (2.02) | 2022/12/08 (Thu) |   DefSubclassProc() を追加。
 // ============================================================================
 
-using System;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 
 namespace Shinta
 {
@@ -49,6 +56,7 @@ namespace Shinta
 	// public 列挙子
 	// ====================================================================
 
+#if false
 	// --------------------------------------------------------------------
 	// DBT
 	// --------------------------------------------------------------------
@@ -309,6 +317,7 @@ namespace Shinta
 		WS_EX_TRANSPARENT = 0x00000020,
 		WS_EX_WINDOWEDGE = 0x00000100,
 	}
+#endif
 
 	// ====================================================================
 	// Windows API
@@ -320,12 +329,16 @@ namespace Shinta
 		// デリゲート
 		// ====================================================================
 
+		internal delegate IntPtr SubclassProc(IntPtr hwnd, UInt32 msg, IntPtr wPalam, IntPtr lParam, IntPtr idSubclass, IntPtr refData);
+#if false
 		internal delegate Boolean EnumMonitorsDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+#endif
 
 		// ====================================================================
 		// public 定数
 		// ====================================================================
 
+#if false
 		// --------------------------------------------------------------------
 		// ChangeWindowMessageFilter()
 		// --------------------------------------------------------------------
@@ -336,25 +349,32 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public const Int32 ROTFLAGS_REGISTRATIONKEEPSALIVE = 0x1;
 		public const Int32 ROTFLAGS_ALLOWANYCLIENT = 0x2;
+#endif
 
 		// --------------------------------------------------------------------
 		// ファイル名
 		// --------------------------------------------------------------------
+		public const String FILE_NAME_COMCTL32_DLL = "Comctl32.dll";
+#if false
 		public const String FILE_NAME_KERNEL32_DLL = "kernel32.dll";
 		public const String FILE_NAME_OLE32_DLL = "ole32.dll";
 		public const String FILE_NAME_SHCORE_DLL = "SHCore.dll";
 		public const String FILE_NAME_SHELL32_DLL = "shell32.dll";
 		public const String FILE_NAME_USER32_DLL = "user32.dll";
+#endif
 
 		// --------------------------------------------------------------------
 		// その他
 		// --------------------------------------------------------------------
+#if false
 		public const UInt32 INFINITE = 0xFFFFFFFF;      // Infinite timeout
+#endif
 
 		// ====================================================================
 		// public 構造体
 		// ====================================================================
 
+#if false
 		// --------------------------------------------------------------------
 		// COPYDATASTRUCT
 		// --------------------------------------------------------------------
@@ -423,11 +443,13 @@ namespace Shinta
 			public IntPtr dwItem1;
 			public IntPtr dwItem2;
 		}
+#endif
 
 		// ====================================================================
 		// マクロ
 		// ====================================================================
 
+#if false
 		// --------------------------------------------------------------------
 		// FAILED (COM)
 		// --------------------------------------------------------------------
@@ -443,12 +465,14 @@ namespace Shinta
 		{
 			return hResult >= 0;
 		}
+#endif
 
 		// ====================================================================
 		// DLL インポート
 		// public にすると CA1401 となるため internal にする
 		// ====================================================================
 
+#if false
 		// --------------------------------------------------------------------
 		// BringWindowToTop
 		// --------------------------------------------------------------------
@@ -475,7 +499,12 @@ namespace Shinta
 		[DllImport(FILE_NAME_OLE32_DLL)]
 		internal static extern Int32 CreateItemMoniker([MarshalAs(UnmanagedType.LPWStr)] String oDelim,
 				[MarshalAs(UnmanagedType.LPWStr)] String oItem, out IMoniker oPpmk);
+#endif
 
+		[DllImport(FILE_NAME_COMCTL32_DLL)]
+		internal static extern IntPtr DefSubclassProc(IntPtr hwnd, UInt32 msg, IntPtr wPalam, IntPtr lParam);
+
+#if false
 		// --------------------------------------------------------------------
 		// DeleteFile
 		// --------------------------------------------------------------------
@@ -623,7 +652,20 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		internal static extern IntPtr SetWindowLong(IntPtr oHWnd, Int32 oIndex, IntPtr oNewLong);
+#endif
 
+		/// <summary>
+		/// SetWindowSubclass
+		/// </summary>
+		/// <param name="hwnd"></param>
+		/// <param name="subclassProc"></param>
+		/// <param name="idSubclass"></param>
+		/// <param name="refData"></param>
+		/// <returns></returns>
+		[DllImport(FILE_NAME_COMCTL32_DLL)]
+		internal static extern Boolean SetWindowSubclass(IntPtr hwnd, SubclassProc subclassProc, IntPtr idSubclass, IntPtr refData);
+
+#if false
 		// --------------------------------------------------------------------
 		// SHChangeNotifyRegister
 		// --------------------------------------------------------------------
@@ -643,6 +685,7 @@ namespace Shinta
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		internal static extern Boolean ShowWindowAsync(IntPtr oHWnd, Int32 oCmdShow);
+#endif
 	}
 }
 

@@ -21,11 +21,17 @@
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
 // ============================================================================
 
+using Microsoft.UI.Xaml;
+
+using PInvoke;
+
 using Serilog;
 using Serilog.Events;
 
 using Windows.Foundation;
 using Windows.UI.Popups;
+
+using WinRT.Interop;
 
 using WinUIEx;
 
@@ -36,6 +42,24 @@ internal class WinUi3Common
 	// ====================================================================
 	// public 関数
 	// ====================================================================
+
+	/// <summary>
+	/// タイトルバーのコンテキストヘルプボタンを有効にする
+	/// </summary>
+	/// <param name="window"></param>
+	/// <param name="subclassProc"></param>
+	/// <returns>有効に出来た、または、既に有効な場合は true</returns>
+	public static Boolean EnableContextHelp(Window window, WindowsApi.SubclassProc subclassProc)
+	{
+		IntPtr handle = WindowNative.GetWindowHandle(window);
+		User32.SetWindowLongFlags exStyle = (User32.SetWindowLongFlags)User32.GetWindowLong(handle, User32.WindowLongIndexFlags.GWL_EXSTYLE);
+		if ((exStyle & User32.SetWindowLongFlags.WS_EX_CONTEXTHELP) != 0)
+		{
+			return true;
+		}
+		User32.SetWindowLong(handle, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle | User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
+		return WindowsApi.SetWindowSubclass(handle, subclassProc, IntPtr.Zero, IntPtr.Zero);
+	}
 
 	/// <summary>
 	/// ログの記録と表示
