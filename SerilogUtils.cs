@@ -51,4 +51,14 @@ internal class SerilogUtils
 				outputTemplate: "{Timestamp:yyyy/MM/dd HH:mm:ss.fff}\t{ProcessId}/M{ThreadId}\t{Level:u3}\t{Message:lj}{NewLine}{Exception}")
 				.CreateLogger();
 	}
+
+	/// <summary>
+	/// スタックトレースをログする
+	/// </summary>
+	/// <param name="ex"></param>
+	public static void LogStackTrace(Exception ex)
+	{
+		Log.Information("スタックトレース：\n" + ex.StackTrace);
+	}
+
 }

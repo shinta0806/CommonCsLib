@@ -255,12 +255,13 @@ public class WindowEx2 : WindowEx
 
 	/// <summary>
 	/// 実行バイナリ内の XAML を読み込んでコントロールを作成
+	/// XAML のビルドアクションは「埋め込みリソース」である必要がある
 	/// </summary>
 	/// <returns></returns>
 	private Object LoadDynamicXaml(String name)
 	{
 #if false
-        // StorageFile を使う方が今時っぽいが、非パッケージ時にうまくうごかないため現時点では使用しない
+        // StorageFile を使う方が今時っぽいが（ビルドアクション：コンテンツ）、非パッケージ時にうまく動かないため現時点では使用しない
         Uri uri = new("ms-appx:///Views/Dynamics/" + name + Common.FILE_EXT_XAML);
         StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(uri);
         using StreamReader streamReader = new StreamReader(await file.OpenStreamForReadAsync());
