@@ -64,18 +64,18 @@ internal class WinUi3Common
 	/// タイトルバーのコンテキストヘルプボタンを有効にする
 	/// </summary>
 	/// <param name="window"></param>
-	/// <param name="subclassProc"></param>
+	/// <param name="subclassProc">関数を直接渡すのではなく、new したものを格納した変数を渡す必要がある。また、その変数はずっと保持しておく必要がある</param>
 	/// <returns>有効に出来た、または、既に有効な場合は true</returns>
 	public static Boolean EnableContextHelp(Window window, WindowsApi.SubclassProc subclassProc)
 	{
-		IntPtr handle = WindowNative.GetWindowHandle(window);
-		User32.SetWindowLongFlags exStyle = (User32.SetWindowLongFlags)User32.GetWindowLong(handle, User32.WindowLongIndexFlags.GWL_EXSTYLE);
+		IntPtr hWnd = WindowNative.GetWindowHandle(window);
+		User32.SetWindowLongFlags exStyle = (User32.SetWindowLongFlags)User32.GetWindowLong(hWnd, User32.WindowLongIndexFlags.GWL_EXSTYLE);
 		if ((exStyle & User32.SetWindowLongFlags.WS_EX_CONTEXTHELP) != 0)
 		{
 			return true;
 		}
-		User32.SetWindowLong(handle, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle | User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
-		return WindowsApi.SetWindowSubclass(handle, subclassProc, IntPtr.Zero, IntPtr.Zero);
+		User32.SetWindowLong(hWnd, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle | User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
+		return WindowsApi.SetWindowSubclass(hWnd, subclassProc, IntPtr.Zero, IntPtr.Zero);
 	}
 
 	/// <summary>

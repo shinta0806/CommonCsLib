@@ -48,6 +48,8 @@
 // (2.02) | 2022/12/08 (Thu) |   DefSubclassProc() を追加。
 // ============================================================================
 
+using PInvoke;
+
 using System.Runtime.InteropServices;
 
 namespace Shinta
@@ -329,10 +331,10 @@ namespace Shinta
 		// デリゲート
 		// ====================================================================
 
-		internal delegate IntPtr SubclassProc(IntPtr hwnd, UInt32 msg, IntPtr wPalam, IntPtr lParam, IntPtr idSubclass, IntPtr refData);
 #if false
 		internal delegate Boolean EnumMonitorsDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
 #endif
+		internal delegate IntPtr SubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam, IntPtr idSubclass, IntPtr refData);
 
 		// ====================================================================
 		// public 定数
@@ -360,8 +362,8 @@ namespace Shinta
 		public const String FILE_NAME_OLE32_DLL = "ole32.dll";
 		public const String FILE_NAME_SHCORE_DLL = "SHCore.dll";
 		public const String FILE_NAME_SHELL32_DLL = "shell32.dll";
-		public const String FILE_NAME_USER32_DLL = "user32.dll";
 #endif
+		public const String FILE_NAME_USER32_DLL = "user32.dll";
 
 		// --------------------------------------------------------------------
 		// その他
@@ -478,7 +480,8 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 		internal static extern Boolean BringWindowToTop(IntPtr windowHandle);
-
+#endif
+#if false
 		// --------------------------------------------------------------------
 		// ChangeWindowMessageFilter
 		// --------------------------------------------------------------------
@@ -502,7 +505,7 @@ namespace Shinta
 #endif
 
 		[DllImport(FILE_NAME_COMCTL32_DLL)]
-		internal static extern IntPtr DefSubclassProc(IntPtr hwnd, UInt32 msg, IntPtr wPalam, IntPtr lParam);
+		internal static extern IntPtr DefSubclassProc(IntPtr hwnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
 
 #if false
 		// --------------------------------------------------------------------
@@ -663,7 +666,7 @@ namespace Shinta
 		/// <param name="refData"></param>
 		/// <returns></returns>
 		[DllImport(FILE_NAME_COMCTL32_DLL)]
-		internal static extern Boolean SetWindowSubclass(IntPtr hwnd, SubclassProc subclassProc, IntPtr idSubclass, IntPtr refData);
+		internal static extern Boolean SetWindowSubclass(IntPtr hWnd, SubclassProc subclassProc, IntPtr idSubclass, IntPtr refData);
 
 #if false
 		// --------------------------------------------------------------------
