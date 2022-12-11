@@ -20,12 +20,14 @@
 //  -.--  | 2022/11/19 (Sat) | WPF 版を元に作成開始。
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
 // (1.01) | 2022/11/19 (Sat) |   軽微なリファクタリング。
+//  1.10  | 2022/12/11 (Sun) |   多言語対応。
 // ============================================================================
 
 using Serilog;
 using Serilog.Events;
 
 using Windows.UI.Popups;
+
 using WinUIEx;
 
 namespace Shinta.WinUi3;
@@ -87,7 +89,7 @@ public class LatestInfoManager
 				await PrepareLatestAsync();
 				if (_newItems.Count == 0)
 				{
-					await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Information, "最新情報はありませんでした。");
+					await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Information, "LatestInfoManager_CheckAsync_NoInfo".ToLocalized());
 				}
 				else
 				{
@@ -99,8 +101,8 @@ public class LatestInfoManager
 			}
 			catch (Exception ex)
 			{
-				await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Error, "最新情報確認時エラー：\n" + ex.Message);
-				Log.Information("スタックトレース：\n" + ex.StackTrace);
+				await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Error, "LatestInfoManager_CheckAsync_Error".ToLocalized() + "\n" + ex.Message);
+				SerilogUtils.LogStackTrace(ex);
 			}
 			return success;
 		});
@@ -157,7 +159,7 @@ public class LatestInfoManager
 	/// <summary>
 	/// メッセージ表示用の親ウィンドウ
 	/// </summary>
-	private WindowEx _window;
+	private readonly WindowEx _window;
 
 	// ====================================================================
 	// private メンバー関数
@@ -170,13 +172,14 @@ public class LatestInfoManager
 	/// <exception cref="Exception"></exception>
 	private async Task AskDisplayLatestAsync()
 	{
-		MessageDialog messageDialog = _window.CreateMessageDialog("最新情報が " + _newItems.Count.ToString() + " 件見つかりました。\n表示しますか？", "質問");
-		messageDialog.Commands.Add(new UICommand("はい"));
-		messageDialog.Commands.Add(new UICommand("いいえ"));
+		MessageDialog messageDialog = _window.CreateMessageDialog(String.Format("LatestInfoManager_AskDisplayLatestAsync_Ask".ToLocalized(),
+				_newItems.Count), Common.LK_GENERAL_LABEL_CONFIRM.ToLocalized());
+		messageDialog.Commands.Add(new UICommand(Common.LK_GENERAL_LABEL_YES.ToLocalized()));
+		messageDialog.Commands.Add(new UICommand(Common.LK_GENERAL_LABEL_NO.ToLocalized()));
 		IUICommand cmd = await messageDialog.ShowAsync();
-		if (cmd.Label != "はい")
+		if (cmd.Label != Common.LK_GENERAL_LABEL_YES.ToLocalized())
 		{
-			throw new Exception("最新情報の表示を中止しました。");
+			throw new Exception("LatestInfoManager_AskDisplayLatestAsync_Cancel".ToLocalized());
 		}
 	}
 
@@ -233,11 +236,11 @@ public class LatestInfoManager
 		}
 		else if (numErrors < _newItems.Count)
 		{
-			throw new Exception("一部の最新情報を表示できませんでした。");
+			throw new Exception("LatestInfoManager_DisplayLatest_Error_Part".ToLocalized());
 		}
 		else
 		{
-			throw new Exception("最新情報を表示できませんでした。");
+			throw new Exception("LatestInfoManager_DisplayLatest_Error_Not");
 		}
 	}
 

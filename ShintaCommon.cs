@@ -207,6 +207,27 @@ namespace Shinta
 		// DPI 標準値
 		public const Double DEFAULT_DPI = 96.0;
 
+		// --------------------------------------------------------------------
+		// よく使われるローカライズキー
+		// --------------------------------------------------------------------
+
+		/// <summary>
+		/// アプリの基本情報
+		/// </summary>
+		public const String LK_GENERAL_APP_NAME = "0_AppDisplayName";
+#if DISTRIB_STORE
+		public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionStore";
+#else
+    public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionZip";
+#endif
+
+		/// <summary>
+		/// ラベル
+		/// </summary>
+		public const String LK_GENERAL_LABEL_CONFIRM = "0_Confirm";
+		public const String LK_GENERAL_LABEL_NO = "0_No";
+		public const String LK_GENERAL_LABEL_YES = "0_Yes";
+
 		// ====================================================================
 		// public メンバー関数
 		// ====================================================================

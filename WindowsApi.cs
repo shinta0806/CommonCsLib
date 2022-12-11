@@ -505,7 +505,7 @@ namespace Shinta
 #endif
 
 		[DllImport(FILE_NAME_COMCTL32_DLL)]
-		internal static extern IntPtr DefSubclassProc(IntPtr hwnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
+		internal static extern IntPtr DefSubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
 
 #if false
 		// --------------------------------------------------------------------
