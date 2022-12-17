@@ -28,6 +28,8 @@
 
 using Microsoft.Xaml.Behaviors;
 
+using PInvoke;
+
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -425,15 +427,15 @@ namespace Shinta.Wpf.Behaviors
 			}
 
 			WindowInteropHelper helper = new(AssociatedObject);
-			Int64 exStyle = (Int64)WindowsApi.GetWindowLong(helper.Handle, (Int32)GWL.GWL_EXSTYLE);
+			User32.SetWindowLongFlags exStyle = (User32.SetWindowLongFlags)User32.GetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_EXSTYLE);
 
 			if (HelpBox == true)
 			{
-				WindowsApi.SetWindowLong(helper.Handle, (Int32)GWL.GWL_EXSTYLE, (IntPtr)(exStyle | ((Int64)WS_EX.WS_EX_CONTEXTHELP)));
+				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle | User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
 			}
 			else
 			{
-				WindowsApi.SetWindowLong(helper.Handle, (Int32)GWL.GWL_EXSTYLE, (IntPtr)(exStyle & ~((Int64)WS_EX.WS_EX_CONTEXTHELP)));
+				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle & ~User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
 			}
 		}
 
@@ -448,15 +450,15 @@ namespace Shinta.Wpf.Behaviors
 			}
 
 			WindowInteropHelper helper = new(AssociatedObject);
-			Int64 style = (Int64)WindowsApi.GetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE);
+			User32.SetWindowLongFlags style = (User32.SetWindowLongFlags)User32.GetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_STYLE);
 
 			if (MinimizeBox == true)
 			{
-				WindowsApi.SetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(style | ((Int64)WS.WS_MINIMIZEBOX)));
+				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_STYLE, style | User32.SetWindowLongFlags.WS_MINIMIZEBOX);
 			}
 			else
 			{
-				WindowsApi.SetWindowLong(helper.Handle, (Int32)GWL.GWL_STYLE, (IntPtr)(style & ~((Int64)WS.WS_MINIMIZEBOX)));
+				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_STYLE, style & ~User32.SetWindowLongFlags.WS_MINIMIZEBOX);
 			}
 		}
 
@@ -465,9 +467,9 @@ namespace Shinta.Wpf.Behaviors
 		// --------------------------------------------------------------------
 		private void WmSysCommand(IntPtr _1, IntPtr wParam, IntPtr _2, ref Boolean handled)
 		{
-			switch ((WM_SYSCOMMAND_WPARAM)wParam)
+			switch ((User32.SysCommands)wParam)
 			{
-				case WM_SYSCOMMAND_WPARAM.SC_CONTEXTHELP:
+				case User32.SysCommands.SC_CONTEXTHELP:
 					if (HelpBoxClickedCommand != null)
 					{
 						if (HelpBoxClickedCommand.CanExecute(HelpBoxClickedCommandParameter))
@@ -485,9 +487,9 @@ namespace Shinta.Wpf.Behaviors
 		// --------------------------------------------------------------------
 		private IntPtr WndProc(IntPtr hWnd, Int32 msg, IntPtr wParam, IntPtr lParam, ref Boolean handled)
 		{
-			switch ((WM)msg)
+			switch ((User32.WindowMessage)msg)
 			{
-				case WM.WM_SYSCOMMAND:
+				case User32.WindowMessage.WM_SYSCOMMAND:
 					WmSysCommand(hWnd, wParam, lParam, ref handled);
 					break;
 			}

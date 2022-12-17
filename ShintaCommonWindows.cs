@@ -5,6 +5,11 @@
 // 
 // ============================================================================
 
+// ----------------------------------------------------------------------------
+// 以下のパッケージがインストールされている前提
+//   PInvoke.User32
+// ----------------------------------------------------------------------------
+
 // ============================================================================
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
@@ -13,6 +18,8 @@
 // (1.01) | 2022/02/02 (Wed) |   GetMonitorRects() を作成。
 // (1.02) | 2022/02/06 (Sun) |   GetMonitorRects() を廃止。
 // ============================================================================
+
+using PInvoke;
 
 using System;
 using System.Collections.Generic;
@@ -77,13 +84,13 @@ namespace Shinta
 			}
 
 			// ウィンドウが最小化されていれば元に戻す
-			if (WindowsApi.IsIconic(hWnd))
+			if (User32.IsIconic(hWnd))
 			{
-				WindowsApi.ShowWindowAsync(hWnd, (Int32)ShowWindowCommands.SW_RESTORE);
+				User32.ShowWindowAsync(hWnd, User32.WindowShowStyle.SW_RESTORE);
 			}
 
 			// アクティベート
-			WindowsApi.SetForegroundWindow(hWnd);
+			User32.SetForegroundWindow(hWnd);
 		}
 
 		// --------------------------------------------------------------------
@@ -127,9 +134,9 @@ namespace Shinta
 		// ZoneID を削除
 		// ＜返値＞削除できたら true
 		// --------------------------------------------------------------------
-		public static Boolean DeleteZoneID(String oPath)
+		public static Boolean DeleteZoneID(String path)
 		{
-			return WindowsApi.DeleteFile(oPath + STREAM_NAME_ZONE_ID);
+			return WindowsApi.DeleteFile(path + STREAM_NAME_ZONE_ID);
 		}
 
 		// --------------------------------------------------------------------

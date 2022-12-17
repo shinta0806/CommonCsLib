@@ -10,6 +10,11 @@
 //   PInvoke.*
 // ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
+// 以下のパッケージがインストールされている前提
+//   PInvoke.User32
+// ----------------------------------------------------------------------------
+
 // ============================================================================
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
@@ -50,6 +55,7 @@
 
 using PInvoke;
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace Shinta
@@ -357,8 +363,8 @@ namespace Shinta
 		// ファイル名
 		// --------------------------------------------------------------------
 		public const String FILE_NAME_COMCTL32_DLL = "Comctl32.dll";
-#if false
 		public const String FILE_NAME_KERNEL32_DLL = "kernel32.dll";
+#if false
 		public const String FILE_NAME_OLE32_DLL = "ole32.dll";
 		public const String FILE_NAME_SHCORE_DLL = "SHCore.dll";
 		public const String FILE_NAME_SHELL32_DLL = "shell32.dll";
@@ -507,14 +513,15 @@ namespace Shinta
 		[DllImport(FILE_NAME_COMCTL32_DLL)]
 		internal static extern IntPtr DefSubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
 
-#if false
 		// --------------------------------------------------------------------
 		// DeleteFile
+		// PInvoke.Kernel32 で宣言されていない
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_KERNEL32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		internal static extern Boolean DeleteFile(String fileName);
 
+#if false
 		// --------------------------------------------------------------------
 		// EnumDisplayMonitors
 		// --------------------------------------------------------------------
@@ -538,13 +545,14 @@ namespace Shinta
 		// GetCurrentThread
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_KERNEL32_DLL)]
-		internal static extern UInt32 GetCurrentThreadId();
+		internal static extern IntPtr GetCurrentThread();
 
 		// --------------------------------------------------------------------
 		// GetCurrentThreadId
+		// PInvoke.Kernel32 参照
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_KERNEL32_DLL)]
-		internal static extern IntPtr GetCurrentThread();
+		internal static extern UInt32 GetCurrentThreadId();
 
 		// --------------------------------------------------------------------
 		// GetDpiForMonitor
@@ -574,6 +582,7 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// GetWindowLong
+		// PInvoke.User32 参照
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		internal static extern IntPtr GetWindowLong(IntPtr oHWnd, Int32 oIndex);
@@ -599,13 +608,14 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// IsIconic
+		// PInvoke.User32 参照
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		internal static extern Boolean IsIconic(IntPtr oHWnd);
 
 		// --------------------------------------------------------------------
-		// IsIconic
+		// MoveWindow
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -638,6 +648,7 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// SetForegroundWindow
+		// PInvoke.User32 参照
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -652,6 +663,7 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// SetWindowLong
+		// PInvoke.User32 参照
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL)]
 		internal static extern IntPtr SetWindowLong(IntPtr oHWnd, Int32 oIndex, IntPtr oNewLong);
@@ -684,6 +696,7 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// ShowWindowAsync
+		// PInvoke.User32 参照
 		// --------------------------------------------------------------------
 		[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
