@@ -200,6 +200,9 @@ namespace Shinta
 		// その他
 		// --------------------------------------------------------------------
 
+		// 開くダイアログ・保存ダイアログ用の追加フィルター
+		public const String OPEN_SAVE_DIALOG_ADDITIONAL_FILTER = "|すべてのファイル|*.*";
+
 		// 一般的なスレッドスリープ時間 [ms]
 		public const Int32 GENERAL_SLEEP_TIME = 20;
 

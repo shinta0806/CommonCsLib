@@ -234,7 +234,7 @@ namespace Shinta.Wpf.ViewModels
 		{
 			OpeningFileSelectionMessage message = new(Common.MESSAGE_KEY_OPEN_OPEN_FILE_DIALOG);
 			message.Title = title;
-			message.Filter = filter + ADDITIONAL_FILTER;
+			message.Filter = filter + Common.OPEN_SAVE_DIALOG_ADDITIONAL_FILTER;
 			if (!String.IsNullOrEmpty(path))
 			{
 				message.InitialDirectory = Path.GetDirectoryName(path);
@@ -257,7 +257,7 @@ namespace Shinta.Wpf.ViewModels
 		{
 			SavingFileSelectionMessage message = new(Common.MESSAGE_KEY_OPEN_SAVE_FILE_DIALOG);
 			message.Title = title;
-			message.Filter = filter + ADDITIONAL_FILTER;
+			message.Filter = filter + Common.OPEN_SAVE_DIALOG_ADDITIONAL_FILTER;
 			if (!String.IsNullOrEmpty(path))
 			{
 				message.InitialDirectory = Path.GetDirectoryName(path);
@@ -321,12 +321,5 @@ namespace Shinta.Wpf.ViewModels
 		protected virtual void SettingsToProperties()
 		{
 		}
-
-		// ====================================================================
-		// protected 定数
-		// ====================================================================
-
-		// 開くダイアログ・保存ダイアログ用の追加フィルター
-		protected const String ADDITIONAL_FILTER = "|すべてのファイル|*.*";
 	}
 }
