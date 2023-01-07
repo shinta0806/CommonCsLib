@@ -61,6 +61,18 @@ internal class WinUi3Common
 	// ====================================================================
 
 	/// <summary>
+	/// ウィンドウが存在するディスプレイの表示スケール
+	/// </summary>
+	/// <param name="window"></param>
+	/// <returns></returns>
+	public static Double DisplayScale(Window window)
+	{
+		IntPtr hWnd = WindowNative.GetWindowHandle(window);
+		Int32 dpi = User32.GetDpiForWindow(hWnd);
+		return dpi / Common.DEFAULT_DPI;
+	}
+
+	/// <summary>
 	/// タイトルバーのコンテキストヘルプボタンを有効にする
 	/// </summary>
 	/// <param name="window"></param>
