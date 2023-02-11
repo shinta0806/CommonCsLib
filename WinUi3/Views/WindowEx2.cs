@@ -13,6 +13,7 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2022/12/08 (Thu) | 作成開始。
 //  1.00  | 2022/12/08 (Thu) | ファーストバージョン。
+//  1.10  | 2023/02/11 (Sat) | AdjustWindowPosition() を作成。
 // ============================================================================
 
 using Microsoft.UI.Dispatching;
@@ -22,6 +23,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
 
+using PInvoke;
+
 using Serilog;
 using Serilog.Events;
 
@@ -29,6 +32,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
+using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI.Popups;
 
@@ -109,6 +113,82 @@ public class WindowEx2 : WindowEx
 	}
 
 	/// <summary>
+	/// ウィンドウがスクリーンからはみ出ないようにする
+	/// </summary>
+	public void AdjustWindowPosition()
+	{
+		MonitorManager monitorManager = new();
+		List<Rect> monitorRects = monitorManager.GetRawMonitorRects();
+
+		// 上下または左右のボーダー
+		Int32 border = User32.GetSystemMetrics(User32.SystemMetric.SM_CYSIZEFRAME) * 2;
+
+		// 現在位置
+		Rect belongRect = BelongMonitorRect(monitorRects, FrameRect());
+		if (belongRect.IsEmpty)
+		{
+			// どのモニターにも属していない場合はプライマリモニターに表示
+			AppWindow.Move(new PointInt32(border, border));
+			return;
+		}
+
+		Rect frameRect;
+
+		// 下がはみ出ていないか（左下でチェック）
+		frameRect = FrameRect();
+		if (!monitorRects.Any(x => x.Contains(new Point(frameRect.Left, frameRect.Bottom))))
+		{
+			AppWindow.Move(new PointInt32((Int32)frameRect.Left, (Int32)(belongRect.Height - frameRect.Height - border)));
+		}
+
+		// 右がはみ出ていないか（右上でチェック）
+		frameRect = FrameRect();
+		if (!monitorRects.Any(x => x.Contains(new Point(frameRect.Right, frameRect.Top))))
+		{
+			AppWindow.Move(new PointInt32((Int32)(belongRect.Right - frameRect.Width - border), (Int32)frameRect.Top));
+		}
+
+		// 上がはみ出ていないか（左上でチェック）
+		frameRect = FrameRect();
+		if (!monitorRects.Any(x => x.Contains(new Point(frameRect.Left, frameRect.Top))))
+		{
+			AppWindow.Move(new PointInt32((Int32)frameRect.Left, border));
+		}
+
+		// 左がはみ出ていないか（左上でチェック）
+		frameRect = FrameRect();
+		if (!monitorRects.Any(x => x.Contains(new Point(frameRect.Left, frameRect.Top))))
+		{
+			AppWindow.Move(new PointInt32(border, (Int32)frameRect.Top));
+		}
+	}
+
+	/// <summary>
+	/// 指定のウィンドウの位置を自身に対してカスケードする
+	/// 結果的に画面外にはみ出る場合があることに注意
+	/// </summary>
+	/// <param name="window"></param>
+	public void CascadeWindow(WindowEx window)
+	{
+		// 位置決め
+		// ToDo: 微妙にタイトルバーの高さと異なる
+		Int32 delta = User32.GetSystemMetrics(User32.SystemMetric.SM_CYSIZEFRAME) + User32.GetSystemMetrics(User32.SystemMetric.SM_CYCAPTION);
+
+		// 移動
+		window.AppWindow.Move(new PointInt32(this.AppWindow.Position.X + delta, this.AppWindow.Position.Y + delta));
+	}
+
+	/// <summary>
+	/// スクリーン上でのウィンドウ位置
+	/// </summary>
+	/// <returns></returns>
+	public Rect FrameRect()
+	{
+		PointInt32 position = AppWindow.Position;
+		return new Rect(Bounds.Left + position.X, Bounds.Top + position.Y, Bounds.Width, Bounds.Height);
+	}
+
+	/// <summary>
 	/// ベール除去
 	/// </summary>
 	/// <returns>除去したかどうか（既に除去されている場合は false）</returns>
@@ -132,7 +212,7 @@ public class WindowEx2 : WindowEx
 	/// </summary>
 	/// <param name="dialog"></param>
 	/// <returns></returns>
-	public async Task ShowDialogAsync(WindowEx dialog)
+	public async Task ShowDialogAsync(WindowEx2 dialog)
 	{
 		if (_openingDialog != null)
 		{
@@ -140,11 +220,11 @@ public class WindowEx2 : WindowEx
 		}
 		_openingDialog = dialog;
 
-		// ディスプレイサイズが不明なのでカスケードしない（はみ出し防止）
 		AddVeil();
 		dialog.Closed += DialogClosed;
-		dialog.AppWindow.Move(new PointInt32(this.AppWindow.Position.X, this.AppWindow.Position.Y));
+		CascadeWindow(dialog);
 		dialog.Activate();
+		dialog.AdjustWindowPosition();
 
 		await Task.Run(() =>
 		{
@@ -230,6 +310,61 @@ public class WindowEx2 : WindowEx
 	{
 		// 開いているダイアログがある場合は閉じる（タスクバーから閉じられた場合などは可能性がある）
 		_openingDialog?.Close();
+	}
+
+	/// <summary>
+	/// ウィンドウを表示しているモニターの矩形
+	/// スクリーン外の場合は Rect.Empty を返す
+	/// </summary>
+	/// <param name="monitorRects"></param>
+	/// <param name="windowRect"></param>
+	/// <returns></returns>
+	private Rect BelongMonitorRect(List<Rect> monitorRects, Rect windowRect)
+	{
+		Rect rect;
+		Rect defaultRect = new();
+
+		// まずはウィンドウの中央で検出
+		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point((windowRect.Left + windowRect.Right) / 2, (windowRect.Top + windowRect.Bottom) / 2)));
+		if (rect != defaultRect)
+		{
+			Debug.WriteLine("BelongMonitorRect() 中央: " + rect);
+			return rect;
+		}
+
+		// 左上
+		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Left, windowRect.Top)));
+		if (rect != defaultRect)
+		{
+			Debug.WriteLine("BelongMonitorRect() 左上: " + rect);
+			return rect;
+		}
+
+		// 右上
+		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Right, windowRect.Top)));
+		if (rect != defaultRect)
+		{
+			Debug.WriteLine("BelongMonitorRect() 右上: " + rect);
+			return rect;
+		}
+
+		// 左下
+		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Left, windowRect.Bottom)));
+		if (rect != defaultRect)
+		{
+			Debug.WriteLine("BelongMonitorRect() 左下: " + rect);
+			return rect;
+		}
+
+		// 右下
+		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Right, windowRect.Bottom)));
+		if (rect != defaultRect)
+		{
+			Debug.WriteLine("BelongMonitorRect() 右下: " + rect);
+			return rect;
+		}
+
+		return Rect.Empty;
 	}
 
 	/// <summary>
