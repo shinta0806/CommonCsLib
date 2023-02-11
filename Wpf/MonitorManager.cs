@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // マルチディスプレイを管理するクラス
-// Copyright (C) 2022 by SHINTA
+// Copyright (C) 2022-2023 by SHINTA
 // 
 // ============================================================================
 
@@ -11,6 +11,11 @@
 // ・マニフェストで高 DPI 対応宣言がされている前提で実装している。
 // ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
+// 以下のパッケージがインストールされている前提
+//   PInvoke.User32, PInvoke.SHCore
+// ----------------------------------------------------------------------------
+
 // ============================================================================
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
@@ -18,8 +23,10 @@
 //  1.00  | 2022/02/06 (Sun) | オリジナルバージョン。
 // (1.01) | 2022/02/06 (Sun) |   GetScaledMonitorRects() を作成。
 // (1.02) | 2022/05/14 (Sat) |   ログ機能を付けた。
+// (1.03) | 2023/02/11 (Sat) |   PInvoke パッケージを使用。
 // ============================================================================
 
+using PInvoke;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -66,7 +73,7 @@ namespace Shinta.Wpf
 
 			for (Int32 i = 0; i < _monitorRawRects.Count; i++)
 			{
-				if (WindowsApi.FAILED(WindowsApi.GetDpiForMonitor(_monitorHandles[i], MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out UInt32 dpiX, out UInt32 dpiY)))
+				if (WindowsApi.FAILED(SHCore.GetDpiForMonitor(_monitorHandles[i], MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out Int32 dpiX, out Int32 dpiY)))
 				{
 					continue;
 				}
@@ -101,7 +108,7 @@ namespace Shinta.Wpf
 		// --------------------------------------------------------------------
 		// マルチモニター環境で各モニターの領域を取得（コールバック）
 		// --------------------------------------------------------------------
-		private Boolean GetMonitorRectsCallback(IntPtr hMonitor, IntPtr hdcMonitor, ref WindowsApi.RECT lprcMonitor, IntPtr dwData)
+		private Boolean GetMonitorRectsCallback(IntPtr hMonitor, IntPtr hdcMonitor, ref PInvoke.RECT lprcMonitor, IntPtr dwData)
 		{
 			Debug.Assert(_monitorRawRects != null, "GetMonitorRectsCallback() _monitorRawRects null");
 			Debug.Assert(_monitorHandles != null, "GetMonitorRectsCallback() _monitorHandles null");
