@@ -29,7 +29,7 @@ using System.Diagnostics;
 
 using Windows.Foundation;
 
-namespace Shinta;
+namespace Shinta.WinUi3;
 
 internal class MonitorManager
 {
