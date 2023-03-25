@@ -24,8 +24,6 @@ using Microsoft.UI.Xaml.Media;
 
 using Serilog;
 
-using System.Diagnostics;
-
 using Windows.Graphics;
 
 namespace Shinta.WinUi3.Views;
@@ -168,13 +166,9 @@ public class PageEx2 : Page
 		RectInt32[] rects = { new RectInt32((Int32)customTitleBar.ActualOffset.X, 0, Int32.MaxValue, (Int32)customTitleBar.ActualHeight) };
 		_window.AppWindow.TitleBar.SetDragRectangles(rects);
 
-		// ボタンの色をカスタムタイトルバーに合わせる
-		SolidColorBrush? brush = ActualBackground(customTitleBar) as SolidColorBrush;
-		if (brush != null)
-		{
-			_window.AppWindow.TitleBar.ButtonBackgroundColor = brush.Color;
-			_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = brush.Color;
-		}
+		// ボタンの色を設定（デフォルト以外にしたい場合はアプリコードで設定が必要）
+		_window.AppWindow.TitleBar.ButtonBackgroundColor = WinUi3Common.TITLE_BAR_COLOR;
+		_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = (Application.Current.Resources["SolidBackgroundFillColorBaseBrush"] as SolidColorBrush)?.Color;
 	}
 
 	/// <summary>

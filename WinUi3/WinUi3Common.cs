@@ -77,9 +77,8 @@ internal class WinUi3Common
 	// --------------------------------------------------------------------
 
 	// タイトルバーの色
-	// ThemeResource では定義されてない模様
+	// ThemeResource では定義されてない模様（WindowCaptionBackground は白のようだ）
 	// https://github.com/microsoft/microsoft-ui-xaml/blob/main/dev/CommonStyles/Common_themeresources_any.xaml
-	// → WindowCaptionBackground でいいのでは？
 	public static readonly Color TITLE_BAR_COLOR = Color.FromArgb(255, 238, 244, 249);
 
 	// ====================================================================
