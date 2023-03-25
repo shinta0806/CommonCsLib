@@ -25,6 +25,7 @@ using Microsoft.UI.Xaml.Media;
 using Serilog;
 
 using System.Diagnostics;
+
 using Windows.Graphics;
 
 namespace Shinta.WinUi3.Views;
@@ -157,7 +158,7 @@ public class PageEx2 : Page
 		{
 			return;
 		}
-		FrameworkElement? customTitleBar = FindName(WinUi3Common.ELEMENT_NAME_CUSTOM_TITLE_BAR) as FrameworkElement;
+		FrameworkElement? customTitleBar = FindName(WinUi3Common.ELEMENT_CUSTOM_TITLE_BAR) as FrameworkElement;
 		if (customTitleBar == null)
 		{
 			return;

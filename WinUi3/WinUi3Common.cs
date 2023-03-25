@@ -67,7 +67,10 @@ internal class WinUi3Common
 	// --------------------------------------------------------------------
 
 	// カスタムタイトルバー
-	public const String ELEMENT_NAME_CUSTOM_TITLE_BAR = "CustomTitleBar";
+	public const String ELEMENT_CUSTOM_TITLE_BAR = "CustomTitleBar";
+
+	// 描画完了チェック用の UI 要素
+	public const String ELEMENT_CHECK_RENDER = "ElementCheckRender";
 
 	// --------------------------------------------------------------------
 	// 色
