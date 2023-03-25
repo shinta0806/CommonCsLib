@@ -25,7 +25,6 @@ using Microsoft.UI.Xaml.Media;
 using Serilog;
 
 using System.Diagnostics;
-
 using Windows.Graphics;
 
 namespace Shinta.WinUi3.Views;
@@ -76,6 +75,36 @@ public class PageEx2 : Page
 	// ====================================================================
 	// private 関数
 	// ====================================================================
+
+	/// <summary>
+	/// 実際の背景ブラシ
+	/// </summary>
+	/// <param name="dependencyObject"></param>
+	/// <returns></returns>
+	private Brush? ActualBackground(DependencyObject dependencyObject)
+	{
+		if (dependencyObject is Control control && control.Background != null)
+		{
+			// Control として背景がある
+			return control.Background;
+		}
+
+		if (dependencyObject is Panel panel && panel.Background != null)
+		{
+			// Panel として背景がある
+			return panel.Background;
+		}
+
+		DependencyObject? parent = (dependencyObject as FrameworkElement)?.Parent;
+		if (parent != null)
+		{
+			// 親の背景を返す
+			return ActualBackground(parent);
+		}
+
+		// 親がいない場合は null
+		return null;
+	}
 
 	/// <summary>
 	/// イベントハンドラー
@@ -139,9 +168,11 @@ public class PageEx2 : Page
 		_window.AppWindow.TitleBar.SetDragRectangles(rects);
 
 		// ボタンの色をカスタムタイトルバーに合わせる
-		if (customTitleBar is Panel panel && panel.Background is SolidColorBrush brush)
+		SolidColorBrush? brush = ActualBackground(customTitleBar) as SolidColorBrush;
+		if (brush != null)
 		{
 			_window.AppWindow.TitleBar.ButtonBackgroundColor = brush.Color;
+			_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = brush.Color;
 		}
 	}
 
