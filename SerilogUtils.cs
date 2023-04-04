@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // Serilog 利用関数
-// Copyright (C) 2022 by SHINTA
+// Copyright (C) 2022-2023 by SHINTA
 // 
 // ============================================================================
 
@@ -19,6 +19,7 @@
 //  -.--  | 2022/11/03 (Thu) | 作成開始。
 //  1.00  | 2022/11/03 (Thu) | ファーストバージョン。
 // (1.01) | 2022/11/05 (Sat) |   CreateLogger() の path を必須にした。
+//  1.10  | 2023/04/02 (Sun) | LogException() を作成。
 // ============================================================================
 
 using Serilog;
@@ -53,6 +54,17 @@ internal class SerilogUtils
 	}
 
 	/// <summary>
+	/// 例外をログする
+	/// </summary>
+	/// <param name="caption"></param>
+	/// <param name="ex"></param>
+	public static void LogException(String caption, Exception ex)
+	{
+		Log.Error(caption + "\n" + ex.Message);
+		LogStackTrace(ex);
+	}
+
+	/// <summary>
 	/// スタックトレースをログする
 	/// </summary>
 	/// <param name="ex"></param>
@@ -60,5 +72,4 @@ internal class SerilogUtils
 	{
 		Log.Information("スタックトレース：\n" + ex.StackTrace);
 	}
-
 }
