@@ -15,6 +15,8 @@
 //  1.00  | 2022/12/08 (Thu) | ファーストバージョン。
 //  1.10  | 2023/02/11 (Sat) | AdjustWindowPosition() を作成。
 //  1.20  | 2023/04/04 (Tue) | ShowExceptionLogMessageDialogAsync() を作成。
+//  1.30  | 2023/04/04 (Tue) | ShowLogContentDialogAsync() を作成。
+//  1.40  | 2023/04/04 (Tue) | ShowExceptionLogContentDialogAsync() を作成。
 // ============================================================================
 
 using Microsoft.UI.Dispatching;
@@ -235,7 +237,21 @@ public class WindowEx2 : WindowEx
 	}
 
 	/// <summary>
-	/// 例外の記録と表示
+	/// 例外の記録と表示（ContentDialog 版）
+	/// UI スレッド以外からも実行可能
+	/// </summary>
+	/// <param name="caption"></param>
+	/// <param name="ex"></param>
+	/// <returns></returns>
+	public async Task<ContentDialogResult> ShowExceptionLogContentDialogAsync(String caption, Exception ex)
+	{
+		ContentDialogResult result = await ShowLogContentDialogAsync(LogEventLevel.Error, caption + "\n" + ex.Message);
+		SerilogUtils.LogStackTrace(ex);
+		return result;
+	}
+
+	/// <summary>
+	/// 例外の記録と表示（MessageDialog 版）
 	/// UI スレッド以外からも実行可能
 	/// </summary>
 	/// <param name="caption"></param>
@@ -249,7 +265,30 @@ public class WindowEx2 : WindowEx
 	}
 
 	/// <summary>
-	/// ログの記録と表示
+	/// ログの記録と表示（ContentDialog 版）
+	/// UI スレッド以外からも実行可能
+	/// </summary>
+	/// <param name="logEventLevel"></param>
+	/// <param name="message"></param>
+	/// <returns></returns>
+	public async Task<ContentDialogResult> ShowLogContentDialogAsync(LogEventLevel logEventLevel, String message)
+	{
+		ContentDialogResult result = ContentDialogResult.None;
+		AutoResetEvent autoResetEvent = new(false);
+		DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, async () =>
+		{
+			result = await WinUi3Common.ShowLogContentDialogAsync(this, logEventLevel, message);
+			autoResetEvent.Set();
+		});
+		await Task.Run(() =>
+		{
+			autoResetEvent.WaitOne();
+		});
+		return result;
+	}
+
+	/// <summary>
+	/// ログの記録と表示（MessageDialog 版）
 	/// UI スレッド以外からも実行可能
 	/// </summary>
 	/// <param name="logEventLevel"></param>

@@ -25,7 +25,8 @@
 // ============================================================================
 
 using Microsoft.UI.Xaml;
-
+using Microsoft.UI.Xaml.Controls;
+using NicoKaraMaker3.Views.MainWindows;
 using PInvoke;
 
 using Serilog;
@@ -116,7 +117,27 @@ internal class WinUi3Common
 	}
 
 	/// <summary>
-	/// ログの記録と表示
+	/// ログの記録と表示（ContentDialog 版）
+	/// </summary>
+	/// <param name="window"></param>
+	/// <param name="logEventLevel"></param>
+	/// <param name="message"></param>
+	/// <returns></returns>
+	public static IAsyncOperation<ContentDialogResult> ShowLogContentDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
+	{
+		Log.Write(logEventLevel, message);
+		ContentDialog contentDialog = new()
+		{
+			XamlRoot = window.Content.XamlRoot,
+			Title = logEventLevel.ToString().ToLocalized(),
+			Content = message,
+			CloseButtonText = "OK".ToLocalized()
+		};
+		return contentDialog.ShowAsync();
+	}
+
+	/// <summary>
+	/// ログの記録と表示（MessageDialog 版）
 	/// </summary>
 	/// <param name="logEventLevel"></param>
 	/// <param name="message"></param>
