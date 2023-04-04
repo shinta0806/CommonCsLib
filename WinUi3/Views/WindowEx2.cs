@@ -14,6 +14,7 @@
 //  -.--  | 2022/12/08 (Thu) | 作成開始。
 //  1.00  | 2022/12/08 (Thu) | ファーストバージョン。
 //  1.10  | 2023/02/11 (Sat) | AdjustWindowPosition() を作成。
+//  1.20  | 2023/04/04 (Tue) | ShowExceptionLogMessageDialogAsync() を作成。
 // ============================================================================
 
 using Microsoft.UI.Dispatching;
@@ -231,6 +232,20 @@ public class WindowEx2 : WindowEx
 			_dialogEvent.WaitOne();
 		});
 		RemoveVeil();
+	}
+
+	/// <summary>
+	/// 例外の記録と表示
+	/// UI スレッド以外からも実行可能
+	/// </summary>
+	/// <param name="caption"></param>
+	/// <param name="ex"></param>
+	/// <returns></returns>
+	public async Task<IUICommand> ShowExceptionLogMessageDialogAsync(String caption, Exception ex)
+	{
+		IUICommand command = await ShowLogMessageDialogAsync(LogEventLevel.Error, caption + "\n" + ex.Message);
+		SerilogUtils.LogStackTrace(ex);
+		return command;
 	}
 
 	/// <summary>
