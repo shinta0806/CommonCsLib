@@ -26,7 +26,7 @@
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using NicoKaraMaker3.Views.MainWindows;
+
 using PInvoke;
 
 using Serilog;
