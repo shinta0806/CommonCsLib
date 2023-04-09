@@ -485,15 +485,16 @@ public class WindowsApi
 	// --------------------------------------------------------------------
 	[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 	internal static extern Boolean BringWindowToTop(IntPtr windowHandle);
-#endif
-#if false
+
 	// --------------------------------------------------------------------
 	// ChangeWindowMessageFilter
 	// --------------------------------------------------------------------
 	[DllImport(FILE_NAME_USER32_DLL, SetLastError = true)]
 	[return: MarshalAs(UnmanagedType.Bool)]
 	internal static extern Boolean ChangeWindowMessageFilter(UInt32 oMsg, UInt32 oFlag);
+#endif
 
+#if false
 	// --------------------------------------------------------------------
 	// CopyMemory
 	// --------------------------------------------------------------------
@@ -509,6 +510,9 @@ public class WindowsApi
 			[MarshalAs(UnmanagedType.LPWStr)] String oItem, out IMoniker oPpmk);
 #endif
 
+	// --------------------------------------------------------------------
+	// DefSubclassProc
+	// --------------------------------------------------------------------
 	[DllImport(FILE_NAME_COMCTL32_DLL)]
 	internal static extern IntPtr DefSubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
 

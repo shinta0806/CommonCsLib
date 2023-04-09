@@ -285,6 +285,7 @@ old
 !Wpf/ViewModels/*.cs
 
 !CsvManager.cs
+!DirectXApi.cs
 !Downloader.cs
 !JulianDay.cs
 !MonitorManager.cs
