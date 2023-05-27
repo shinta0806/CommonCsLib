@@ -1,7 +1,7 @@
 ﻿// ============================================================================
 // 
 // よく使う一般的な定数や関数（OS に依存しないもの）
-// Copyright (C) 2014-2022 by SHINTA
+// Copyright (C) 2014-2023 by SHINTA
 // 
 // ============================================================================
 
@@ -64,6 +64,7 @@
 // (4.21) | 2022/05/22 (Sun) |   拡張子を追加。
 //  4.30  | 2022/05/22 (Sun) | TempPath() を作成。
 // (4.31) | 2022/12/04 (Sun) |   拡張子を追加。
+//  4.40  | 2023/05/27 (Sat) | ShallowCopyFieldsDeclaredOnly() を作成。
 // ============================================================================
 
 using System;
@@ -226,7 +227,7 @@ namespace Shinta
 #if DISTRIB_STORE
 		public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionStore";
 #else
-    public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionZip";
+		public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionZip";
 #endif
 
 		/// <summary>
@@ -716,20 +717,30 @@ namespace Shinta
 
 		// --------------------------------------------------------------------
 		// 全フィールドを浅くコピーする
+		// インスタンスの実クラスの基底クラスも含めてコピーするが、基底クラスの private フィールドはコピーできないことに注意
 		// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
-		// 基底クラスの private フィールドはコピーできない模様
 		// --------------------------------------------------------------------
 		public static void ShallowCopyFields<T>(T src, T dest) where T : notnull
 		{
 			FieldInfo[] fields = src.GetType().GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-			foreach (FieldInfo field in fields)
-			{
-				field.SetValue(dest, field.GetValue(src));
-			}
+			ShallowCopyFieldsCore(src, dest, fields);
+		}
+
+		// --------------------------------------------------------------------
+		// 全フィールドを浅くコピーする
+		// インスタンスの実クラスではなく T としてコピーする。private フィールドもコピーできる
+		// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
+		// --------------------------------------------------------------------
+		public static void ShallowCopyFieldsDeclaredOnly<T>(T src, T dest) where T : notnull
+		{
+			FieldInfo[] fields = typeof(T).GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | 
+					BindingFlags.DeclaredOnly);
+			ShallowCopyFieldsCore(src, dest, fields);
 		}
 
 		// --------------------------------------------------------------------
 		// 全プロパティーを浅くコピーする
+		// インスタンスの実クラスの基底クラスも含めてコピーするが、基底クラスの private プロパティーはコピーできないことに注意
 		// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
 		// --------------------------------------------------------------------
 		public static void ShallowCopyProperties<T>(T src, T dest) where T : notnull
@@ -903,6 +914,18 @@ namespace Shinta
 			return true;
 		}
 #endif
+
+		// --------------------------------------------------------------------
+		// 全フィールドを浅くコピーする
+		// --------------------------------------------------------------------
+		private static void ShallowCopyFieldsCore<T>(T src, T dest, FieldInfo[] fields) where T : notnull
+		{
+			foreach (FieldInfo field in fields)
+			{
+				field.SetValue(dest, field.GetValue(src));
+			}
+		}
+
 	}
 	// public class Common ___END___
 

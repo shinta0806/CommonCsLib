@@ -183,7 +183,6 @@ public class PageEx2 : Page
 
 		// ToDo: Window.SizeToContent が実装されれば不要となるコード
 		// Windows App SDK 1.2 現在、コンテンツのサイズは表示スケールに自動追随するが、ResizeClient() は表示スケールを考慮してくれない
-		// ページコンテナが StackPanel の場合、HorizontalAlignment="Left" VerticalAlignment="Top" を指定する必要がある。
 		Double scale = WinUi3Common.DisplayScale(_window);
 
 		Int32 width = _window.AppWindow.ClientSize.Width;

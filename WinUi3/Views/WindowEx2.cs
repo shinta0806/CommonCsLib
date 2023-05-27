@@ -69,6 +69,7 @@ public class WindowEx2 : WindowEx
 
 	/// <summary>
 	/// 内容に合わせてサイズ調整
+	/// ページコンテナが StackPanel の場合、HorizontalAlignment="Left" VerticalAlignment="Top" を指定する必要がある。
 	/// 関連する操作は PageEx2 にやってもらう
 	/// ToDo: Window.SizeToContent が実装されれば不要となるコード
 	/// </summary>

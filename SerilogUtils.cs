@@ -60,7 +60,7 @@ internal class SerilogUtils
 	/// <param name="ex"></param>
 	public static void LogException(String caption, Exception ex)
 	{
-		Log.Error(caption + "\n" + ex.Message);
+		Log.Error(caption + "：\n" + ex.Message);
 		LogStackTrace(ex);
 	}
 
