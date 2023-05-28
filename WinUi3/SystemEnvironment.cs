@@ -95,7 +95,7 @@ namespace Shinta.WinUi3
 				// 自身のパス
 				Log.Information(LOG_PREFIX_SYSTEM_ENV + LOG_ITEM_NAME_PATH + Environment.GetCommandLineArgs()[0]);
 
-				// ファミリー
+				// ファミリー（設定が保存されている SHINTA のアプリ）
 				try
 				{
 					String family = String.Empty;

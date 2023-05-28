@@ -246,7 +246,7 @@ public class WindowEx2 : WindowEx
 	/// <returns></returns>
 	public async Task<ContentDialogResult> ShowExceptionLogContentDialogAsync(String caption, Exception ex)
 	{
-		ContentDialogResult result = await ShowLogContentDialogAsync(LogEventLevel.Error, caption + "\n" + ex.Message);
+		ContentDialogResult result = await ShowLogContentDialogAsync(LogEventLevel.Error, caption + "：\n" + ex.Message);
 		SerilogUtils.LogStackTrace(ex);
 		return result;
 	}
@@ -260,7 +260,7 @@ public class WindowEx2 : WindowEx
 	/// <returns></returns>
 	public async Task<IUICommand> ShowExceptionLogMessageDialogAsync(String caption, Exception ex)
 	{
-		IUICommand command = await ShowLogMessageDialogAsync(LogEventLevel.Error, caption + "\n" + ex.Message);
+		IUICommand command = await ShowLogMessageDialogAsync(LogEventLevel.Error, caption + "：\n" + ex.Message);
 		SerilogUtils.LogStackTrace(ex);
 		return command;
 	}
@@ -363,8 +363,12 @@ public class WindowEx2 : WindowEx
 	/// </summary>
 	private void AppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
 	{
-		// 開いているダイアログがある場合は閉じる（タスクバーから閉じられた場合などは可能性がある）
-		_openingDialog?.Close();
+		Log.Debug("WindowEx2.AppWindowClosing() " + args.Cancel);
+		if (_openingDialog != null)
+		{
+			// 開いているダイアログがある場合は閉じない（タスクバーから閉じられた場合などは可能性がある）
+			args.Cancel = true;
+		}
 	}
 
 	/// <summary>
@@ -520,7 +524,7 @@ public class WindowEx2 : WindowEx
 	}
 
 	/// <summary>
-	/// イベントハンドラー：メインウィンドウ Activated / Deactivated
+	/// イベントハンドラー：ウィンドウ Activated / Deactivated
 	/// </summary>
 	/// <param name="_"></param>
 	/// <param name="args"></param>
