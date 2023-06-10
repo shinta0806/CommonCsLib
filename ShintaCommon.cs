@@ -65,6 +65,7 @@
 //  4.30  | 2022/05/22 (Sun) | TempPath() を作成。
 // (4.31) | 2022/12/04 (Sun) |   拡張子を追加。
 //  4.40  | 2023/05/27 (Sat) | ShallowCopyFieldsDeclaredOnly() を作成。
+//  4.50  | 2023/06/10 (Sat) | DeleteFileIfEmpty() を作成。
 // ============================================================================
 
 using System;
@@ -339,6 +340,29 @@ namespace Shinta
 		}
 #endif
 
+		/// <summary>
+		/// ファイルが空なら削除
+		/// 主に FileSavePicker が勝手に作成するファイルを削除する用途
+		/// </summary>
+		/// <param name="path"></param>
+		/// <returns></returns>
+		public static Boolean DeleteFileIfEmpty(String path)
+		{
+			Boolean result = false;
+			try
+			{
+				if (new FileInfo(path).Length == 0)
+				{
+					File.Delete(path);
+					result = true;
+				}
+			}
+			catch
+			{
+			}
+			return result;
+		}
+
 		// --------------------------------------------------------------------
 		// テンポラリフォルダーを削除
 		// --------------------------------------------------------------------
@@ -375,11 +399,7 @@ namespace Shinta
 				throw new Exception("xmlDocument.DocumentElement is null");
 			}
 			using XmlNodeReader xmlNodeReader = new(xmlDocument.DocumentElement);
-			Object? des = xmlSerializer.Deserialize(xmlNodeReader);
-			if (des == null)
-			{
-				throw new Exception("Deserialize result is null");
-			}
+			Object? des = xmlSerializer.Deserialize(xmlNodeReader) ?? throw new Exception("Deserialize result is null");
 			return (T)des;
 		}
 
@@ -467,10 +487,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static String MakeRelativePath(String? basePath, String? absolutePath)
 		{
-			if (basePath == null)
-			{
-				basePath = String.Empty;
-			}
+			basePath ??= String.Empty;
 			if (String.IsNullOrEmpty(absolutePath))
 			{
 				return String.Empty;
@@ -605,10 +622,7 @@ namespace Shinta
 		public static List<Process> SameNameProcesses(Process? specifyProcess = null)
 		{
 			// プロセスが指定されていない場合は実行中のプロセスが指定されたものとする
-			if (specifyProcess == null)
-			{
-				specifyProcess = Process.GetCurrentProcess();
-			}
+			specifyProcess ??= Process.GetCurrentProcess();
 
 			Process[] allProcesses = Process.GetProcessesByName(specifyProcess.ProcessName);
 			List<Process> sameNameProcesses = new();
@@ -733,7 +747,7 @@ namespace Shinta
 		// --------------------------------------------------------------------
 		public static void ShallowCopyFieldsDeclaredOnly<T>(T src, T dest) where T : notnull
 		{
-			FieldInfo[] fields = typeof(T).GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | 
+			FieldInfo[] fields = typeof(T).GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public |
 					BindingFlags.DeclaredOnly);
 			ShallowCopyFieldsCore(src, dest, fields);
 		}
