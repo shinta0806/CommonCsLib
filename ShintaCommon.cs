@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // よく使う一般的な定数や関数（OS に依存しないもの）
 // Copyright (C) 2014-2023 by SHINTA
@@ -68,15 +68,9 @@
 //  4.50  | 2023/06/10 (Sat) | DeleteFileIfEmpty() を作成。
 // ============================================================================
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 

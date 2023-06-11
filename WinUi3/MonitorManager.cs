@@ -25,8 +25,6 @@
 
 using PInvoke;
 
-using System.Diagnostics;
-
 using Windows.Foundation;
 
 namespace Shinta.WinUi3;

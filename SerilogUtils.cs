@@ -22,8 +22,6 @@
 //  1.10  | 2023/04/02 (Sun) | LogException() を作成。
 // ============================================================================
 
-using Serilog;
-
 namespace Shinta;
 
 internal class SerilogUtils

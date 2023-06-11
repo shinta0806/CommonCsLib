@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // Windows API を C# で使えるようにするための記述
 // Copyright (C) 2015-2023 by SHINTA
@@ -58,7 +58,6 @@
 
 using PInvoke;
 
-using System;
 using System.Runtime.InteropServices;
 
 namespace Shinta;

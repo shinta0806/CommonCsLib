@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // WinUI 3 環境で使用する共通関数群
 // Copyright (C) 2022-2023 by SHINTA
@@ -28,9 +28,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 using PInvoke;
-
-using Serilog;
-using Serilog.Events;
 
 using Windows.Foundation;
 using Windows.UI;

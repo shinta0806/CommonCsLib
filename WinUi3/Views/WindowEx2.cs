@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // ウィンドウの拡張
 // 
@@ -28,18 +28,12 @@ using Microsoft.UI.Xaml.Markup;
 
 using PInvoke;
 
-using Serilog;
-using Serilog.Events;
-
-using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI.Popups;
-
-using WinUIEx;
 
 namespace Shinta.WinUi3.Views;
 
