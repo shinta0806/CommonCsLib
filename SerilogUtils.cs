@@ -20,6 +20,7 @@
 //  1.00  | 2022/11/03 (Thu) | ファーストバージョン。
 // (1.01) | 2022/11/05 (Sat) |   CreateLogger() の path を必須にした。
 //  1.10  | 2023/04/02 (Sun) | LogException() を作成。
+// (1.11) | 2023/07/17 (Mon) |   ログアクセスを共有にした。
 // ============================================================================
 
 namespace Shinta;
@@ -46,7 +47,7 @@ internal class SerilogUtils
 #endif
 				.Enrich.WithProcessId()
 				.Enrich.WithThreadId()
-				.WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: flleSizeLimit, retainedFileCountLimit: generations,
+				.WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: flleSizeLimit, retainedFileCountLimit: generations, shared: true,
 				outputTemplate: "{Timestamp:yyyy/MM/dd HH:mm:ss.fff}\t{ProcessId}/M{ThreadId}\t{Level:u3}\t{Message:lj}{NewLine}{Exception}")
 				.CreateLogger();
 	}

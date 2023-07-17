@@ -1,7 +1,7 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // 最近使用したファイル・フォルダーを管理
-// Copyright (C) 2022 by SHINTA
+// Copyright (C) 2022-2023 by SHINTA
 // 
 // ============================================================================
 
@@ -14,12 +14,10 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2022/12/31 (Sat) | 作成開始。
 //  1.00  | 2022/12/31 (Sat) | ファーストバージョン。
+// (1.01) | 2023/06/25 (Sun) |   軽微なリファクタリング。
 // ============================================================================
 
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 
 namespace Shinta;
 
@@ -117,12 +115,12 @@ internal class RecentPathManager
 	/// <summary>
 	/// 履歴種別
 	/// </summary>
-	private RecentItemType _recentItemType;
+	private readonly RecentItemType _recentItemType;
 
 	/// <summary>
 	/// 保持する履歴の数
 	/// </summary>
-	private Int32 _capacity;
+	private readonly Int32 _capacity;
 
 	/// <summary>
 	/// 履歴

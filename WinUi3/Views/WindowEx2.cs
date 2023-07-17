@@ -372,7 +372,7 @@ public class WindowEx2 : WindowEx
 	/// <param name="monitorRects"></param>
 	/// <param name="windowRect"></param>
 	/// <returns></returns>
-	private Rect BelongMonitorRect(List<Rect> monitorRects, Rect windowRect)
+	private static Rect BelongMonitorRect(List<Rect> monitorRects, Rect windowRect)
 	{
 		Rect rect;
 		Rect defaultRect = new();
@@ -381,7 +381,6 @@ public class WindowEx2 : WindowEx
 		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point((windowRect.Left + windowRect.Right) / 2, (windowRect.Top + windowRect.Bottom) / 2)));
 		if (rect != defaultRect)
 		{
-			Debug.WriteLine("BelongMonitorRect() 中央: " + rect);
 			return rect;
 		}
 
@@ -389,7 +388,6 @@ public class WindowEx2 : WindowEx
 		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Left, windowRect.Top)));
 		if (rect != defaultRect)
 		{
-			Debug.WriteLine("BelongMonitorRect() 左上: " + rect);
 			return rect;
 		}
 
@@ -397,7 +395,6 @@ public class WindowEx2 : WindowEx
 		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Right, windowRect.Top)));
 		if (rect != defaultRect)
 		{
-			Debug.WriteLine("BelongMonitorRect() 右上: " + rect);
 			return rect;
 		}
 
@@ -405,7 +402,6 @@ public class WindowEx2 : WindowEx
 		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Left, windowRect.Bottom)));
 		if (rect != defaultRect)
 		{
-			Debug.WriteLine("BelongMonitorRect() 左下: " + rect);
 			return rect;
 		}
 
@@ -413,7 +409,6 @@ public class WindowEx2 : WindowEx
 		rect = monitorRects.FirstOrDefault(x => x.Contains(new Point(windowRect.Right, windowRect.Bottom)));
 		if (rect != defaultRect)
 		{
-			Debug.WriteLine("BelongMonitorRect() 右下: " + rect);
 			return rect;
 		}
 
@@ -456,11 +451,8 @@ public class WindowEx2 : WindowEx
         String xaml = await streamReader.ReadToEndAsync();
 #endif
 		Assembly assembly = Assembly.GetExecutingAssembly();
-		using Stream? stream = assembly.GetManifestResourceStream(DynamicXamlNamespace() + "." + name + Common.FILE_EXT_XAML);
-		if (stream == null)
-		{
-			throw new Exception("内部エラー：コントロールリソースが見つかりません。");
-		}
+		using Stream stream = assembly.GetManifestResourceStream(DynamicXamlNamespace() + "." + name + Common.FILE_EXT_XAML) 
+				?? throw new Exception("内部エラー：コントロールリソースが見つかりません。");
 		Byte[] data = new Byte[stream.Length];
 		stream.Read(data);
 		String xaml = Encoding.UTF8.GetString(data);
