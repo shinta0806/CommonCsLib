@@ -790,12 +790,12 @@ namespace Shinta
 				return 0;
 			}
 
-			Match aMatch = Regex.Match(str, "-?[0-9]+");
-			if (String.IsNullOrEmpty(aMatch.Value))
+			Match match = Regex.Match(str, "-?[0-9]+");
+			if (String.IsNullOrEmpty(match.Value))
 			{
 				return 0;
 			}
-			return Int32.Parse(aMatch.Value);
+			return Int32.Parse(match.Value);
 		}
 
 		// --------------------------------------------------------------------
