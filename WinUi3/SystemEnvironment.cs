@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // 動作環境を取得する
-// Copyright (C) 2022 by SHINTA
+// Copyright (C) 2022-2023 by SHINTA
 // 
 // ============================================================================
 
@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2022/12/03 (Sat) | WPF 版を元に作成開始。
 //  1.00  | 2022/12/03 (Sat) | ファーストバージョン。
+// (1.01) | 2023/08/19 (Sat) |   ManagementValue() を改善。
 // ============================================================================
 
 using System.Management;
@@ -154,7 +155,7 @@ public class SystemEnvironment
 			ManagementObjectSearcher searcher = new("SELECT " + propertyName + " FROM " + className);
 
 			// クエリの結果が 1 つのみであることを前提としている
-			foreach (ManagementObject obj in searcher.Get())
+			foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
 			{
 				foreach (PropertyData property in obj.Properties)
 				{
