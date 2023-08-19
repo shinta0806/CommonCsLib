@@ -23,12 +23,15 @@
 //  1.10  | 2022/12/08 (Thu) | EnableContextHelp() を作成。
 // (1.11) | 2023/03/25 (Sat) |   カスタムタイトルバー定数を定義。
 // (1.12) | 2023/08/19 (Sat) |   CsWin32 導入。
+//  1.20  | 2023/08/19 (Sat) | IsMsix() を作成。
+//  1.30  | 2023/08/19 (Sat) | SettingsFolder() を作成。
 // ============================================================================
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 using Windows.Foundation;
+using Windows.Storage;
 using Windows.UI;
 using Windows.UI.Popups;
 using Windows.Win32;
@@ -114,6 +117,17 @@ internal class WinUi3Common
 		return PInvoke.SetWindowSubclass(hWnd, subclassProc, UIntPtr.Zero, UIntPtr.Zero);
 	}
 
+	/// <summary>
+	/// MSIX パッケージで実行されているかどうか
+	/// </summary>
+	/// <returns></returns>
+	public static Boolean IsMsix()
+	{
+		UInt32 length = 0;
+		WIN32_ERROR error = PInvoke.GetCurrentPackageFullName(ref length, null);
+		return !error.HasFlag(WIN32_ERROR.APPMODEL_ERROR_NO_PACKAGE);
+	}
+
 #if false
 	/// <summary>
 	/// RECT が点を内包するか
@@ -128,6 +142,24 @@ internal class WinUi3Common
 		return rect.X <= x && x <= rect.X + rect.Width && rect.Y <= y && y <= rect.Y + rect.Height;
 	}
 #endif
+
+	/// <summary>
+	/// 設定保存用フォルダー（末尾 '\\'）
+	/// </summary>
+	/// <returns></returns>
+	public static String SettingsFolder()
+	{
+		if (IsMsix())
+		{
+			// MSIX パッケージの場合は Local\Packages\... 配下
+			return Path.GetDirectoryName(ApplicationData.Current.LocalFolder.Path) + "\\" + Common.FOLDER_NAME_SETTINGS;
+		}
+		else
+		{
+			// 非 MSIX パッケージの場合は Local\SHINTA\... 配下
+			return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\" + Common.FOLDER_NAME_SHINTA + Common.AppId() + "\\";
+		}
+	}
 
 	/// <summary>
 	/// ログの記録と表示（ContentDialog 版）

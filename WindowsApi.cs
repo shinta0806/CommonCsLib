@@ -518,13 +518,14 @@ public class WindowsApi
 	//[DllImport(FILE_NAME_COMCTL32_DLL)]
 	//internal static extern IntPtr DefSubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
 
+#if false
 	// --------------------------------------------------------------------
 	// DeleteFile
-	// PInvoke.Kernel32 で宣言されていない
 	// --------------------------------------------------------------------
 	[DllImport(FILE_NAME_KERNEL32_DLL, SetLastError = true, CharSet = CharSet.Unicode)]
 	[return: MarshalAs(UnmanagedType.Bool)]
 	internal static extern Boolean DeleteFile(String fileName);
+#endif
 
 	// --------------------------------------------------------------------
 	// EnumDisplayMonitors
