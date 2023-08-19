@@ -1,7 +1,7 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // RSS を解析・管理するクラス
-// Copyright (C) 2022 by SHINTA
+// Copyright (C) 2022-2023 by SHINTA
 // 
 // ============================================================================
 
@@ -21,6 +21,7 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2022/11/19 (Sat) | WPF 版を元に作成開始。
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
+// (1.01) | 2023/08/16 (Wed) |   既読アイテム保持の最大数のデフォルト値を 20 に変更。
 // ============================================================================
 
 using System.Xml;
@@ -257,9 +258,11 @@ public class RssManager
 	/// </summary>
 	public void Save()
 	{
-		RssSettings rssSettings = new(_settingsPath);
-		rssSettings.PastDownloadDate = PastDownloadDate;
-		rssSettings.PastRssGuids = PastRssGuids;
+		RssSettings rssSettings = new(_settingsPath)
+		{
+			PastDownloadDate = PastDownloadDate,
+			PastRssGuids = PastRssGuids
+		};
 		rssSettings.Save();
 	}
 
@@ -298,7 +301,7 @@ public class RssManager
 	/// <summary>
 	/// 既読アイテム保持の最大数のデフォルト値
 	/// </summary>
-	private const Int32 PAST_RSS_GUIDS_CAPACITY_DEFAULT = 10;
+	private const Int32 PAST_RSS_GUIDS_CAPACITY_DEFAULT = 20;
 
 	// ====================================================================
 	// private 変数
