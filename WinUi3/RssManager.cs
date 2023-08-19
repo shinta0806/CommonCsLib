@@ -22,8 +22,10 @@
 //  -.--  | 2022/11/19 (Sat) | WPF 版を元に作成開始。
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
 // (1.01) | 2023/08/16 (Wed) |   既読アイテム保持の最大数のデフォルト値を 20 に変更。
+//  1.10  | 2023/08/19 (Sat) | 保存を JSON 形式に変更。
 // ============================================================================
 
+using System.Text.Json;
 using System.Xml;
 
 namespace Shinta.WinUi3;
@@ -34,7 +36,7 @@ namespace Shinta.WinUi3;
 // 
 // ========================================================================
 
-public class RssManager
+internal class RssManager
 {
 	// ====================================================================
 	// コンストラクター
@@ -192,9 +194,7 @@ public class RssManager
 	/// </summary>
 	public void Load()
 	{
-		RssSettings rssSettings = new(_settingsPath);
-		rssSettings.Load();
-
+		RssSettings rssSettings = _jsonManager.Load<RssSettings>(_settingsPath, false, _jsonSerializerOptions);
 		PastDownloadDate = rssSettings.PastDownloadDate;
 		PastRssGuids = rssSettings.PastRssGuids;
 	}
@@ -242,7 +242,7 @@ public class RssManager
 		catch (Exception ex)
 		{
 			errorMessage = ex.Message;
-#if DEBUG
+#if DEBUGz
 			var i = ex.InnerException;
 #endif
 		}
@@ -258,12 +258,12 @@ public class RssManager
 	/// </summary>
 	public void Save()
 	{
-		RssSettings rssSettings = new(_settingsPath)
+		RssSettings rssSettings = new()
 		{
 			PastDownloadDate = PastDownloadDate,
 			PastRssGuids = PastRssGuids
 		};
-		rssSettings.Save();
+		_jsonManager.Save(rssSettings, _settingsPath, false, _jsonSerializerOptions);
 	}
 
 	/// <summary>
@@ -323,9 +323,19 @@ public class RssManager
 	private DateTime _latestDownloadDate;
 
 	/// <summary>
-	/// 保存パス
+	/// 保存パス（絶対パスでも相対パスでも可）
 	/// </summary>
 	private readonly String _settingsPath;
+
+	/// <summary>
+	/// 設定保存管理
+	/// </summary>
+	private readonly JsonManager _jsonManager = new();
+
+	/// <summary>
+	/// 設定保存時のオプション
+	/// </summary>
+	private readonly JsonSerializerOptions _jsonSerializerOptions = new();
 
 	// ====================================================================
 	// private 関数
@@ -519,7 +529,11 @@ public class RssItem
 	/// <summary>
 	/// 要素情報（[要素名/属性名] = 値）
 	/// </summary>
-	public Dictionary<String, String> Elements { get; set; } = new();
+	public Dictionary<String, String> Elements
+	{
+		get;
+		set;
+	} = new();
 
 	// ====================================================================
 	// public 定数
@@ -537,29 +551,8 @@ public class RssItem
 // 
 // ========================================================================
 
-public class RssSettings : SerializableSettings
+public class RssSettings
 {
-	// ====================================================================
-	// コンストラクター
-	// ====================================================================
-
-	/// <summary>
-	/// メインコンストラクター（引数あり）
-	/// </summary>
-	/// <param name="settingsPath"></param>
-	public RssSettings(String settingsPath)
-	{
-		_settingsPath = settingsPath;
-	}
-
-	/// <summary>
-	/// シリアライズ用コンストラクター（引数なし）
-	/// </summary>
-	public RssSettings()
-	{
-		_settingsPath = String.Empty;
-	}
-
 	// ====================================================================
 	// public プロパティー
 	// ====================================================================
@@ -581,27 +574,5 @@ public class RssSettings : SerializableSettings
 		get;
 		set;
 	} = new();
-
-	// ====================================================================
-	// public 関数
-	// ====================================================================
-
-	/// <summary>
-	/// 保存パス
-	/// </summary>
-	/// <returns></returns>
-	public override String SettingsPath()
-	{
-		return _settingsPath;
-	}
-
-	// ====================================================================
-	// private 変数
-	// ====================================================================
-
-	/// <summary>
-	/// 保存パス
-	/// </summary>
-	private readonly String _settingsPath;
 }
 

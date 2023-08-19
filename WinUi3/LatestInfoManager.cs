@@ -1,7 +1,7 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // 最新情報を解析・管理するクラス
-// Copyright (C) 2022 by SHINTA
+// Copyright (C) 2022-2023 by SHINTA
 // 
 // ============================================================================
 
@@ -20,19 +20,15 @@
 //  -.--  | 2022/11/19 (Sat) | WPF 版を元に作成開始。
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
 // (1.01) | 2022/11/19 (Sat) |   軽微なリファクタリング。
-//  1.10  | 2022/12/11 (Sun) |   多言語対応。
+//  1.10  | 2022/12/11 (Sun) | 多言語対応。
+//  1.20  | 2023/08/19 (Sat) | RssManager の派生にした。
 // ============================================================================
-
-using Serilog;
-using Serilog.Events;
 
 using Windows.UI.Popups;
 
-using WinUIEx;
-
 namespace Shinta.WinUi3;
 
-public class LatestInfoManager
+internal class LatestInfoManager : RssManager
 {
 	// ====================================================================
 	// コンストラクター
@@ -47,23 +43,15 @@ public class LatestInfoManager
 	/// <param name="appVer"></param>
 	/// <param name="cancellationToken"></param>
 	/// <param name="window"></param>
-	/// <param name="settingsPath"></param>
-	public LatestInfoManager(String rssUrl, Boolean forceShow, Int32 wait, String appVer, CancellationToken cancellationToken, WindowEx window, String? settingsPath = null)
+	/// <param name="settingsPath">絶対パスでも相対パスでも可</param>
+	public LatestInfoManager(String rssUrl, Boolean forceShow, Int32 wait, String appVer, WindowEx window, String? settingsPath = null)
+			: base(String.IsNullOrEmpty(settingsPath) ? FILE_NAME_LATEST_INFO : settingsPath)
 	{
 		_rssUrl = rssUrl;
 		_forceShow = forceShow;
 		_wait = wait;
 		_appVer = appVer;
-		_cancellationToken = cancellationToken;
 		_window = window;
-		if (String.IsNullOrEmpty(settingsPath))
-		{
-			_settingsPath = Common.UserAppDataFolderPath() + FILE_NAME_LATEST_INFO;
-		}
-		else
-		{
-			_settingsPath = settingsPath;
-		}
 	}
 
 	// ====================================================================
@@ -115,7 +103,7 @@ public class LatestInfoManager
 	/// <summary>
 	/// 最新情報保存ファイル名
 	/// </summary>
-	private const String FILE_NAME_LATEST_INFO = "LatestInfo" + Common.FILE_EXT_CONFIG;
+	private const String FILE_NAME_LATEST_INFO = "LatestInfo" + Common.FILE_EXT_JSON;
 
 	// ====================================================================
 	// private 変数
@@ -142,17 +130,7 @@ public class LatestInfoManager
 	private readonly String _appVer;
 
 	/// <summary>
-	/// 中断制御
-	/// </summary>
-	private readonly CancellationToken _cancellationToken;
-
-	/// <summary>
-	/// 最新情報保存パス
-	/// </summary>
-	private readonly String _settingsPath;
-
-	/// <summary>
-	/// 最新情報
+	/// 今回の最新情報
 	/// </summary>
 	private List<RssItem> _newItems = new();
 
@@ -181,32 +159,6 @@ public class LatestInfoManager
 		{
 			throw new Exception("LatestInfoManager_AskDisplayLatestAsync_Cancel".ToLocalized());
 		}
-	}
-
-	/// <summary>
-	/// RSS マネージャーを生成
-	/// </summary>
-	/// <returns></returns>
-	private RssManager CreateRssManager()
-	{
-		RssManager rssManager = new(_settingsPath);
-
-		// 既存設定の読込
-		rssManager.Load();
-
-		// 中断制御
-		rssManager.CancellationToken = _cancellationToken;
-
-#if DEBUG
-		String guids = "SetRssManager() PastRssGuids:\n";
-		foreach (String guid in rssManager.PastRssGuids)
-		{
-			guids += guid + "\n";
-		}
-		Log.Debug(guids);
-#endif
-
-		return rssManager;
 	}
 
 	/// <summary>
@@ -240,7 +192,7 @@ public class LatestInfoManager
 		}
 		else
 		{
-			throw new Exception("LatestInfoManager_DisplayLatest_Error_Not");
+			throw new Exception("LatestInfoManager_DisplayLatest_Error_Not".ToLocalized());
 		}
 	}
 
@@ -254,17 +206,25 @@ public class LatestInfoManager
 		Log.Information("最新情報を確認中...");
 
 		// RSS チェック
-		RssManager rssManager = CreateRssManager();
-		(Boolean result, String? errorMessage) = await rssManager.ReadLatestRssAsync(_rssUrl, _appVer);
+		try
+		{
+			Load();
+		}
+		catch (Exception ex)
+		{
+			SerilogUtils.LogException("過去の最新情報を読み込めませんでした", ex);
+		}
+
+		(Boolean result, String? errorMessage) = await ReadLatestRssAsync(_rssUrl, _appVer);
 		if (!result)
 		{
 			throw new Exception(errorMessage);
 		}
-		_newItems = rssManager.GetNewItems();
+		_newItems = GetNewItems();
 
 		// 更新
-		rssManager.UpdatePastRss();
-		rssManager.Save();
+		UpdatePastRss();
+		Save();
 	}
 
 	/// <summary>
