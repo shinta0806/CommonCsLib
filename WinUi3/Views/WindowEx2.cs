@@ -5,7 +5,8 @@
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 
+// 以下のパッケージがインストールされている前提
+//   CsWin32
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -26,14 +27,15 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
 
-using PInvoke;
-
 using System.Reflection;
 using System.Text;
 
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI.Popups;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Shinta.WinUi3.Views;
 
@@ -116,10 +118,15 @@ public class WindowEx2 : WindowEx
 	public void AdjustWindowPosition()
 	{
 		MonitorManager monitorManager = new();
-		List<Rect> monitorRects = monitorManager.GetRawMonitorRects();
+		List<RECT> monitorRectsOrig = monitorManager.GetRawMonitorRects();
+		List<Rect> monitorRects = new();
+		foreach (RECT rect in monitorRectsOrig)
+		{
+			monitorRects.Add(new Rect(rect.X, rect.Y, rect.Width, rect.Height));
+		}
 
 		// 上下または左右のボーダー
-		Int32 border = User32.GetSystemMetrics(User32.SystemMetric.SM_CYSIZEFRAME) * 2;
+		Int32 border = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYSIZEFRAME) * 2;
 
 		// 現在位置
 		Rect belongRect = BelongMonitorRect(monitorRects, FrameRect());
@@ -170,7 +177,7 @@ public class WindowEx2 : WindowEx
 	{
 		// 位置決め
 		// ToDo: 微妙にタイトルバーの高さと異なる
-		Int32 delta = User32.GetSystemMetrics(User32.SystemMetric.SM_CYSIZEFRAME) + User32.GetSystemMetrics(User32.SystemMetric.SM_CYCAPTION);
+		Int32 delta = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYSIZEFRAME) + PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYCAPTION);
 
 		// 移動
 		window.AppWindow.Move(new PointInt32(this.AppWindow.Position.X + delta, this.AppWindow.Position.Y + delta));
@@ -451,7 +458,7 @@ public class WindowEx2 : WindowEx
         String xaml = await streamReader.ReadToEndAsync();
 #endif
 		Assembly assembly = Assembly.GetExecutingAssembly();
-		using Stream stream = assembly.GetManifestResourceStream(DynamicXamlNamespace() + "." + name + Common.FILE_EXT_XAML) 
+		using Stream stream = assembly.GetManifestResourceStream(DynamicXamlNamespace() + "." + name + Common.FILE_EXT_XAML)
 				?? throw new Exception("内部エラー：コントロールリソースが見つかりません。");
 		Byte[] data = new Byte[stream.Length];
 		stream.Read(data);

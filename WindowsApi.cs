@@ -56,9 +56,8 @@
 // (2.05) | 2023/02/11 (Sat) |   EnumDisplayMonitors() を追加。
 // ============================================================================
 
-using PInvoke;
-
 using System.Runtime.InteropServices;
+using Windows.Win32.Foundation;
 
 namespace Shinta;
 
@@ -340,7 +339,7 @@ public class WindowsApi
 	// ====================================================================
 
 	internal delegate Boolean EnumMonitorsDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
-	internal delegate IntPtr SubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam, IntPtr idSubclass, IntPtr refData);
+	//internal delegate IntPtr SubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam, IntPtr idSubclass, IntPtr refData);
 
 	// ====================================================================
 	// public 定数
@@ -457,21 +456,25 @@ public class WindowsApi
 	// マクロ
 	// ====================================================================
 
+#if false
 	// --------------------------------------------------------------------
 	// FAILED (COM)
+	// HRESULT.Failed を使用すること
 	// --------------------------------------------------------------------
-	public static Boolean FAILED(HResult hResult)
+	public static Boolean FAILED(HRESULT hResult)
 	{
 		return hResult < 0;
 	}
 
 	// --------------------------------------------------------------------
 	// SUCCEEDED (COM)
+	// HRESULT.Succeeded を使用すること
 	// --------------------------------------------------------------------
-	public static Boolean SUCCEEDED(HResult hResult)
+	public static Boolean SUCCEEDED(HRESULT hResult)
 	{
 		return hResult >= 0;
 	}
+#endif
 
 	// ====================================================================
 	// DLL インポート
@@ -512,8 +515,8 @@ public class WindowsApi
 	// --------------------------------------------------------------------
 	// DefSubclassProc
 	// --------------------------------------------------------------------
-	[DllImport(FILE_NAME_COMCTL32_DLL)]
-	internal static extern IntPtr DefSubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
+	//[DllImport(FILE_NAME_COMCTL32_DLL)]
+	//internal static extern IntPtr DefSubclassProc(IntPtr hWnd, User32.WindowMessage msg, IntPtr wPalam, IntPtr lParam);
 
 	// --------------------------------------------------------------------
 	// DeleteFile
@@ -525,7 +528,7 @@ public class WindowsApi
 
 	// --------------------------------------------------------------------
 	// EnumDisplayMonitors
-	// PInvoke.User32 は unsafe
+	// CsWin32 は unsafe
 	// --------------------------------------------------------------------
 	[DllImport(FILE_NAME_USER32_DLL)]
 	[return: MarshalAs(UnmanagedType.Bool)]
@@ -680,8 +683,8 @@ public class WindowsApi
 	/// <param name="idSubclass"></param>
 	/// <param name="refData"></param>
 	/// <returns></returns>
-	[DllImport(FILE_NAME_COMCTL32_DLL)]
-	internal static extern Boolean SetWindowSubclass(IntPtr hWnd, SubclassProc subclassProc, IntPtr idSubclass, IntPtr refData);
+	//[DllImport(FILE_NAME_COMCTL32_DLL)]
+	//internal static extern Boolean SetWindowSubclass(IntPtr hWnd, SubclassProc subclassProc, IntPtr idSubclass, IntPtr refData);
 
 #if false
 	// --------------------------------------------------------------------

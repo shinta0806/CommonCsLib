@@ -13,7 +13,7 @@
 
 // ----------------------------------------------------------------------------
 // 以下のパッケージがインストールされている前提
-//   PInvoke.User32, PInvoke.SHCore
+//   CsWin32
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -21,11 +21,13 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2023/02/11 (Sat) | 作成開始。
 //  1.00  | 2023/02/11 (Sat) | オリジナルバージョン。
+//  1.10  | 2023/08/19 (Sat) | CsWin32 導入に伴う仕様変更。
 // ============================================================================
 
-using PInvoke;
-
-using Windows.Foundation;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Gdi;
+using Windows.Win32.UI.HiDpi;
 
 namespace Shinta.WinUi3;
 
@@ -49,7 +51,7 @@ internal class MonitorManager
 	// --------------------------------------------------------------------
 	// マルチモニター環境で各モニターの領域を取得（API 値のままスケーリングしない）
 	// --------------------------------------------------------------------
-	public List<Rect> GetRawMonitorRects()
+	public List<RECT> GetRawMonitorRects()
 	{
 		GetMonitorRectsCore();
 		Debug.Assert(_monitorRawRects != null, "GetRawMonitorRects() _monitorRawRects null");
@@ -59,7 +61,7 @@ internal class MonitorManager
 	// --------------------------------------------------------------------
 	// マルチモニター環境で各モニターの領域を取得（各ディスプレイの拡大率に合わせてスケーリング）
 	// --------------------------------------------------------------------
-	public List<Rect> GetScaledMonitorRects()
+	public List<RECT> GetScaledMonitorRects()
 	{
 		GetMonitorRectsCore();
 		Debug.Assert(_monitorRawRects != null, "GetScaledMonitorRects() _monitorRawRects null");
@@ -67,14 +69,15 @@ internal class MonitorManager
 
 		for (Int32 i = 0; i < _monitorRawRects.Count; i++)
 		{
-			if (WindowsApi.FAILED(SHCore.GetDpiForMonitor(_monitorHandles[i], MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out Int32 dpiX, out Int32 dpiY)))
+			if (PInvoke.GetDpiForMonitor(_monitorHandles[i], MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out UInt32 dpiX, out UInt32 dpiY).Failed)
 			{
 				continue;
 			}
 
 			Double scaleX = Common.DEFAULT_DPI / dpiX;
 			Double scaleY = Common.DEFAULT_DPI / dpiY;
-			Rect rect = new(_monitorRawRects[i].Left * scaleX, _monitorRawRects[i].Top * scaleY, _monitorRawRects[i].Width * scaleX, _monitorRawRects[i].Height * scaleY);
+			RECT rect = new((Int32)(_monitorRawRects[i].left * scaleX), (Int32)(_monitorRawRects[i].top * scaleY),
+					(Int32)(_monitorRawRects[i].right * scaleX), (Int32)(_monitorRawRects[i].bottom * scaleY));
 			_monitorRawRects[i] = rect;
 		}
 		return _monitorRawRects;
@@ -85,10 +88,10 @@ internal class MonitorManager
 	// ====================================================================
 
 	// ディスプレイ領域格納用
-	private List<Rect>? _monitorRawRects;
+	private List<RECT>? _monitorRawRects;
 
 	// ディスプレイハンドル格納用
-	private List<IntPtr>? _monitorHandles;
+	private List<HMONITOR>? _monitorHandles;
 
 	// ====================================================================
 	// private 関数
@@ -97,13 +100,12 @@ internal class MonitorManager
 	// --------------------------------------------------------------------
 	// マルチモニター環境で各モニターの領域を取得（コールバック）
 	// --------------------------------------------------------------------
-	private Boolean GetMonitorRectsCallback(IntPtr hMonitor, IntPtr hdcMonitor, ref PInvoke.RECT lprcMonitor, IntPtr dwData)
+	private Boolean GetMonitorRectsCallback(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData)
 	{
 		Debug.Assert(_monitorRawRects != null, "GetMonitorRectsCallback() _monitorRawRects null");
 		Debug.Assert(_monitorHandles != null, "GetMonitorRectsCallback() _monitorHandles null");
-		Rect rect = new(lprcMonitor.left, lprcMonitor.top, lprcMonitor.right - lprcMonitor.left, lprcMonitor.bottom - lprcMonitor.top);
-		_monitorRawRects.Add(rect);
-		_monitorHandles.Add(hMonitor);
+		_monitorRawRects.Add(lprcMonitor);
+		_monitorHandles.Add((HMONITOR)hMonitor);
 		return true;
 	}
 

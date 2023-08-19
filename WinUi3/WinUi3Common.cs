@@ -7,7 +7,7 @@
 
 // ----------------------------------------------------------------------------
 // 以下のパッケージがインストールされている前提
-//   PInvoke.User32
+//   CsWin32
 //   Serilog.Sinks.File
 // ----------------------------------------------------------------------------
 
@@ -22,20 +22,21 @@
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
 //  1.10  | 2022/12/08 (Thu) | EnableContextHelp() を作成。
 // (1.11) | 2023/03/25 (Sat) |   カスタムタイトルバー定数を定義。
+// (1.12) | 2023/08/19 (Sat) |   CsWin32 導入。
 // ============================================================================
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-using PInvoke;
-
 using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Popups;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 using WinRT.Interop;
-
-using WinUIEx;
 
 namespace Shinta.WinUi3;
 
@@ -90,8 +91,8 @@ internal class WinUi3Common
 	/// <returns></returns>
 	public static Double DisplayScale(Window window)
 	{
-		IntPtr hWnd = WindowNative.GetWindowHandle(window);
-		Int32 dpi = User32.GetDpiForWindow(hWnd);
+		HWND hWnd = (HWND)WindowNative.GetWindowHandle(window);
+		UInt32 dpi = PInvoke.GetDpiForWindow(hWnd);
 		return dpi / Common.DEFAULT_DPI;
 	}
 
@@ -101,17 +102,32 @@ internal class WinUi3Common
 	/// <param name="window"></param>
 	/// <param name="subclassProc">関数を直接渡すのではなく、new したものを格納した変数を渡す必要がある。また、その変数はずっと保持しておく必要がある</param>
 	/// <returns>有効に出来た、または、既に有効な場合は true</returns>
-	public static Boolean EnableContextHelp(Window window, WindowsApi.SubclassProc subclassProc)
+	public static Boolean EnableContextHelp(Window window, SUBCLASSPROC subclassProc)
 	{
-		IntPtr hWnd = WindowNative.GetWindowHandle(window);
-		User32.SetWindowLongFlags exStyle = (User32.SetWindowLongFlags)User32.GetWindowLong(hWnd, User32.WindowLongIndexFlags.GWL_EXSTYLE);
-		if ((exStyle & User32.SetWindowLongFlags.WS_EX_CONTEXTHELP) != 0)
+		HWND hWnd = (HWND)WindowNative.GetWindowHandle(window);
+		Int32 exStyle = PInvoke.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+		if (((WINDOW_EX_STYLE)exStyle).HasFlag(WINDOW_EX_STYLE.WS_EX_CONTEXTHELP))
 		{
 			return true;
 		}
-		User32.SetWindowLong(hWnd, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle | User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
-		return WindowsApi.SetWindowSubclass(hWnd, subclassProc, IntPtr.Zero, IntPtr.Zero);
+		_ = PInvoke.SetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, exStyle | (Int32)WINDOW_EX_STYLE.WS_EX_CONTEXTHELP);
+		return PInvoke.SetWindowSubclass(hWnd, subclassProc, UIntPtr.Zero, UIntPtr.Zero);
 	}
+
+#if false
+	/// <summary>
+	/// RECT が点を内包するか
+	/// </summary>
+	/// <param name="rect"></param>
+	/// <param name="x"></param>
+	/// <param name="y"></param>
+	/// <returns></returns>
+	public static Boolean RectContains(RECT rect, Int32 x, Int32 y)
+	{
+		// Windows.Foundation.Rect.Contains() の実装は右端を「以下」で判定しているので、それに倣う
+		return rect.X <= x && x <= rect.X + rect.Width && rect.Y <= y && y <= rect.Y + rect.Height;
+	}
+#endif
 
 	/// <summary>
 	/// ログの記録と表示（ContentDialog 版）
