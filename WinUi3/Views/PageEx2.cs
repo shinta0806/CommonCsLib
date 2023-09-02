@@ -61,6 +61,47 @@ public class PageEx2 : Page
 	}
 
 	// ====================================================================
+	// public 関数
+	// ====================================================================
+
+	/// <summary>
+	/// WindowEx2.SizeToContent の処理
+	/// </summary>
+	public void WindowSizeToContent()
+	{
+		if (_window.SizeToContent == SizeToContent.Manual)
+		{
+			return;
+		}
+
+		// ToDo: Window.SizeToContent が実装されれば不要となるコード
+		// Windows App SDK 1.2 現在、コンテンツのサイズは表示スケールに自動追随するが、ResizeClient() は表示スケールを考慮してくれない
+		Double scale = WinUi3Common.DisplayScale(_window);
+
+		Int32 width = _window.AppWindow.ClientSize.Width;
+		if (_window.SizeToContent == SizeToContent.Width || _window.SizeToContent == SizeToContent.WidthAndHeight)
+		{
+			width = (Int32)Content.ActualSize.X;
+			if (Content is FrameworkElement frameworkElement)
+			{
+				width += (Int32)(frameworkElement.Margin.Left + frameworkElement.Margin.Right);
+			}
+			width = (Int32)(width * scale);
+		}
+		Int32 height = _window.AppWindow.ClientSize.Height;
+		if (_window.SizeToContent == SizeToContent.Height || _window.SizeToContent == SizeToContent.WidthAndHeight)
+		{
+			height = (Int32)Content.ActualSize.Y;
+			if (Content is FrameworkElement frameworkElement)
+			{
+				height += (Int32)(frameworkElement.Margin.Top + frameworkElement.Margin.Bottom);
+			}
+			height = (Int32)(height * scale);
+		}
+		_window.AppWindow.ResizeClient(new SizeInt32(width, height));
+	}
+
+	// ====================================================================
 	// protected 変数
 	// ====================================================================
 
@@ -167,42 +208,5 @@ public class PageEx2 : Page
 		// ボタンの色を設定（デフォルト以外にしたい場合はアプリコードで設定が必要）
 		_window.AppWindow.TitleBar.ButtonBackgroundColor = WinUi3Common.TITLE_BAR_COLOR;
 		_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = (Application.Current.Resources["SolidBackgroundFillColorBaseBrush"] as SolidColorBrush)?.Color;
-	}
-
-	/// <summary>
-	/// WindowEx2.SizeToContent の処理
-	/// </summary>
-	private void WindowSizeToContent()
-	{
-		if (_window.SizeToContent == SizeToContent.Manual)
-		{
-			return;
-		}
-
-		// ToDo: Window.SizeToContent が実装されれば不要となるコード
-		// Windows App SDK 1.2 現在、コンテンツのサイズは表示スケールに自動追随するが、ResizeClient() は表示スケールを考慮してくれない
-		Double scale = WinUi3Common.DisplayScale(_window);
-
-		Int32 width = _window.AppWindow.ClientSize.Width;
-		if (_window.SizeToContent == SizeToContent.Width || _window.SizeToContent == SizeToContent.WidthAndHeight)
-		{
-			width = (Int32)Content.ActualSize.X;
-			if (Content is FrameworkElement frameworkElement)
-			{
-				width += (Int32)(frameworkElement.Margin.Left + frameworkElement.Margin.Right);
-			}
-			width = (Int32)(width * scale);
-		}
-		Int32 height = _window.AppWindow.ClientSize.Height;
-		if (_window.SizeToContent == SizeToContent.Height || _window.SizeToContent == SizeToContent.WidthAndHeight)
-		{
-			height = (Int32)Content.ActualSize.Y;
-			if (Content is FrameworkElement frameworkElement)
-			{
-				height += (Int32)(frameworkElement.Margin.Top + frameworkElement.Margin.Bottom);
-			}
-			height = (Int32)(height * scale);
-		}
-		_window.AppWindow.ResizeClient(new SizeInt32(width, height));
 	}
 }
