@@ -39,7 +39,7 @@ internal class JsonManager
 	/// <param name="options">同じオプションの場合は同じインスタンスを渡すこと</param>
 	/// <returns></returns>
 	/// <exception cref="Exception"></exception>
-	public T Load<T>(String path, Boolean decompress, JsonSerializerOptions options)
+	public T Load<T>(String path, Boolean decompress, JsonSerializerOptions? options = default)
 	{
 		String json;
 		if (decompress)
@@ -61,7 +61,7 @@ internal class JsonManager
 	/// <param name="compress"></param>
 	/// <param name="options">同じオプションの場合は同じインスタンスを渡すこと</param>
 	/// <exception cref="Exception"></exception>
-	public void Save(Object settings, String path, Boolean compress, JsonSerializerOptions options)
+	public void Save(Object settings, String path, Boolean compress, JsonSerializerOptions? options = default)
 	{
 		String json = JsonSerializer.Serialize(settings, options);
 		path = AdjustPath(path);

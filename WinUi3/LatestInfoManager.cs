@@ -22,6 +22,7 @@
 // (1.01) | 2022/11/19 (Sat) |   軽微なリファクタリング。
 //  1.10  | 2022/12/11 (Sun) | 多言語対応。
 //  1.20  | 2023/08/19 (Sat) | RssManager の派生にした。
+// (1.21) | 2023/09/05 (Tue) |   Task に関する内部変更。
 // ============================================================================
 
 using Windows.UI.Popups;
@@ -62,9 +63,9 @@ internal class LatestInfoManager : RssManager
 	/// 最新情報の確認と、必要に応じて結果表示
 	/// </summary>
 	/// <returns>true: 成功, false: 失敗</returns>
-	public Task<Boolean> CheckAsync()
+	public async Task<Boolean> CheckAsync()
 	{
-		return Task.Run(async () =>
+		return await Task.Run(async () =>
 		{
 			Boolean success = false;
 			try
@@ -233,16 +234,12 @@ internal class LatestInfoManager : RssManager
 	/// <param name="logEventLevel"></param>
 	/// <param name="message"></param>
 	/// <returns></returns>
-	public Task ShowLogMessageDialogIfNeededAsync(LogEventLevel logEventLevel, String message)
+	private async Task ShowLogMessageDialogIfNeededAsync(LogEventLevel logEventLevel, String message)
 	{
 		Log.Write(logEventLevel, message);
 		if (_forceShow)
 		{
-			return _window.CreateMessageDialog(message, logEventLevel.ToString().ToLocalized()).ShowAsync().AsTask();
-		}
-		else
-		{
-			return Task.CompletedTask;
+			await _window.CreateMessageDialog(message, logEventLevel.ToString().ToLocalized()).ShowAsync();
 		}
 	}
 }
