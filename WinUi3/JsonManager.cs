@@ -15,6 +15,7 @@
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2023/08/19 (Sat) | ファーストバージョン。
+// (1.01) | 2023/09/17 (Sun) |   Load() のオーバーロードを作成。
 // ============================================================================
 
 using System.IO.Compression;
@@ -41,16 +42,23 @@ internal class JsonManager
 	/// <exception cref="Exception"></exception>
 	public T Load<T>(String path, Boolean decompress, JsonSerializerOptions? options = default)
 	{
-		String json;
-		if (decompress)
-		{
-			json = Decompress(path);
-		}
-		else
-		{
-			json = File.ReadAllText(AdjustPath(path), Encoding.UTF8);
-		}
+		String json = LoadJsonString(path, decompress);
 		return JsonSerializer.Deserialize<T>(json, options) ?? throw new Exception("設定を復元できませんでした：" + path);
+	}
+
+	/// <summary>
+	/// 設定を読み込み
+	/// </summary>
+	/// <param name="type"></param>
+	/// <param name="path"></param>
+	/// <param name="decompress"></param>
+	/// <param name="options"></param>
+	/// <returns></returns>
+	/// <exception cref="Exception"></exception>
+	public Object Load(Type type, String path, Boolean decompress, JsonSerializerOptions? options = default)
+	{
+		String json = LoadJsonString(path, decompress);
+		return JsonSerializer.Deserialize(json, type, options) ?? throw new Exception("設定を復元できませんでした：" + path);
 	}
 
 	/// <summary>
@@ -139,5 +147,23 @@ internal class JsonManager
 		String folder = Common.TempPath();
 		ZipFile.ExtractToDirectory(path, folder);
 		return File.ReadAllText(folder + "\\" + FILE_NAME_COMPRESS, Encoding.UTF8);
+	}
+
+	/// <summary>
+	/// JSON 文字列の読み込み
+	/// </summary>
+	/// <param name="path"></param>
+	/// <param name="decompress"></param>
+	/// <returns></returns>
+	private static String LoadJsonString(String path, Boolean decompress)
+	{
+		if (decompress)
+		{
+			return Decompress(path);
+		}
+		else
+		{
+			return File.ReadAllText(AdjustPath(path), Encoding.UTF8);
+		}
 	}
 }

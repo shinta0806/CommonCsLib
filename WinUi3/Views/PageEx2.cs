@@ -15,8 +15,10 @@
 //  1.00  | 2022/12/08 (Thu) | ファーストバージョン。
 // (1.01) | 2023/01/04 (Wed) |   PageEx2Loaded() で表示スケールを考慮するようにした。
 //  1.10  | 2023/03/25 (Sat) | IsCustomTitleBarEnabled を作成。
+// (1.11) | 2023/09/14 (Thu) |   カスタムタイトルバーの色を調整。
 // ============================================================================
 
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -181,8 +183,7 @@ public class PageEx2 : Page
 		catch (Exception ex)
 		{
 			// ユーザー起因では発生しないイベントなのでログのみ
-			Log.Error("ページロード時エラー：" + GetType().Name + "\n" + ex.Message);
-			Log.Information("スタックトレース：\n" + ex.StackTrace);
+			SerilogUtils.LogException("ページロード時エラー", ex);
 		}
 	}
 
@@ -208,6 +209,6 @@ public class PageEx2 : Page
 
 		// ボタンの色を設定（デフォルト以外にしたい場合はアプリコードで設定が必要）
 		_window.AppWindow.TitleBar.ButtonBackgroundColor = WinUi3Common.TITLE_BAR_COLOR;
-		_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = (Application.Current.Resources["SolidBackgroundFillColorBaseBrush"] as SolidColorBrush)?.Color;
+		_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
 	}
 }

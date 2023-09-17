@@ -30,7 +30,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-using Windows.Foundation;
 using Windows.Storage;
 using Windows.UI;
 using Windows.UI.Popups;
@@ -168,7 +167,7 @@ internal class WinUi3Common
 	/// <param name="logEventLevel"></param>
 	/// <param name="message"></param>
 	/// <returns></returns>
-	public static IAsyncOperation<ContentDialogResult> ShowLogContentDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
+	public static async Task<ContentDialogResult> ShowLogContentDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
 	{
 		Log.Write(logEventLevel, message);
 		ContentDialog contentDialog = new()
@@ -178,7 +177,7 @@ internal class WinUi3Common
 			Content = message,
 			CloseButtonText = "OK".ToLocalized()
 		};
-		return contentDialog.ShowAsync();
+		return await contentDialog.ShowAsync();
 	}
 
 	/// <summary>
@@ -187,9 +186,9 @@ internal class WinUi3Common
 	/// <param name="logEventLevel"></param>
 	/// <param name="message"></param>
 	/// <returns></returns>
-	public static IAsyncOperation<IUICommand> ShowLogMessageDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
+	public static async Task<IUICommand> ShowLogMessageDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
 	{
 		Log.Write(logEventLevel, message);
-		return window.CreateMessageDialog(message, logEventLevel.ToString().ToLocalized()).ShowAsync();
+		return await window.CreateMessageDialog(message, logEventLevel.ToString().ToLocalized()).ShowAsync();
 	}
 }

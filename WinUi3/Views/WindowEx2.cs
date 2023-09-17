@@ -240,7 +240,7 @@ public class WindowEx2 : WindowEx
 
 	/// <summary>
 	/// 例外の記録と表示（ContentDialog 版）
-	/// UI スレッド以外からも実行可能
+	/// UI スレッドのみから実行可能
 	/// </summary>
 	/// <param name="caption"></param>
 	/// <param name="ex"></param>
@@ -268,13 +268,16 @@ public class WindowEx2 : WindowEx
 
 	/// <summary>
 	/// ログの記録と表示（ContentDialog 版）
-	/// UI スレッド以外からも実行可能
+	/// UI スレッドのみから実行可能
 	/// </summary>
 	/// <param name="logEventLevel"></param>
 	/// <param name="message"></param>
 	/// <returns></returns>
 	public async Task<ContentDialogResult> ShowLogContentDialogAsync(LogEventLevel logEventLevel, String message)
 	{
+		return await WinUi3Common.ShowLogContentDialogAsync(this, logEventLevel, message);
+#if false
+		// UI スレッド以外から実行したらフリーズした
 		ContentDialogResult result = ContentDialogResult.None;
 		AutoResetEvent autoResetEvent = new(false);
 		DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, async () =>
@@ -287,6 +290,7 @@ public class WindowEx2 : WindowEx
 			autoResetEvent.WaitOne();
 		});
 		return result;
+#endif
 	}
 
 	/// <summary>
