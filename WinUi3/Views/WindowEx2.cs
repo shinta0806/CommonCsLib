@@ -27,9 +27,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
 
-using System.Reflection;
-using System.Text;
-
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI.Popups;
@@ -87,28 +84,21 @@ public class WindowEx2 : WindowEx
 	/// <param name="childName"></param>
 	/// <param name="childDataContext"></param>
 	/// <returns>追加したかどうか（既に追加されている場合は false）</returns>
-	public Boolean AddVeil(String? childName = null, Object? childDataContext = null)
+	public Boolean AddVeil()
 	{
-		if (_veiledElement != null)
+		if (_veilGrid != null)
 		{
+			// 既に追加されている
 			return false;
 		}
-		Page page = MainPage();
-		_veiledElement = page.Content;
-
-		// いったん切り離し
-		page.Content = null;
-
-		// 再構築
-		Grid veilGrid = (Grid)LoadDynamicXaml("VeilGrid");
-		veilGrid.Children.Add(_veiledElement);
-		if (!String.IsNullOrEmpty(childName))
+		UIElement content = MainPage().Content;
+		if (content is not Panel panel)
 		{
-			FrameworkElement element = (FrameworkElement)LoadDynamicXaml(childName);
-			element.DataContext = childDataContext;
-			veilGrid.Children.Add(element);
+			// ページにパネルがないので追加できない
+			return false;
 		}
-		page.Content = veilGrid;
+		_veilGrid = CreateVeil(panel);
+		panel.Children.Add(_veilGrid);
 		return true;
 	}
 
@@ -199,16 +189,19 @@ public class WindowEx2 : WindowEx
 	/// <returns>除去したかどうか（既に除去されている場合は false）</returns>
 	public Boolean RemoveVeil()
 	{
-		if (_veiledElement == null)
+		if (_veilGrid == null)
 		{
+			// 既に除去されている
 			return false;
 		}
-
-		Page page = MainPage();
-		Grid veilGrid = (Grid)page.Content;
-		veilGrid.Children.Clear();
-		page.Content = _veiledElement;
-		_veiledElement = null;
+		UIElement content = MainPage().Content;
+		if (content is not Panel panel)
+		{
+			// ページにパネルがないので除去できない
+			return false;
+		}
+		panel.Children.Remove(_veilGrid);
+		_veilGrid = null;
 		return true;
 	}
 
@@ -323,19 +316,6 @@ public class WindowEx2 : WindowEx
 	}
 
 	// ====================================================================
-	// protected 関数
-	// ====================================================================
-
-	/// <summary>
-	/// LoadDynamicXaml() で使用するネームスペース
-	/// </summary>
-	/// <returns></returns>
-	protected virtual String DynamicXamlNamespace()
-	{
-		return String.Empty;
-	}
-
-	// ====================================================================
 	// private 変数
 	// ====================================================================
 
@@ -350,9 +330,9 @@ public class WindowEx2 : WindowEx
 	private readonly AutoResetEvent _dialogEvent = new(false);
 
 	/// <summary>
-	/// ベールに覆われている UIElement
+	/// ベール
 	/// </summary>
-	private UIElement? _veiledElement;
+	private Grid? _veilGrid;
 
 	/// <summary>
 	/// 初期化済
@@ -368,7 +348,6 @@ public class WindowEx2 : WindowEx
 	/// </summary>
 	private void AppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
 	{
-		Log.Debug("WindowEx2.AppWindowClosing() " + args.Cancel);
 		if (_openingDialog != null)
 		{
 			// 開いているダイアログがある場合は閉じない（タスクバーから閉じられた場合などは可能性がある）
@@ -427,6 +406,61 @@ public class WindowEx2 : WindowEx
 	}
 
 	/// <summary>
+	/// ベールとして使う Grid を作成
+	/// </summary>
+	/// <param name="parent"></param>
+	/// <returns></returns>
+	private Grid CreateVeil(Panel parent)
+	{
+		Double width = this.Width;
+		Double height = this.Height;
+		Double marginLeft = -parent.Margin.Left;
+		Double marginTop = -parent.Margin.Top;
+		Double marginRight = -parent.Margin.Right;
+		Double marginBottom = -parent.Margin.Bottom;
+		String add = String.Empty;
+
+		if (parent is Grid)
+		{
+
+		}
+		else if (parent is RelativePanel)
+		{
+			add = "RelativePanel.AlignLeftWithPanel=\"True\" RelativePanel.AlignRightWithPanel=\"True\" RelativePanel.AlignTopWithPanel=\"True\" RelativePanel.AlignBottomWithPanel=\"True\"";
+		}
+		else if (parent is StackPanel stackPanel)
+		{
+			if (stackPanel.Orientation == Orientation.Vertical)
+			{
+				height = this.Height * 2;
+				marginTop -= this.Height;
+			}
+			else
+			{
+				width = this.Width * 2;
+				marginLeft -= this.Width;
+			}
+		}
+		else
+		{
+			Debug.Assert(false, "CreateVeil() bad parent");
+		}
+		String margin = "Margin=\"" + marginLeft + "," + marginTop + "," + marginRight + "," + marginBottom + "\"";
+
+		String xaml = $@"
+<Grid
+    xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
+    xmlns:d=""http://schemas.microsoft.com/expression/blend/2008""
+    xmlns:mc=""http://schemas.openxmlformats.org/markup-compatibility/2006""
+    Background=""#4D000000"" Canvas.ZIndex=""100"" Width=""{width}"" Height=""{height}"" {margin} {add} 
+    >
+</Grid>
+";
+		Log.Debug(xaml);
+		return (Grid)XamlReader.Load(xaml);
+	}
+
+	/// <summary>
 	/// イベントハンドラー：ダイアログが閉じられた
 	/// </summary>
 	/// <param name="sender"></param>
@@ -445,29 +479,6 @@ public class WindowEx2 : WindowEx
 		Page page = MainPage();
 		page.GettingFocus += MainPageGettingFocus;
 		_initialized = true;
-	}
-
-	/// <summary>
-	/// 実行バイナリ内の XAML を読み込んでコントロールを作成
-	/// XAML のビルドアクションは「埋め込みリソース」である必要がある
-	/// </summary>
-	/// <returns></returns>
-	private Object LoadDynamicXaml(String name)
-	{
-#if false
-        // StorageFile を使う方が今時っぽいが（ビルドアクション：コンテンツ）、非パッケージ時にうまく動かないため現時点では使用しない
-        Uri uri = new("ms-appx:///Views/Dynamics/" + name + Common.FILE_EXT_XAML);
-        StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(uri);
-        using StreamReader streamReader = new StreamReader(await file.OpenStreamForReadAsync());
-        String xaml = await streamReader.ReadToEndAsync();
-#endif
-		Assembly assembly = Assembly.GetExecutingAssembly();
-		using Stream stream = assembly.GetManifestResourceStream(DynamicXamlNamespace() + "." + name + Common.FILE_EXT_XAML)
-				?? throw new Exception("内部エラー：コントロールリソースが見つかりません。");
-		Byte[] data = new Byte[stream.Length];
-		stream.Read(data);
-		String xaml = Encoding.UTF8.GetString(data);
-		return XamlReader.Load(xaml);
 	}
 
 	/// <summary>
@@ -499,7 +510,7 @@ public class WindowEx2 : WindowEx
 	{
 		try
 		{
-			if (_veiledElement == null)
+			if (_veilGrid == null)
 			{
 				// ベールに覆われていない（なにも作業等をしていない状態）ならそのままフォーカスを取得する
 				return;
@@ -515,8 +526,7 @@ public class WindowEx2 : WindowEx
 		catch (Exception ex)
 		{
 			// 終了確認後の可能性もあるので表示せずにログのみ
-			Log.Error(GetType().Name + " メインページフォーカス時エラー：\n" + ex.Message);
-			Log.Information("スタックトレース：\n" + ex.StackTrace);
+			SerilogUtils.LogException(GetType().Name + " メインページフォーカス時エラー", ex);
 		}
 	}
 
