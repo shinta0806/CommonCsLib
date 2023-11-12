@@ -214,7 +214,13 @@ public class WindowEx2 : WindowEx
 	{
 		if (_openingDialog != null)
 		{
-			throw new Exception("内部エラー：既にダイアログが開いています。");
+			Log.Error("既にダイアログが開いています。：" + dialog.GetType().Name);
+
+			// ToDo: Windows App SDK 1.4 現在、メニューをマウスとキーボードで操作すると 2 回呼ばれてしまうことがあり、ShowDialogAsync() の二重コールがありえる
+			// dialog を閉じないとゾンビプロセスになるが、一度表示しないと閉じられない
+			dialog.Activated += DialogActivated;
+			dialog.Show();
+			return;
 		}
 		_openingDialog = dialog;
 
@@ -458,6 +464,32 @@ public class WindowEx2 : WindowEx
 ";
 		Log.Debug(xaml);
 		return (Grid)XamlReader.Load(xaml);
+	}
+
+	/// <summary>
+	/// イベントハンドラー：破棄すべきダイアログがアクティブになった
+	/// </summary>
+	/// <param name="sender"></param>
+	/// <param name="args"></param>
+	private async void DialogActivated(Object sender, WindowActivatedEventArgs args)
+	{
+		try
+		{
+			WindowEx2 dialog = (WindowEx2)sender;
+
+			// 多重イベント防止
+			dialog.Activated -= DialogActivated;
+
+			// いきなり閉じるとアクセス違反になるので、まず隠して、時間が経ったら閉じる
+			dialog.Hide();
+			await Task.Delay(1000);
+			dialog.Close();
+			Log.Debug("DialogActivated() ダイアログを閉じた");
+		}
+		catch (Exception ex)
+		{
+			SerilogUtils.LogException("破棄すべきダイアログを閉じられませんでした。", ex);
+		}
 	}
 
 	/// <summary>
