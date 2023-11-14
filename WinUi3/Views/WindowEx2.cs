@@ -18,6 +18,7 @@
 //  1.20  | 2023/04/04 (Tue) | ShowExceptionLogMessageDialogAsync() を作成。
 //  1.30  | 2023/04/04 (Tue) | ShowLogContentDialogAsync() を作成。
 //  1.40  | 2023/04/04 (Tue) | ShowExceptionLogContentDialogAsync() を作成。
+// (1.41) | 2023/11/14 (Tue) |   AddVeil() を改善。
 // ============================================================================
 
 using Microsoft.UI.Dispatching;
@@ -430,9 +431,13 @@ public class WindowEx2 : WindowEx
 		{
 
 		}
-		else if (parent is RelativePanel)
+		else if (parent is RelativePanel relativePanel)
 		{
 			add = "RelativePanel.AlignLeftWithPanel=\"True\" RelativePanel.AlignRightWithPanel=\"True\" RelativePanel.AlignTopWithPanel=\"True\" RelativePanel.AlignBottomWithPanel=\"True\"";
+			marginLeft -= relativePanel.Padding.Left;
+			marginTop -= relativePanel.Padding.Top;
+			marginRight -= relativePanel.Padding.Right;
+			marginBottom -= relativePanel.Padding.Bottom;
 		}
 		else if (parent is StackPanel stackPanel)
 		{
@@ -446,6 +451,10 @@ public class WindowEx2 : WindowEx
 				width = this.Width * 2;
 				marginLeft -= this.Width;
 			}
+			marginLeft -= stackPanel.Padding.Left;
+			marginTop -= stackPanel.Padding.Top;
+			marginRight -= stackPanel.Padding.Right;
+			marginBottom -= stackPanel.Padding.Bottom;
 		}
 		else
 		{
