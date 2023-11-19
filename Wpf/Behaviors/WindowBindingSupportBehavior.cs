@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // Window のバインド可能なプロパティーを増やすためのビヘイビア
 // Copyright (C) 2019-2023 by SHINTA
@@ -11,7 +11,7 @@
 
 // ----------------------------------------------------------------------------
 // 以下のパッケージがインストールされている前提
-//   PInvoke.User32
+//   Microsoft.Windows.CsWin32
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -30,18 +30,19 @@
 //  1.50  | 2022/02/26 (Sat) | HelpBoxClickedCommandParameter を実装。
 // (1.51) | 2022/05/31 (Tue) |   HelpBoxClickedCommand の動作を改善。
 // (1.52) | 2023/02/11 (Sat) |   PInvoke.User32 を導入。
+// (1.53) | 2023/11/19 (Sun) |   Microsoft.Windows.CsWin32 パッケージを導入。
 // ============================================================================
 
 using Microsoft.Xaml.Behaviors;
 
-using PInvoke;
-
-using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Shinta.Wpf.Behaviors
 {
@@ -433,15 +434,14 @@ namespace Shinta.Wpf.Behaviors
 			}
 
 			WindowInteropHelper helper = new(AssociatedObject);
-			User32.SetWindowLongFlags exStyle = (User32.SetWindowLongFlags)User32.GetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_EXSTYLE);
-
+			WINDOW_EX_STYLE exStyle = (WINDOW_EX_STYLE)PInvoke.GetWindowLong((HWND)helper.Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
 			if (HelpBox == true)
 			{
-				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle | User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
+				PInvoke.SetWindowLong((HWND)helper.Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (Int32)(exStyle | WINDOW_EX_STYLE.WS_EX_CONTEXTHELP));
 			}
 			else
 			{
-				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle & ~User32.SetWindowLongFlags.WS_EX_CONTEXTHELP);
+				PInvoke.SetWindowLong((HWND)helper.Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (Int32)(exStyle & ~WINDOW_EX_STYLE.WS_EX_CONTEXTHELP));
 			}
 		}
 
@@ -456,15 +456,15 @@ namespace Shinta.Wpf.Behaviors
 			}
 
 			WindowInteropHelper helper = new(AssociatedObject);
-			User32.SetWindowLongFlags style = (User32.SetWindowLongFlags)User32.GetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_STYLE);
+			WINDOW_STYLE style = (WINDOW_STYLE)PInvoke.GetWindowLong((HWND)helper.Handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
 
 			if (MinimizeBox == true)
 			{
-				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_STYLE, style | User32.SetWindowLongFlags.WS_MINIMIZEBOX);
+				PInvoke.SetWindowLong((HWND)helper.Handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE, (Int32)(style | WINDOW_STYLE.WS_MINIMIZEBOX));
 			}
 			else
 			{
-				User32.SetWindowLong(helper.Handle, User32.WindowLongIndexFlags.GWL_STYLE, style & ~User32.SetWindowLongFlags.WS_MINIMIZEBOX);
+				PInvoke.SetWindowLong((HWND)helper.Handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE, (Int32)(style & ~WINDOW_STYLE.WS_MINIMIZEBOX));
 			}
 		}
 
@@ -473,9 +473,9 @@ namespace Shinta.Wpf.Behaviors
 		// --------------------------------------------------------------------
 		private void WmSysCommand(IntPtr _1, IntPtr wParam, IntPtr _2, ref Boolean handled)
 		{
-			switch ((User32.SysCommands)wParam)
+			switch ((UInt32)wParam)
 			{
-				case User32.SysCommands.SC_CONTEXTHELP:
+				case PInvoke.SC_CONTEXTHELP:
 					if (HelpBoxClickedCommand != null)
 					{
 						if (HelpBoxClickedCommand.CanExecute(HelpBoxClickedCommandParameter))
@@ -493,9 +493,9 @@ namespace Shinta.Wpf.Behaviors
 		// --------------------------------------------------------------------
 		private IntPtr WndProc(IntPtr hWnd, Int32 msg, IntPtr wParam, IntPtr lParam, ref Boolean handled)
 		{
-			switch ((User32.WindowMessage)msg)
+			switch ((UInt32)msg)
 			{
-				case User32.WindowMessage.WM_SYSCOMMAND:
+				case PInvoke.WM_SYSCOMMAND:
 					WmSysCommand(hWnd, wParam, lParam, ref handled);
 					break;
 			}
