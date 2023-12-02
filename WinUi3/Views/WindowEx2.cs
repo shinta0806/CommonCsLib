@@ -471,7 +471,7 @@ public class WindowEx2 : WindowEx
     >
 </Grid>
 ";
-		Log.Debug(xaml);
+		//Log.Debug(xaml);
 		return (Grid)XamlReader.Load(xaml);
 	}
 

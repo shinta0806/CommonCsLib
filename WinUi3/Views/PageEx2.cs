@@ -16,6 +16,7 @@
 // (1.01) | 2023/01/04 (Wed) |   PageEx2Loaded() で表示スケールを考慮するようにした。
 //  1.10  | 2023/03/25 (Sat) | IsCustomTitleBarEnabled を作成。
 // (1.11) | 2023/09/14 (Thu) |   カスタムタイトルバーの色を調整。
+//  1.20  | 2023/11/21 (Tue) | Window プロパティーを作成。
 // ============================================================================
 
 using Microsoft.UI;
@@ -49,6 +50,15 @@ public class PageEx2 : Page
 	// ====================================================================
 	// public プロパティー
 	// ====================================================================
+
+	/// <summary>
+	/// ウィンドウ
+	/// </summary>
+	private readonly WindowEx2 _window;
+	public WindowEx2 Window
+	{
+		get => _window;
+	}
 
 	/// <summary>
 	/// ELEMENT_NAME_CUSTOM_TITLE_BAR をカスタムタイトルバーとして使用する
@@ -104,15 +114,6 @@ public class PageEx2 : Page
 	}
 
 	// ====================================================================
-	// protected 変数
-	// ====================================================================
-
-	/// <summary>
-	/// ウィンドウ
-	/// </summary>
-	protected readonly WindowEx2 _window;
-
-	// ====================================================================
 	// private 関数
 	// ====================================================================
 
@@ -121,7 +122,7 @@ public class PageEx2 : Page
 	/// </summary>
 	/// <param name="dependencyObject"></param>
 	/// <returns></returns>
-	private Brush? ActualBackground(DependencyObject dependencyObject)
+	private static Brush? ActualBackground(DependencyObject dependencyObject)
 	{
 		if (dependencyObject is Control control && control.Background != null)
 		{
@@ -204,7 +205,7 @@ public class PageEx2 : Page
 
 		// ドラッグできるようにする
 		// ToDo: Windows App SDK 1.4 になって、rect の幅に Int32.MaxValue を渡すとドラッグできないようになってしまった
-		RectInt32[] rects = { new RectInt32((Int32)customTitleBar.ActualOffset.X, 0, 100000, (Int32)customTitleBar.ActualHeight) };
+		RectInt32[] rects = { new((Int32)customTitleBar.ActualOffset.X, 0, 100000, (Int32)customTitleBar.ActualHeight) };
 		_window.AppWindow.TitleBar.SetDragRectangles(rects);
 
 		// ボタンの色を設定（デフォルト以外にしたい場合はアプリコードで設定が必要）
