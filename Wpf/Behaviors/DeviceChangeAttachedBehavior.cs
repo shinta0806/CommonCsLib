@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // 
 // リムーバブルメディアの着脱時にコマンドを発行する添付ビヘイビア
 // Copyright (C) 2019-2021 by SHINTA
@@ -17,12 +17,13 @@
 // (1.02) | 2021/05/03 (Mon) |   CS8605 警告（null の可能性がある値をボックス化解除しています）に対処。
 // ============================================================================
 
-using System;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+
+using Windows.Win32;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 #nullable enable
 
@@ -134,10 +135,10 @@ namespace Shinta.Wpf.Behaviors
 				return;
 			}
 
-			switch ((DBT)wParam.ToInt32())
+			switch ((UInt32)wParam.ToInt32())
 			{
-				case DBT.DBT_DEVICEARRIVAL:
-				case DBT.DBT_DEVICEREMOVECOMPLETE:
+				case PInvoke.DBT_DEVICEARRIVAL:
+				case PInvoke.DBT_DEVICEREMOVECOMPLETE:
 					break;
 				default:
 					return;
@@ -147,16 +148,16 @@ namespace Shinta.Wpf.Behaviors
 				return;
 			}
 
-			if (Marshal.PtrToStructure(lParam, typeof(WindowsApi.DEV_BROADCAST_HDR)) is not WindowsApi.DEV_BROADCAST_HDR hdr)
+			if (Marshal.PtrToStructure(lParam, typeof(DEV_BROADCAST_HDR)) is not DEV_BROADCAST_HDR hdr)
 			{
 				return;
 			}
-			if (hdr.dbch_devicetype != (Int32)DBT_DEVTYP.DBT_DEVTYP_VOLUME)
+			if (hdr.dbch_devicetype != DEV_BROADCAST_HDR_DEVICE_TYPE.DBT_DEVTYP_VOLUME)
 			{
 				return;
 			}
 
-			if (Marshal.PtrToStructure(lParam, typeof(WindowsApi.DEV_BROADCAST_VOLUME)) is not WindowsApi.DEV_BROADCAST_VOLUME volume)
+			if (Marshal.PtrToStructure(lParam, typeof(DEV_BROADCAST_VOLUME)) is not DEV_BROADCAST_VOLUME volume)
 			{
 				return;
 			}
@@ -177,7 +178,7 @@ namespace Shinta.Wpf.Behaviors
 
 			// 着脱情報を引数としてコマンドを実行
 			DeviceChangeInfo info = new();
-			info.Kind = (DBT)wParam.ToInt32();
+			info.Kind = (UInt32)wParam.ToInt32();
 			info.DriveLetter = driveLetter;
 			command.Execute(info);
 		}
@@ -202,7 +203,6 @@ namespace Shinta.Wpf.Behaviors
 				default:
 					return;
 			}
-
 			if (Marshal.PtrToStructure(wParam, typeof(WindowsApi.SHNOTIFYSTRUCT)) is not WindowsApi.SHNOTIFYSTRUCT shNotifyStruct)
 			{
 				return;
@@ -213,7 +213,7 @@ namespace Shinta.Wpf.Behaviors
 
 			// 着脱情報を引数としてコマンドを実行
 			DeviceChangeInfo info = new();
-			info.Kind = (SHCNE)lParam == SHCNE.SHCNE_MEDIAINSERTED ? DBT.DBT_DEVICEARRIVAL : DBT.DBT_DEVICEREMOVECOMPLETE;
+			info.Kind = (SHCNE)lParam == SHCNE.SHCNE_MEDIAINSERTED ? PInvoke.DBT_DEVICEARRIVAL : PInvoke.DBT_DEVICEREMOVECOMPLETE;
 			info.DriveLetter = driveLetter;
 			command.Execute(info);
 		}
@@ -225,13 +225,13 @@ namespace Shinta.Wpf.Behaviors
 		{
 			try
 			{
-				switch ((WM)msg)
+				switch ((UInt32)msg)
 				{
-					case WM.WM_DEVICECHANGE:
+					case PInvoke.WM_DEVICECHANGE:
 						WmDeviceChange(hWnd, wParam, lParam);
 						handled = true;
 						break;
-					case WM.WM_SHNOTIFY:
+					case (UInt32)WM.WM_SHNOTIFY:
 						WmShNotify(hWnd, wParam, lParam);
 						handled = true;
 						break;
@@ -254,7 +254,7 @@ namespace Shinta.Wpf.Behaviors
 		// ====================================================================
 
 		// 着脱種別
-		public DBT Kind { get; set; }
+		public UInt32 Kind { get; set; }
 
 		// 着脱されたドライブレター（"A:" のようにコロンまで）
 		public String? DriveLetter { get; set; }

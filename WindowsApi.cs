@@ -171,9 +171,11 @@ public enum MONITOR_DPI_TYPE
 	MDT_RAW_DPI = 2,
 	MDT_DEFAULT
 }
+#endif
 
 // --------------------------------------------------------------------
 // SHCNRE
+// CsWin32 0.3.49-beta 時点では未サポート
 // --------------------------------------------------------------------
 [Flags]
 public enum SHCNE
@@ -205,6 +207,7 @@ public enum SHCNE
 	SHCNE_INTERRUPT = unchecked((Int32)0x80000000),
 }
 
+#if false
 // --------------------------------------------------------------------
 // SHCNRF
 // --------------------------------------------------------------------
@@ -235,22 +238,24 @@ public enum ShowWindowCommands : Int32
 	SW_SHOWNA = 8,
 	SW_RESTORE = 9
 }
+#endif
 
 // --------------------------------------------------------------------
 // ウィンドウメッセージ
 // --------------------------------------------------------------------
 public enum WM : UInt32
 {
-	WM_APP = 0x8000,
-	WM_CLOSE = 0x0010,
-	WM_COPYDATA = 0x4A,
-	WM_DEVICECHANGE = 0x0219,
-	WM_PAINT = 0x000F,
-	WM_QUIT = 0x0012,
+	//WM_APP = 0x8000,
+	//WM_CLOSE = 0x0010,
+	//WM_COPYDATA = 0x4A,
+	//WM_DEVICECHANGE = 0x0219,
+	//WM_PAINT = 0x000F,
+	//WM_QUIT = 0x0012,
 	WM_SHNOTIFY = 0x0401,
-	WM_SYSCOMMAND = 0x0112,
+	//WM_SYSCOMMAND = 0x0112,
 }
 
+#if false
 // --------------------------------------------------------------------
 // WM_SYSCOMMAND wParam
 // --------------------------------------------------------------------
@@ -366,8 +371,8 @@ public class WindowsApi
 #if false
 	public const String FILE_NAME_OLE32_DLL = "ole32.dll";
 	public const String FILE_NAME_SHCORE_DLL = "SHCore.dll";
-	public const String FILE_NAME_SHELL32_DLL = "shell32.dll";
 #endif
+	public const String FILE_NAME_SHELL32_DLL = "shell32.dll";
 	public const String FILE_NAME_USER32_DLL = "user32.dll";
 
 	// --------------------------------------------------------------------
@@ -440,6 +445,7 @@ public class WindowsApi
 		[MarshalAs(UnmanagedType.Bool)]
 		public Boolean fRecursive;
 	}
+#endif
 
 	// --------------------------------------------------------------------
 	// SHNOTIFYSTRUCT
@@ -450,7 +456,6 @@ public class WindowsApi
 		public IntPtr dwItem1;
 		public IntPtr dwItem2;
 	}
-#endif
 
 	// ====================================================================
 	// マクロ
@@ -693,6 +698,7 @@ public class WindowsApi
 	// --------------------------------------------------------------------
 	[DllImport(FILE_NAME_SHELL32_DLL, SetLastError = true, EntryPoint = "#2", CharSet = CharSet.Auto)]
 	internal static extern UInt32 SHChangeNotifyRegister(IntPtr oHWnd, SHCNRF oSources, SHCNE oEvents, UInt32 oMsg, Int32 oEntries, ref SHChangeNotifyEntry oShCne);
+#endif
 
 	// --------------------------------------------------------------------
 	// SHGetPathFromIDList
@@ -701,6 +707,7 @@ public class WindowsApi
 	[return: MarshalAs(UnmanagedType.Bool)]
 	internal static extern Boolean SHGetPathFromIDList(IntPtr idList, StringBuilder path);
 
+#if false
 	// --------------------------------------------------------------------
 	// ShowWindowAsync
 	// PInvoke.User32 参照
