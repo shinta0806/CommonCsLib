@@ -78,7 +78,7 @@ internal class LatestInfoManager : RssManager
 				await PrepareLatestAsync();
 				if (_newItems.Count == 0)
 				{
-					await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Information, "LatestInfoManager_CheckAsync_NoInfo".ToLocalized());
+					await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Information, "LatestInfoManager_NoInfo_CheckAsync".ToLocalized());
 				}
 				else
 				{
@@ -90,7 +90,7 @@ internal class LatestInfoManager : RssManager
 			}
 			catch (Exception ex)
 			{
-				await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Error, "LatestInfoManager_CheckAsync_Error".ToLocalized() + "\n" + ex.Message);
+				await ShowLogMessageDialogIfNeededAsync(LogEventLevel.Error, "LatestInfoManager_Error_CheckAsync".ToLocalized() + "\n" + ex.Message);
 				SerilogUtils.LogStackTrace(ex);
 			}
 			return success;
@@ -151,14 +151,14 @@ internal class LatestInfoManager : RssManager
 	/// <exception cref="Exception"></exception>
 	private async Task AskDisplayLatestAsync()
 	{
-		MessageDialog messageDialog = _window.CreateMessageDialog(String.Format("LatestInfoManager_AskDisplayLatestAsync_Ask".ToLocalized(),
-				_newItems.Count), Common.LK_GENERAL_LABEL_CONFIRM.ToLocalized());
+		MessageDialog messageDialog = _window.CreateMessageDialog(String.Format("LatestInfoManager_Ask_AskDisplayLatestAsync".ToLocalized(),
+			_newItems.Count), Common.LK_GENERAL_LABEL_CONFIRM.ToLocalized());
 		messageDialog.Commands.Add(new UICommand(Common.LK_GENERAL_LABEL_YES.ToLocalized()));
 		messageDialog.Commands.Add(new UICommand(Common.LK_GENERAL_LABEL_NO.ToLocalized()));
 		IUICommand cmd = await messageDialog.ShowAsync();
 		if (cmd.Label != Common.LK_GENERAL_LABEL_YES.ToLocalized())
 		{
-			throw new Exception("LatestInfoManager_AskDisplayLatestAsync_Cancel".ToLocalized());
+			throw new Exception("LatestInfoManager_Cancel_AskDisplayLatestAsync".ToLocalized());
 		}
 	}
 
@@ -189,11 +189,11 @@ internal class LatestInfoManager : RssManager
 		}
 		else if (numErrors < _newItems.Count)
 		{
-			throw new Exception("LatestInfoManager_DisplayLatest_Error_Part".ToLocalized());
+			throw new Exception("LatestInfoManager_Error_DisplayLatest_Part".ToLocalized());
 		}
 		else
 		{
-			throw new Exception("LatestInfoManager_DisplayLatest_Error_Not".ToLocalized());
+			throw new Exception("LatestInfoManager_Error_DisplayLatest_Not".ToLocalized());
 		}
 	}
 

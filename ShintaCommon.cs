@@ -220,6 +220,7 @@ public partial class Common
 	// よく使われるローカライズキー
 	// --------------------------------------------------------------------
 
+#if false
 	/// <summary>
 	/// アプリの基本情報
 	/// </summary>
@@ -229,13 +230,15 @@ public partial class Common
 #else
 	public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionZip";
 #endif
+#endif
 
 	/// <summary>
 	/// ラベル
 	/// </summary>
-	public const String LK_GENERAL_LABEL_CONFIRM = "0_Confirm";
-	public const String LK_GENERAL_LABEL_NO = "0_No";
-	public const String LK_GENERAL_LABEL_YES = "0_Yes";
+	public const String LK_GENERAL_LABEL_CONFIRM = "Confirm";
+	public const String LK_GENERAL_LABEL_NO = "No";
+	public const String LK_GENERAL_LABEL_OK = "Ok";
+	public const String LK_GENERAL_LABEL_YES = "Yes";
 
 	// ====================================================================
 	// public メンバー関数

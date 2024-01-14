@@ -173,9 +173,9 @@ internal class WinUi3Common
 		ContentDialog contentDialog = new()
 		{
 			XamlRoot = window.Content.XamlRoot,
-			Title = logEventLevel.ToString()/*.ToLocalized()*/,
+			Title = logEventLevel.ToString().ToLocalized(),
 			Content = message,
-			CloseButtonText = "OK"/*.ToLocalized()*/
+			CloseButtonText = Common.LK_GENERAL_LABEL_OK.ToLocalized(),
 		};
 		return await contentDialog.ShowAsync();
 	}
@@ -189,6 +189,6 @@ internal class WinUi3Common
 	public static async Task<IUICommand> ShowLogMessageDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
 	{
 		Log.Write(logEventLevel, message);
-		return await window.CreateMessageDialog(message, logEventLevel.ToString()/*.ToLocalized()*/).ShowAsync();
+		return await window.CreateMessageDialog(message, logEventLevel.ToString().ToLocalized()).ShowAsync();
 	}
 }
