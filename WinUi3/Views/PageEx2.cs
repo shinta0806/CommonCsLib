@@ -165,8 +165,8 @@ public class PageEx2 : Page
 
 		pageEx2._window.AppWindow.TitleBar.ExtendsContentIntoTitleBar = pageEx2.IsCustomTitleBarEnabled;
 
-		// ToDo: Windows App SDK 1.2 現在、効果が無い模様
-		pageEx2._window.AppWindow.TitleBar.IconShowOptions = IconShowOptions.ShowIconAndSystemMenu;
+		// ToDo: Windows App SDK 1.2～1.4 現在、効果が無い模様
+		//pageEx2._window.AppWindow.TitleBar.IconShowOptions = IconShowOptions.ShowIconAndSystemMenu;
 	}
 
 	/// <summary>
@@ -205,11 +205,11 @@ public class PageEx2 : Page
 
 		// ドラッグできるようにする
 		// ToDo: Windows App SDK 1.4 になって、rect の幅に Int32.MaxValue を渡すとドラッグできないようになってしまった
-		RectInt32[] rects = { new((Int32)customTitleBar.ActualOffset.X, 0, 100000, (Int32)customTitleBar.ActualHeight) };
+		RectInt32[] rects = [new((Int32)customTitleBar.ActualOffset.X, 0, 100000, (Int32)customTitleBar.ActualHeight)];
 		_window.AppWindow.TitleBar.SetDragRectangles(rects);
 
 		// ボタンの色を設定（デフォルト以外にしたい場合はアプリコードで設定が必要）
-		_window.AppWindow.TitleBar.ButtonBackgroundColor = WinUi3Common.TITLE_BAR_COLOR;
+		_window.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
 		_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
 	}
 }

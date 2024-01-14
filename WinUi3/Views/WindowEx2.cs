@@ -185,6 +185,26 @@ public class WindowEx2 : WindowEx
 	}
 
 	/// <summary>
+	/// メインページ（ウィンドウ内のページ）
+	/// </summary>
+	/// <returns></returns>
+	public Page MainPage()
+	{
+		if (Content is Frame frame)
+		{
+			return (Page)frame.Content;
+		}
+		else if (Content is Page page)
+		{
+			return page;
+		}
+		else
+		{
+			throw new Exception("内部エラー：予期しないコンテンツクラスです。");
+		}
+	}
+
+	/// <summary>
 	/// ベール除去
 	/// </summary>
 	/// <returns>除去したかどうか（既に除去されている場合は false）</returns>
@@ -520,26 +540,6 @@ public class WindowEx2 : WindowEx
 		Page page = MainPage();
 		page.GettingFocus += MainPageGettingFocus;
 		_initialized = true;
-	}
-
-	/// <summary>
-	/// メインページ（ウィンドウ内のページ）
-	/// </summary>
-	/// <returns></returns>
-	private Page MainPage()
-	{
-		if (Content is Frame frame)
-		{
-			return (Page)frame.Content;
-		}
-		else if (Content is Page page)
-		{
-			return page;
-		}
-		else
-		{
-			throw new Exception("内部エラー：予期しないコンテンツクラスです。");
-		}
 	}
 
 	/// <summary>

@@ -80,7 +80,7 @@ internal class WinUi3Common
 	// タイトルバーの色
 	// ThemeResource では定義されてない模様（WindowCaptionBackground は白のようだ）
 	// https://github.com/microsoft/microsoft-ui-xaml/blob/main/dev/CommonStyles/Common_themeresources_any.xaml
-	public static readonly Color TITLE_BAR_COLOR = Color.FromArgb(255, 238, 244, 249);
+	//public static readonly Color TITLE_BAR_COLOR = Color.FromArgb(255, 238, 244, 249);
 
 	// ====================================================================
 	// public 関数
@@ -173,9 +173,9 @@ internal class WinUi3Common
 		ContentDialog contentDialog = new()
 		{
 			XamlRoot = window.Content.XamlRoot,
-			Title = logEventLevel.ToString().ToLocalized(),
+			Title = logEventLevel.ToString()/*.ToLocalized()*/,
 			Content = message,
-			CloseButtonText = "OK".ToLocalized()
+			CloseButtonText = "OK"/*.ToLocalized()*/
 		};
 		return await contentDialog.ShowAsync();
 	}
@@ -189,6 +189,6 @@ internal class WinUi3Common
 	public static async Task<IUICommand> ShowLogMessageDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
 	{
 		Log.Write(logEventLevel, message);
-		return await window.CreateMessageDialog(message, logEventLevel.ToString().ToLocalized()).ShowAsync();
+		return await window.CreateMessageDialog(message, logEventLevel.ToString()/*.ToLocalized()*/).ShowAsync();
 	}
 }
