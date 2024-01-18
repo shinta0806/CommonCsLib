@@ -220,7 +220,6 @@ public partial class Common
 	// よく使われるローカライズキー
 	// --------------------------------------------------------------------
 
-#if false
 	/// <summary>
 	/// アプリの基本情報
 	/// </summary>
@@ -229,7 +228,6 @@ public partial class Common
 	public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionStore";
 #else
 	public const String LK_GENERAL_APP_DISTRIB = "0_AppDistributionZip";
-#endif
 #endif
 
 	/// <summary>
