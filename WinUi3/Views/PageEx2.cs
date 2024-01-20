@@ -108,6 +108,14 @@ public class PageEx2 : Page
 			{
 				height += (Int32)(frameworkElement.Margin.Top + frameworkElement.Margin.Bottom);
 			}
+			if (IsCustomTitleBarEnabled)
+			{
+				FrameworkElement? customTitleBar = FindName(WinUi3Common.ELEMENT_CUSTOM_TITLE_BAR) as FrameworkElement;
+				if (customTitleBar != null)
+				{
+					height -= (Int32)customTitleBar.ActualHeight;
+				}
+			}
 			height = (Int32)(height * scale);
 		}
 		_window.AppWindow.ResizeClient(new SizeInt32(width, height));

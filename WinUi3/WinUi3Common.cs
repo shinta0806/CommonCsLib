@@ -31,7 +31,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 using Windows.Storage;
-using Windows.UI;
+using Windows.Storage.Pickers;
 using Windows.UI.Popups;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -87,6 +87,17 @@ internal class WinUi3Common
 	// ====================================================================
 
 	/// <summary>
+	/// FileOpenPicker に拡張子を追加
+	/// </summary>
+	public static void AddFileOpenPickerExtensions(FileOpenPicker fileOpenPicker, IEnumerable<String> exts)
+	{
+		foreach (String ext in exts)
+		{
+			fileOpenPicker.FileTypeFilter.Add(ext);
+		}
+	}
+
+	/// <summary>
 	/// ウィンドウが存在するディスプレイの表示スケール
 	/// </summary>
 	/// <param name="window"></param>
@@ -125,6 +136,19 @@ internal class WinUi3Common
 		UInt32 length = 0;
 		WIN32_ERROR error = PInvoke.GetCurrentPackageFullName(ref length, null);
 		return !error.HasFlag(WIN32_ERROR.APPMODEL_ERROR_NO_PACKAGE);
+	}
+
+	/// <summary>
+	/// FileOpenPicker でファイルを 1 つ取得
+	/// </summary>
+	/// <returns></returns>
+	public static async Task<StorageFile?> PickSingleFileAsync(WindowEx window, String[] exts)
+	{
+		FileOpenPicker fileOpenPicker = window.CreateOpenFilePicker();
+		AddFileOpenPickerExtensions(fileOpenPicker, exts);
+		fileOpenPicker.FileTypeFilter.Add("*");
+
+		return await fileOpenPicker.PickSingleFileAsync();
 	}
 
 #if false

@@ -40,7 +40,7 @@ internal class JsonManager
 	/// <param name="options">同じオプションの場合は同じインスタンスを渡すこと</param>
 	/// <returns></returns>
 	/// <exception cref="Exception"></exception>
-	public T Load<T>(String path, Boolean decompress, JsonSerializerOptions? options = default)
+	public T Load<T>(String path, Boolean decompress, JsonSerializerOptions? options)
 	{
 		String json = LoadJsonString(path, decompress);
 		return JsonSerializer.Deserialize<T>(json, options) ?? throw new Exception("設定を復元できませんでした：" + path);
@@ -55,7 +55,7 @@ internal class JsonManager
 	/// <param name="options"></param>
 	/// <returns></returns>
 	/// <exception cref="Exception"></exception>
-	public Object Load(Type type, String path, Boolean decompress, JsonSerializerOptions? options = default)
+	public Object Load(Type type, String path, Boolean decompress, JsonSerializerOptions? options)
 	{
 		String json = LoadJsonString(path, decompress);
 		return JsonSerializer.Deserialize(json, type, options) ?? throw new Exception("設定を復元できませんでした：" + path);
