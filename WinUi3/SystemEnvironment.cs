@@ -108,7 +108,7 @@ public class SystemEnvironment
 						family += "、";
 					}
 					String folderName = Path.GetFileName(folder);
-					Int32 periPos = folderName.IndexOf(".");
+					Int32 periPos = folderName.IndexOf('.');
 					if (periPos < 0)
 					{
 						family += folderName;
