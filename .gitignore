@@ -280,6 +280,7 @@ old
 # Add needed C# files
 
 !WinUi3/*.cs
+!WinUi3/ViewModels/*.cs
 !WinUi3/Views/*.cs
 !Wpf/*.cs
 !Wpf/Behaviors/*.cs
