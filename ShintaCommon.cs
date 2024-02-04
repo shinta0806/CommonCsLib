@@ -356,7 +356,7 @@ public partial class Common
 	/// 主に FileSavePicker が勝手に作成するファイルを削除する用途
 	/// </summary>
 	/// <param name="path"></param>
-	/// <returns></returns>
+	/// <returns>ファイルを削除した場合は true</returns>
 	public static Boolean DeleteFileIfEmpty(String path)
 	{
 		Boolean result = false;
