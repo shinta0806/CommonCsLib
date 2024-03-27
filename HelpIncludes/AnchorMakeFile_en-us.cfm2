@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0;URL='<!-- Cfm/AnchorPath: -->'">
+  <title><!-- Cfm/Var: AppName --> Help</title>
+  <style>
+    .loading
+    {
+      width: 60px;
+			height: 60px;
+			position: fixed;
+      top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			margin: auto;
+      border-radius: 50%;
+      border: solid 20px;
+      border-color: #25ccff #2a97f3 #2a97f3;
+      animation: rotation 1s infinite linear;    
+    }
+    @keyframes rotation
+    {
+      100% 
+      {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div>
+  <div class="loading"></div>
+</div>
+
+<p>
+  Preparing to display <!-- Cfm/Var: AppName --> help...<br>
+  <br>
+  If help does not display after a while, click <a href="<!-- Cfm/AnchorPath: -->">here</a>.<br>
+</p>
+
+</body>
+</html>
