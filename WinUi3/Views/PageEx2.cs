@@ -17,9 +17,9 @@
 //  1.10  | 2023/03/25 (Sat) | IsCustomTitleBarEnabled を作成。
 // (1.11) | 2023/09/14 (Thu) |   カスタムタイトルバーの色を調整。
 //  1.20  | 2023/11/21 (Tue) | Window プロパティーを作成。
+// (1.21) | 2024/03/30 (Sat) |  IsCustomTitleBarEnabled の動作を改善。
 // ============================================================================
 
-using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -171,9 +171,10 @@ public class PageEx2 : Page
 			return;
 		}
 
-		pageEx2._window.AppWindow.TitleBar.ExtendsContentIntoTitleBar = pageEx2.IsCustomTitleBarEnabled;
+		pageEx2._window.ExtendsContentIntoTitleBar = pageEx2.IsCustomTitleBarEnabled;
+		pageEx2.SetCustomTitleBar();
 
-		// ToDo: Windows App SDK 1.2～1.4 現在、効果が無い模様
+		// ToDo: Windows App SDK 1.2～1.5 現在、効果が無い模様
 		//pageEx2._window.AppWindow.TitleBar.IconShowOptions = IconShowOptions.ShowIconAndSystemMenu;
 	}
 
@@ -211,13 +212,21 @@ public class PageEx2 : Page
 			return;
 		}
 
-		// ドラッグできるようにする
-		// ToDo: Windows App SDK 1.4 になって、rect の幅に Int32.MaxValue を渡すとドラッグできないようになってしまった
+		// カスタムタイトルバーとして設定
+		_window.SetTitleBar(customTitleBar);
+
+#if false
+		// ドラッグ領域の設定
+		// Windows App SDK 1.5 現在不要となった。逆に、設定すると画面拡大率（表示スケール）が 100% 以外の時に不具合が出る
 		RectInt32[] rects = [new((Int32)customTitleBar.ActualOffset.X, 0, 100000, (Int32)customTitleBar.ActualHeight)];
 		_window.AppWindow.TitleBar.SetDragRectangles(rects);
+#endif
 
-		// ボタンの色を設定（デフォルト以外にしたい場合はアプリコードで設定が必要）
+#if false
+		// ボタンの色を設定
+		// Windows App SDK 1.5 現在不要となった
 		_window.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
 		_window.AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+#endif
 	}
 }
