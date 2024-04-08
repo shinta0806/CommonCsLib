@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // よく使う一般的な定数や関数（Windows に依存するもの）
-// Copyright (C) 2021-2023 by SHINTA
+// Copyright (C) 2021-2024 by SHINTA
 // 
 // ============================================================================
 
@@ -18,10 +18,12 @@
 // (1.01) | 2022/02/02 (Wed) |   GetMonitorRects() を作成。
 // (1.02) | 2022/02/06 (Sun) |   GetMonitorRects() を廃止。
 // (1.03) | 2023/11/19 (Sun) |   Microsoft.Windows.CsWin32 パッケージを導入。
+//  1.10  | 2024/04/08 (Mon) | IsMsix() を作成。
+//  1.20  | 2024/04/08 (Mon) | SettingsFolder() を作成。
+// (1.21) | 2024/04/08 (Mon) |   AdjustWindowRect() を廃止。
 // ============================================================================
 
-using System.Windows;
-
+using Windows.Storage;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
@@ -97,8 +99,10 @@ public class CommonWindows
 		}
 	}
 
+#if false
 	/// <summary>
 	/// ウィンドウがスクリーンから完全にはみ出している場合はスクリーン内に移動する
+	/// 必要であれば WPF 用のライブラリに移す
 	/// </summary>
 	/// <param name="windowRect"></param>
 	/// <returns></returns>
@@ -123,6 +127,7 @@ public class CommonWindows
 		// 移動の必要がある
 		return new Rect(0, 0, windowRect.Width, windowRect.Height);
 	}
+#endif
 
 	/// <summary>
 	/// ZoneID を削除
@@ -155,6 +160,35 @@ public class CommonWindows
 			return false;
 		}
 		return true;
+	}
+
+	/// <summary>
+	/// MSIX パッケージで実行されているかどうか
+	/// </summary>
+	/// <returns></returns>
+	public static Boolean IsMsix()
+	{
+		UInt32 length = 0;
+		WIN32_ERROR error = PInvoke.GetCurrentPackageFullName(ref length, null);
+		return !error.HasFlag(WIN32_ERROR.APPMODEL_ERROR_NO_PACKAGE);
+	}
+
+	/// <summary>
+	/// 設定保存用フォルダー（末尾 '\\'）
+	/// </summary>
+	/// <returns></returns>
+	public static String SettingsFolder()
+	{
+		if (IsMsix())
+		{
+			// MSIX パッケージの場合は Local\Packages\... 配下
+			return Path.GetDirectoryName(ApplicationData.Current.LocalFolder.Path) + "\\" + Common.FOLDER_NAME_SETTINGS;
+		}
+		else
+		{
+			// 非 MSIX パッケージの場合は Roaming\SHINTA\... 配下
+			return Common.UserAppDataFolderPath();
+		}
 	}
 
 	// ====================================================================

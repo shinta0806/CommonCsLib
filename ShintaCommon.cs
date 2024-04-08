@@ -70,11 +70,20 @@
 // (4.61) | 2024/01/13 (Sat) |   StringToInt32() を改善。
 // ============================================================================
 
+// ----------------------------------------------------------------------------
+// 以下のパッケージがインストールされている前提
+//   CsWin32
+// ----------------------------------------------------------------------------
+
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
+
+using Windows.Storage;
+using Windows.Win32;
+using Windows.Win32.Foundation;
 
 namespace Shinta;
 

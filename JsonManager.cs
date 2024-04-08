@@ -1,12 +1,12 @@
 // ============================================================================
 // 
 // JSON 形式で設定の保存と読み込みを管理
-// Copyright (C) 2023 by SHINTA
+// Copyright (C) 2023-2024 by SHINTA
 // 
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 保存場所は WinUI 3 のテンプレートに倣う
+// 保存場所は MSIX かどうかによって変わる
 // 同じオプションの場合は JsonSerializerOptions を使い回す必要がある
 // https://learn.microsoft.com/ja-jp/dotnet/standard/serialization/system-text-json/configure-options?pivots=dotnet-7-0#reuse-jsonserializeroptions-instances
 // ----------------------------------------------------------------------------
@@ -16,13 +16,14 @@
 // ----------------------------------------------------------------------------
 //  1.00  | 2023/08/19 (Sat) | ファーストバージョン。
 // (1.01) | 2023/09/17 (Sun) |   Load() のオーバーロードを作成。
+// (1.04) | 2024/04/08 (Mon) |   MSIX ではない馬合の保存先を変更。
 // ============================================================================
 
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 
-namespace Shinta.WinUi3;
+namespace Shinta;
 
 internal class JsonManager
 {
@@ -113,7 +114,7 @@ internal class JsonManager
 		else
 		{
 			// 相対パスの場合は設定フォルダー配下
-			return WinUi3Common.SettingsFolder() + path;
+			return CommonWindows.SettingsFolder() + path;
 		}
 	}
 

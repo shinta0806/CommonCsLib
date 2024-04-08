@@ -290,6 +290,7 @@ old
 !DirectXApi.cs
 !Downloader.cs
 !JulianDay.cs
+!JsonManager.cs
 !MonitorManager.cs
 !RecentPathManager.cs
 !ResourceLoaderExtensions.cs
