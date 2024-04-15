@@ -94,6 +94,7 @@ public class Downloader
 	{
 		// Firefox 30.0 の UA：Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0
 		// Firefox 91.0 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0
+		// Firefox 124.0.2 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0
 		Version osVersion = Environment.OSVersion.Version;
 		String ua = "Mozilla/5.0 (Windows NT " + osVersion.Major.ToString() + "." + osVersion.Minor.ToString() + "; ";
 
@@ -112,7 +113,7 @@ public class Downloader
 			}
 		}
 
-		ua += "rv:91.0) Gecko/20100101 Firefox/91.0";
+		ua += "rv:124.0) Gecko/20100101 Firefox/124.0";
 
 		return ua;
 	}

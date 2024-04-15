@@ -150,6 +150,7 @@ public partial class Common
 	public const String FILE_EXT_INI = ".ini";
 	public const String FILE_EXT_JPEG = ".jpeg";
 	public const String FILE_EXT_JPG = ".jpg";
+	public const String FILE_EXT_JS = ".js";
 	public const String FILE_EXT_JSON = ".json";
 	public const String FILE_EXT_JXR = ".jxr";
 	public const String FILE_EXT_KRA = ".kra";
