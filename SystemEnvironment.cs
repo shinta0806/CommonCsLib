@@ -22,6 +22,7 @@
 //  1.00  | 2022/12/03 (Sat) | ファーストバージョン。
 // (1.01) | 2023/08/19 (Sat) |   ManagementValue() を改善。
 // (1.02) | 2024/04/18 (Thu) |   LogEnvironment() を改善。
+// (1.03) | 2024/04/18 (Thu) |   LogEnvironment() を改善。
 // ============================================================================
 
 using System.Management;
@@ -114,13 +115,17 @@ public class SystemEnvironment
 				}
 				else
 				{
-					folders = Directory.GetDirectories(Path.GetDirectoryName(CommonWindows.SettingsFolder())!);
+					folders = Directory.GetDirectories(Path.GetDirectoryName(Path.GetDirectoryName(CommonWindows.SettingsFolder()))!);
 				}
 				foreach (String folder in folders)
 				{
 					String folderName = Path.GetFileName(folder);
 					Int32 periPos = folderName.IndexOf('.');
-					Int32 underPos = folderName.IndexOf('_', periPos);
+					Int32 underPos = -1;
+					if (periPos >= 0)
+					{
+						underPos = folderName.IndexOf('_', periPos);
+					}
 					if (periPos >= 0 && underPos >= 0)
 					{
 						families.Add(folderName[(periPos + 1)..underPos]);
