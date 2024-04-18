@@ -1,12 +1,13 @@
 // ============================================================================
 // 
 // 動作環境を取得する
-// Copyright (C) 2022-2023 by SHINTA
+// Copyright (C) 2022-2024 by SHINTA
 // 
 // ============================================================================
 
 // ----------------------------------------------------------------------------
 // 以下のパッケージがインストールされている前提
+//   Microsoft.Windows.Compatibility
 //   Serilog.Sinks.File
 // ----------------------------------------------------------------------------
 
@@ -20,11 +21,14 @@
 //  -.--  | 2022/12/03 (Sat) | WPF 版を元に作成開始。
 //  1.00  | 2022/12/03 (Sat) | ファーストバージョン。
 // (1.01) | 2023/08/19 (Sat) |   ManagementValue() を改善。
+// (1.02) | 2024/04/18 (Thu) |   LogEnvironment() を改善。
 // ============================================================================
 
 using System.Management;
 
-namespace Shinta.WinUi3;
+using Windows.Storage;
+
+namespace Shinta;
 
 public class SystemEnvironment
 {
@@ -32,9 +36,9 @@ public class SystemEnvironment
 	// コンストラクター
 	// ====================================================================
 
-	// --------------------------------------------------------------------
-	// メインコンストラクター
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// メインコンストラクター
+	/// </summary>
 	public SystemEnvironment()
 	{
 	}
@@ -43,30 +47,35 @@ public class SystemEnvironment
 	// public 定数
 	// ====================================================================
 
-	// ログの動作環境表記
+	/// <summary>
+	/// ログの動作環境表記
+	/// </summary>
 	public const String LOG_PREFIX_SYSTEM_ENV = "［動作環境］";
 
-	// ログ項目名
+	/// <summary>
+	/// ログ項目名
+	/// </summary>
 	public const String LOG_ITEM_NAME_PATH = "Path: ";
 
 	// ====================================================================
-	// public メンバー関数
+	// public 関数
 	// ====================================================================
 
 #pragma warning disable CA1822
-	// --------------------------------------------------------------------
-	// CPU 名の取得
-	// ＜返値＞ ベンダー文字列, CPU 名文字列
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// CPU 名の取得
+	/// </summary>
+	/// <returns>ベンダー文字列, CPU 名文字列</returns>
 	public (String? vendorIdString, String? brandName) GetCpuBrandName()
 	{
 		return (ManagementValue(WMI_CLASS_PROCESSOR, "Manufacturer"), ManagementValue(WMI_CLASS_PROCESSOR, "Name"));
 	}
 #pragma warning restore CA1822
 
-	// --------------------------------------------------------------------
-	// 環境をログに記録
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// 環境をログに記録
+	/// </summary>
+	/// <returns></returns>
 	public Boolean LogEnvironment()
 	{
 		Boolean success = false;
@@ -97,37 +106,42 @@ public class SystemEnvironment
 			// ファミリー（設定が保存されている SHINTA のアプリ）
 			try
 			{
-				String family = String.Empty;
+				List<String> families = new();
 				String[] folders;
-				folders = Directory.GetDirectories(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-						+ "\\" + Common.FOLDER_NAME_SHINTA);
+				if (CommonWindows.IsMsix())
+				{
+					folders = Directory.GetDirectories(Path.GetDirectoryName(Path.GetDirectoryName(ApplicationData.Current.LocalFolder.Path))!, "22724SHINTA*");
+				}
+				else
+				{
+					folders = Directory.GetDirectories(Path.GetDirectoryName(CommonWindows.SettingsFolder())!);
+				}
 				foreach (String folder in folders)
 				{
-					if (!String.IsNullOrEmpty(family))
-					{
-						family += "、";
-					}
 					String folderName = Path.GetFileName(folder);
 					Int32 periPos = folderName.IndexOf('.');
-					if (periPos < 0)
+					Int32 underPos = folderName.IndexOf('_', periPos);
+					if (periPos >= 0 && underPos >= 0)
 					{
-						family += folderName;
+						families.Add(folderName[(periPos + 1)..underPos]);
 					}
 					else
 					{
-						family += folderName[0..periPos];
+						families.Add(folderName);
 					}
 				}
-				Log.Information(LOG_PREFIX_SYSTEM_ENV + "Family: " + family);
+				Log.Information(LOG_PREFIX_SYSTEM_ENV + "Family: " + String.Join('、', families));
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				SerilogUtils.LogException("ファミリー検索時エラー", ex);
 			}
 
 			success = true;
 		}
-		catch (Exception)
+		catch (Exception ex)
 		{
+			SerilogUtils.LogException("環境ログ時エラー", ex);
 		}
 
 		return success;
@@ -137,17 +151,21 @@ public class SystemEnvironment
 	// private 定数
 	// ====================================================================
 
-	// WMI CPU 情報取得
+	/// <summary>
+	/// WMI CPU 情報取得
+	/// </summary>
 	private const String WMI_CLASS_PROCESSOR = "Win32_Processor";
 
 	// ====================================================================
-	// private static メンバー関数
+	// private 関数
 	// ====================================================================
 
-	// --------------------------------------------------------------------
-	// 指定された情報を取得
-	// ＜返値＞ 取得できなかった場合は null
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// 指定された情報を取得
+	/// </summary>
+	/// <param name="className"></param>
+	/// <param name="propertyName"></param>
+	/// <returns>取得できなかった場合は null</returns>
 	private static String? ManagementValue(String className, String propertyName)
 	{
 		try
