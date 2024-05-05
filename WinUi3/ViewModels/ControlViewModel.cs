@@ -1,6 +1,6 @@
 // ============================================================================
 // 
-// ページ内の各ページ（NavigationBar で切り替えられるページ）の ViewModel を保持するクラス
+// ページ内の各ページ（NavigationBar で切り替えられるページ）の ViewModel 基底クラス
 // 
 // ============================================================================
 
@@ -11,15 +11,17 @@
 // ============================================================================
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
-//  -.--  | 2024/01/21 (Sun) | 作成開始。
-//  1.00  | 2024/01/21 (Sun) | ファーストバージョン。
+//  -.--  | 2024/05/05 (Sun) | 作成開始。
+//  1.00  | 2024/05/05 (Sun) | ファーストバージョン。
 // ============================================================================
+
+using CommunityToolkit.Mvvm.ComponentModel;
+
+using Shinta.WinUi3.Views;
 
 namespace Shinta.WinUi3.ViewModels;
 
-internal class ControlViewModels<TViewModel, TEnum>
-	where TViewModel : ControlViewModel, new()
-	where TEnum : Enum
+internal class ControlViewModel : ObservableRecipient
 {
 	// ====================================================================
 	// コンストラクター
@@ -28,42 +30,46 @@ internal class ControlViewModels<TViewModel, TEnum>
 	/// <summary>
 	/// メインコンストラクター
 	/// </summary>
-	public ControlViewModels(TEnum numItems)
+	public ControlViewModel()
 	{
-		Items = new TViewModel[Convert.ToInt32(numItems)];
-
-		// ダミー代入
-		TViewModel viewModel = new();
-		foreach (TEnum t in Enum.GetValues(typeof(TEnum)))
-		{
-			if (Convert.ToInt32(t) < Items.Length)
-			{
-				this[t] = viewModel;
-			}
-		}
 	}
 
 	// ====================================================================
 	// public プロパティー
 	// ====================================================================
 
+	// --------------------------------------------------------------------
+	// 一般のプロパティー
+	// --------------------------------------------------------------------
+
 	/// <summary>
-	/// 制作パネルの ViewModel（実体）
+	/// ウィンドウ
 	/// </summary>
-	public TViewModel[] Items
+	public WindowEx2? Window
 	{
 		get;
 		set;
 	}
 
+	// ====================================================================
+	// public 関数
+	// ====================================================================
+
 	/// <summary>
-	/// 制作パネルの ViewModel（インデクサー）
+	/// イベントハンドラー：ページが選択されなくなった
 	/// </summary>
-	/// <param name="index"></param>
-	/// <returns></returns>
-	public TViewModel this[TEnum index]
+	public virtual Task DeselectedAsync()
 	{
-		get => Items[Convert.ToInt32(index)];
-		set => Items[Convert.ToInt32(index)] = value;
+		Log.Information(GetType().Name + ".DeselectedAsync()");
+		return Task.CompletedTask;
+	}
+
+	/// <summary>
+	/// イベントハンドラー：ページが選択された
+	/// </summary>
+	public virtual Task SelectedAsync()
+	{
+		Log.Information(GetType().Name + ".SelectedAsync()");
+		return Task.CompletedTask;
 	}
 }

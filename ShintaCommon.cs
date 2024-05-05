@@ -81,10 +81,6 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
 
-using Windows.Storage;
-using Windows.Win32;
-using Windows.Win32.Foundation;
-
 namespace Shinta;
 
 // ====================================================================
