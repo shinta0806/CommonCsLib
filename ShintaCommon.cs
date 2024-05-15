@@ -68,6 +68,7 @@
 //  4.50  | 2023/06/10 (Sat) | DeleteFileIfEmpty() を作成。
 //  4.60  | 2023/08/19 (Sat) | AppId() を作成。
 // (4.61) | 2024/01/13 (Sat) |   StringToInt32() を改善。
+// (4.62) | 2024/05/09 (Thu) |   拡張子を追加。
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -150,6 +151,7 @@ public partial class Common
 	public const String FILE_EXT_JSON = ".json";
 	public const String FILE_EXT_JXR = ".jxr";
 	public const String FILE_EXT_KRA = ".kra";
+	public const String FILE_EXT_LNK = ".lnk";
 	public const String FILE_EXT_LOCK = ".lock";
 	public const String FILE_EXT_LOG_ARCHIVE = ".lga";
 	public const String FILE_EXT_LOG = ".log";

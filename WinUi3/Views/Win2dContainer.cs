@@ -111,6 +111,15 @@ internal class Win2dContainer : Grid
 	/// </summary>
 	/// <param name="point"></param>
 	/// <param name="args"></param>
+	protected virtual void MouseDownRight(Point point, PointerRoutedEventArgs args)
+	{
+	}
+
+	/// <summary>
+	/// イベントハンドラー
+	/// </summary>
+	/// <param name="point"></param>
+	/// <param name="args"></param>
 	protected virtual void MouseMove(Point point, PointerRoutedEventArgs args)
 	{
 	}
@@ -252,9 +261,14 @@ internal class Win2dContainer : Grid
 			PointerPoint pointerPoint = args.GetCurrentPoint(win2DContainer);
 			if (args.Pointer.PointerDeviceType == PointerDeviceType.Mouse)
 			{
+				if (pointerPoint.Properties.IsRightButtonPressed)
+				{
+					// マウスの場合、右ボタン押下も判定
+					MouseDownRight(pointerPoint.Position, args);
+				}
 				if (!pointerPoint.Properties.IsLeftButtonPressed)
 				{
-					// マウスの場合、左ボタン押下でないなら処理しない
+					// マウスの場合、中ボタン押下は処理しない
 					return;
 				}
 			}
