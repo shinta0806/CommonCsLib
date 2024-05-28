@@ -17,6 +17,7 @@
 //  1.00  | 2023/08/19 (Sat) | ファーストバージョン。
 // (1.01) | 2023/09/17 (Sun) |   Load() のオーバーロードを作成。
 // (1.04) | 2024/04/08 (Mon) |   MSIX ではない馬合の保存先を変更。
+// (1.05) | 2024/05/20 (Mon) |   Load() のパスを改善。
 // ============================================================================
 
 using System.IO.Compression;
@@ -158,13 +159,14 @@ internal class JsonManager
 	/// <returns></returns>
 	private static String LoadJsonString(String path, Boolean decompress)
 	{
+		path = AdjustPath(path);
 		if (decompress)
 		{
 			return Decompress(path);
 		}
 		else
 		{
-			return File.ReadAllText(AdjustPath(path), Encoding.UTF8);
+			return File.ReadAllText(path, Encoding.UTF8);
 		}
 	}
 }

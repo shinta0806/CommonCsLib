@@ -100,6 +100,23 @@ internal class WinUi3Common
 	}
 
 	/// <summary>
+	/// FileSavePicker に拡張子を追加
+	/// </summary>
+	/// <param name="fileSavePicker"></param>
+	/// <param name="exts"></param>
+	/// <param name="names"></param>
+	public static void AddFileSavePickerExtensions(FileSavePicker fileSavePicker, IEnumerable<String> exts, IEnumerable<String> names)
+	{
+		IEnumerator<String> namesEnumerator = names.GetEnumerator();
+		namesEnumerator.MoveNext();
+		foreach (String ext in exts)
+		{
+			fileSavePicker.FileTypeChoices.Add(namesEnumerator.Current, [ext]);
+			namesEnumerator.MoveNext();
+		}
+	}
+
+	/// <summary>
 	/// ウィンドウが存在するディスプレイの表示スケール
 	/// </summary>
 	/// <param name="window"></param>
@@ -133,13 +150,28 @@ internal class WinUi3Common
 	/// FileOpenPicker でファイルを 1 つ取得
 	/// </summary>
 	/// <returns></returns>
-	public static async Task<StorageFile?> PickSingleFileAsync(WindowEx window, String[] exts)
+	public static async Task<StorageFile?> PickSingleOpenFileAsync(WindowEx window, String[] exts)
 	{
 		FileOpenPicker fileOpenPicker = window.CreateOpenFilePicker();
 		AddFileOpenPickerExtensions(fileOpenPicker, exts);
 		fileOpenPicker.FileTypeFilter.Add("*");
 
 		return await fileOpenPicker.PickSingleFileAsync();
+	}
+
+	/// <summary>
+	/// FileSavePicker でファイルを 1 つ取得
+	/// </summary>
+	/// <param name="window"></param>
+	/// <param name="exts"></param>
+	/// <returns></returns>
+	public static async Task<StorageFile?> PickSingleSaveFileAsync(WindowEx window, String[] exts, String[] names, String suggestedFileName)
+	{
+		FileSavePicker fileSavePicker = window.CreateSaveFilePicker();
+		AddFileSavePickerExtensions(fileSavePicker, exts, names);
+		fileSavePicker.SuggestedFileName = suggestedFileName;
+
+		return await fileSavePicker.PickSaveFileAsync();
 	}
 
 #if false
