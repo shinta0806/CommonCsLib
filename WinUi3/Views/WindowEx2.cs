@@ -20,7 +20,10 @@
 //  1.40  | 2023/04/04 (Tue) | ShowExceptionLogContentDialogAsync() を作成。
 // (1.41) | 2023/11/14 (Tue) |   AddVeil() を改善。
 //  1.50  | 2024/06/25 (Tue) | IsHelpButtonEnabled を作成。
+//  1.60  | 2024/06/25 (Tue) | HelpClickedCommand を作成。
 // ============================================================================
+
+using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
@@ -50,6 +53,9 @@ public class WindowEx2 : WindowEx
 	/// </summary>
 	public WindowEx2()
 	{
+		// コマンド
+		HelpClickedCommand = new RelayCommand<String>(HelpClicked);
+
 		// イベントハンドラー
 		Activated += WindowActivated;
 		AppWindow.Closing += AppWindowClosing;
@@ -100,6 +106,22 @@ public class WindowEx2 : WindowEx
 		get;
 		set;
 	}
+
+	// --------------------------------------------------------------------
+	// コマンド
+	// --------------------------------------------------------------------
+
+	#region ヘルプリンクの制御
+	public RelayCommand<String> HelpClickedCommand
+	{
+		get;
+	}
+
+	private void HelpClicked(String? parameter)
+	{
+		ShowHelp(parameter);
+	}
+	#endregion
 
 	// ====================================================================
 	// public 関数
@@ -378,7 +400,7 @@ public class WindowEx2 : WindowEx
 	/// ヘルプを表示
 	/// </summary>
 	/// <returns></returns>
-	protected virtual void ShowHelp()
+	protected virtual void ShowHelp(String? parameter)
 	{
 	}
 
@@ -649,7 +671,7 @@ public class WindowEx2 : WindowEx
 			case PInvoke.WM_SYSCOMMAND:
 				if ((UInt32)wPalam == PInvoke.SC_CONTEXTHELP)
 				{
-					ShowHelp();
+					ShowHelp(HelpButtonParameter);
 					return (LRESULT)IntPtr.Zero;
 				}
 
