@@ -19,6 +19,7 @@
 //  1.30  | 2023/04/04 (Tue) | ShowLogContentDialogAsync() を作成。
 //  1.40  | 2023/04/04 (Tue) | ShowExceptionLogContentDialogAsync() を作成。
 // (1.41) | 2023/11/14 (Tue) |   AddVeil() を改善。
+//  1.50  | 2024/06/25 (Tue) | IsHelpButtonEnabled を作成。
 // ============================================================================
 
 using Microsoft.UI.Dispatching;
@@ -33,6 +34,7 @@ using Windows.Graphics;
 using Windows.UI.Popups;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.UI.Shell;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Shinta.WinUi3.Views;
@@ -60,6 +62,32 @@ public class WindowEx2 : WindowEx
 	// --------------------------------------------------------------------
 	// 一般のプロパティー
 	// --------------------------------------------------------------------
+
+	/// <summary>
+	/// ヘルプボタンを表示するか
+	/// </summary>
+	private Boolean _isHelpButtonEnabled;
+	public Boolean IsHelpButtonEnabled
+	{
+		get => _isHelpButtonEnabled;
+		set
+		{
+			if (_isHelpButtonEnabled != value)
+			{
+				_isHelpButtonEnabled = value;
+				OnIsHelpButtonEnabledChanged();
+			}
+		}
+	}
+
+	/// <summary>
+	/// ヘルプボタンの引数
+	/// </summary>
+	public String? HelpButtonParameter
+	{
+		get;
+		set;
+	}
 
 	/// <summary>
 	/// 内容に合わせてサイズ調整
@@ -343,6 +371,18 @@ public class WindowEx2 : WindowEx
 	}
 
 	// ====================================================================
+	// public 関数
+	// ====================================================================
+
+	/// <summary>
+	/// ヘルプを表示
+	/// </summary>
+	/// <returns></returns>
+	protected virtual void ShowHelp()
+	{
+	}
+
+	// ====================================================================
 	// private 変数
 	// ====================================================================
 
@@ -360,6 +400,11 @@ public class WindowEx2 : WindowEx
 	/// ベール
 	/// </summary>
 	private Grid? _veilGrid;
+
+	/// <summary>
+	/// ウィンドウプロシージャー
+	/// </summary>
+	private SUBCLASSPROC? _subclassProc;
 
 	/// <summary>
 	/// 初期化済
@@ -568,6 +613,51 @@ public class WindowEx2 : WindowEx
 		{
 			// 終了確認後の可能性もあるので表示せずにログのみ
 			SerilogUtils.LogException(GetType().Name + " メインページフォーカス時エラー", ex);
+		}
+	}
+
+	/// <summary>
+	/// イベントハンドラー
+	/// </summary>
+	private void OnIsHelpButtonEnabledChanged()
+	{
+		if (IsHelpButtonEnabled)
+		{
+			_subclassProc = new SUBCLASSPROC(SubclassProc);
+			WinUi3Common.EnableContextHelp(this, _subclassProc);
+		}
+		else
+		{
+			// 未実装
+		}
+	}
+
+	/// <summary>
+	/// ウィンドウメッセージ処理
+	/// </summary>
+	/// <param name="hwnd"></param>
+	/// <param name="msg"></param>
+	/// <param name="wPalam"></param>
+	/// <param name="lParam"></param>
+	/// <param name="_1"></param>
+	/// <param name="_2"></param>
+	/// <returns></returns>
+	private LRESULT SubclassProc(HWND hWnd, UInt32 msg, WPARAM wPalam, LPARAM lParam, UIntPtr _1, UIntPtr _2)
+	{
+		switch (msg)
+		{
+			case PInvoke.WM_SYSCOMMAND:
+				if ((UInt32)wPalam == PInvoke.SC_CONTEXTHELP)
+				{
+					ShowHelp();
+					return (LRESULT)IntPtr.Zero;
+				}
+
+				// ヘルプボタン以外は次のハンドラーにお任せ
+				return PInvoke.DefSubclassProc(hWnd, msg, wPalam, lParam);
+			default:
+				// WM_SYSCOMMAND 以外は次のハンドラーにお任せ
+				return PInvoke.DefSubclassProc(hWnd, msg, wPalam, lParam);
 		}
 	}
 
