@@ -106,7 +106,7 @@ public class DataGridExtensionBehavior : BehaviorBase<DataGrid>
 	/// <param name="e"></param>
 	private void AssociatedObjectSelectionChanged(Object sender, SelectionChangedEventArgs args)
 	{
-		if (AutoScroll)
+		if (AutoScroll && AssociatedObject != null)
 		{
 			AssociatedObject.ScrollIntoView(AssociatedObject.SelectedItem, null);
 		}
