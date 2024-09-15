@@ -42,7 +42,7 @@ public class DataGridExtensionBehavior : BehaviorBase<DataGrid>
 	// ====================================================================
 
 	/// <summary>
-	/// 選択されているフォントタブ（標準配色……）
+	/// 選択した行が見える位置にスクロールするか
 	/// </summary>
 	public static readonly DependencyProperty AutoScrollProperty
 			= DependencyProperty.Register(nameof(AutoScroll), typeof(Boolean), typeof(DataGridExtensionBehavior),
