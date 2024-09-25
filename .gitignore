@@ -291,6 +291,7 @@ old
 !Downloader.cs
 !JsonManager.cs
 !JulianDay.cs
+!PropertyRecord.cs
 !RecentPathManager.cs
 !ResourceLoaderExtensions.cs
 !SerilogUtils.cs
