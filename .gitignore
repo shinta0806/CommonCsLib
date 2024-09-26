@@ -288,6 +288,7 @@ old
 !Wpf/ViewModels/*.cs
 
 !CsvManager.cs
+!DatabaseCommon.cs
 !Downloader.cs
 !JsonManager.cs
 !JulianDay.cs

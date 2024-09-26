@@ -12,6 +12,7 @@
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2024/09/25 (Wed) | ファーストバージョン。
+//  1.10  | 2024/09/26 (Thu) | Comment プロパティーを作成。
 // ============================================================================
 
 using System.ComponentModel.DataAnnotations;
@@ -20,7 +21,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Shinta;
 
 [Table(TABLE_NAME_PROPERTY)]
-public class PropertyRecord
+internal class PropertyRecord
 {
 	// ====================================================================
 	// public 定数
@@ -44,6 +45,7 @@ public class PropertyRecord
 
 	public const String FIELD_NAME_AUTO_KEY = NAME_CORE + "_auto_key";
 	public const String FIELD_NAME_APP_VER = NAME_CORE + "_app_ver";
+	public const String FIELD_NAME_COMMENT = NAME_CORE + "_comment";
 
 	// ====================================================================
 	// public プロパティー
@@ -69,4 +71,14 @@ public class PropertyRecord
 		get;
 		set;
 	} = String.Empty;
+
+	/// <summary>
+	/// 備考
+	/// </summary>
+	[Column(FIELD_NAME_COMMENT)]
+	public String? Comment
+	{
+		get;
+		set;
+	}
 }

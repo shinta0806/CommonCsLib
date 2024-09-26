@@ -27,6 +27,7 @@
 //  1.30  | 2023/08/19 (Sat) | SettingsFolder() を作成。
 // (1.31) | 2024/04/08 (Mon) |   IsMsix() を移管。
 // (1.32) | 2024/04/08 (Mon) |   SettingsFolder() を移管。
+//  1.40  | 2024/09/25 (Wed) | PickSingleOpenFolderAsync() を作成。
 // ============================================================================
 
 using Microsoft.UI.Xaml;
@@ -157,6 +158,20 @@ internal class WinUi3Common
 		fileOpenPicker.FileTypeFilter.Add("*");
 
 		return await fileOpenPicker.PickSingleFileAsync();
+	}
+
+	/// <summary>
+	/// FolderPicker でフォルダーを取得
+	/// </summary>
+	/// <param name="window"></param>
+	/// <returns></returns>
+	public static async Task<StorageFolder?> PickSingleOpenFolderAsync(WindowEx window)
+	{
+		FolderPicker folderPicker = new FolderPicker();
+		folderPicker.FileTypeFilter.Add("*");
+		InitializeWithWindow.Initialize(folderPicker, window.GetWindowHandle());
+
+		return await folderPicker.PickSingleFolderAsync();
 	}
 
 	/// <summary>
