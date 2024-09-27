@@ -317,7 +317,7 @@ public class WindowEx2 : WindowEx
 	/// <returns></returns>
 	public async Task<ContentDialogResult> ShowExceptionLogContentDialogAsync(String caption, Exception ex)
 	{
-		ContentDialogResult result = await ShowLogContentDialogAsync(LogEventLevel.Error, caption + "：\n" + ex.Message);
+		ContentDialogResult result = await ShowLogContentDialogAsync(LogEventLevel.Error, ExceptionMessage(caption, ex));
 		SerilogUtils.LogStackTrace(ex);
 		return result;
 	}
@@ -331,7 +331,7 @@ public class WindowEx2 : WindowEx
 	/// <returns></returns>
 	public async Task<IUICommand> ShowExceptionLogMessageDialogAsync(String caption, Exception ex)
 	{
-		IUICommand command = await ShowLogMessageDialogAsync(LogEventLevel.Error, caption + "：\n" + ex.Message);
+		IUICommand command = await ShowLogMessageDialogAsync(LogEventLevel.Error, ExceptionMessage(caption, ex));
 		SerilogUtils.LogStackTrace(ex);
 		return command;
 	}
@@ -597,6 +597,22 @@ public class WindowEx2 : WindowEx
 	{
 		_openingDialog = null;
 		_dialogEvent.Set();
+	}
+
+	/// <summary>
+	/// 表示する例外メッセージ
+	/// </summary>
+	/// <param name="caption"></param>
+	/// <param name="ex"></param>
+	/// <returns></returns>
+	private String ExceptionMessage(String caption, Exception ex)
+	{
+		String message = caption + "：\n" + ex.Message;
+		if (ex.InnerException != null)
+		{
+			message += "\n詳細：\n" + ex.InnerException.Message;
+		}
+		return message;
 	}
 
 	/// <summary>

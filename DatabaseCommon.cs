@@ -13,6 +13,7 @@
 //  Ver.  |      更新日      |                    更新内容
 // ----------------------------------------------------------------------------
 //  1.00  | 2024/09/26 (Thu) | ファーストバージョン。
+//  1.10  | 2024/09/27 (Fri) | IsVersionPropertySame() を作成した。
 // ============================================================================
 
 using Microsoft.Data.Sqlite;
@@ -25,6 +26,30 @@ internal class DatabaseCommon
 	// ====================================================================
 	// public 関数
 	// ====================================================================
+
+	/// <summary>
+	/// データベースのプロパティーが指定バージョンと同一か
+	/// </summary>
+	/// <param name="propertyRecords"></param>
+	/// <returns></returns>
+	public static Boolean IsVersionPropertySame(DbSet<PropertyRecord> propertyRecords, String appVer)
+	{
+		PropertyRecord? propertyRecord = propertyRecords.FirstOrDefault();
+		if (propertyRecord == null)
+		{
+			// プロパティーが存在していない場合は NG
+			Log.Information("データベースプロパティーが存在していません。");
+			return false;
+		}
+		if (propertyRecord.AppVer != appVer)
+		{
+			// バージョンが異なる場合は NG
+			Log.Information("データベースプロパティーのバージョンが異なります。");
+			return false;
+		}
+
+		return true;
+	}
 
 	/// <summary>
 	/// ジャーナルモードを DELETE に設定

@@ -167,7 +167,7 @@ internal class WinUi3Common
 	/// <returns></returns>
 	public static async Task<StorageFolder?> PickSingleOpenFolderAsync(WindowEx window)
 	{
-		FolderPicker folderPicker = new FolderPicker();
+		FolderPicker folderPicker = new();
 		folderPicker.FileTypeFilter.Add("*");
 		InitializeWithWindow.Initialize(folderPicker, window.GetWindowHandle());
 
