@@ -69,6 +69,7 @@
 //  4.60  | 2023/08/19 (Sat) | AppId() を作成。
 // (4.61) | 2024/01/13 (Sat) |   StringToInt32() を改善。
 // (4.62) | 2024/05/09 (Thu) |   拡張子を追加。
+//  4.70  | 2024/09/28 (Sat) | ExceptionMessage() を作成。
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -448,6 +449,22 @@ public partial class Common
 		return Convert.ToBase64String(aEncBytes);
 	}
 #endif
+
+	/// <summary>
+	/// 表示する例外メッセージ
+	/// </summary>
+	/// <param name="caption"></param>
+	/// <param name="ex"></param>
+	/// <returns></returns>
+	public static String ExceptionMessage(String caption, Exception ex)
+	{
+		String message = caption + "：\n" + ex.Message;
+		if (ex.InnerException != null)
+		{
+			message += "\n詳細：\n" + ex.InnerException.Message;
+		}
+		return message;
+	}
 
 	// --------------------------------------------------------------------
 	// テンポラリフォルダーを初期化

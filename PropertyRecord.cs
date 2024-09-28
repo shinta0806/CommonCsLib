@@ -72,8 +72,10 @@ internal class PropertyRecord
 		set;
 	} = String.Empty;
 
+#if !OBSOLETE_PROPERTY_RECORD
 	/// <summary>
 	/// 備考
+	/// 追加カラム：既存アプリは OBSOLETE_PROPERTY_RECORD フラグを立てて除外されるようにする
 	/// </summary>
 	[Column(FIELD_NAME_COMMENT)]
 	public String? Comment
@@ -81,4 +83,5 @@ internal class PropertyRecord
 		get;
 		set;
 	}
+#endif
 }

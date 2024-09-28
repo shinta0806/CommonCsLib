@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // Serilog 利用関数
-// Copyright (C) 2022-2023 by SHINTA
+// Copyright (C) 2022-2024 by SHINTA
 // 
 // ============================================================================
 
@@ -21,6 +21,7 @@
 // (1.01) | 2022/11/05 (Sat) |   CreateLogger() の path を必須にした。
 //  1.10  | 2023/04/02 (Sun) | LogException() を作成。
 // (1.11) | 2023/07/17 (Mon) |   ログアクセスを共有にした。
+// (1.12) | 2024/09/28 (Sat) |   LogException() を改善。
 // ============================================================================
 
 namespace Shinta;
@@ -40,16 +41,16 @@ internal class SerilogUtils
 	public static void CreateLogger(Int32 flleSizeLimit, Int32 generations, String path)
 	{
 		Log.Logger = new LoggerConfiguration()
-				.MinimumLevel.Information()
+			.MinimumLevel.Information()
 #if DEBUG
-				.MinimumLevel.Debug()
-				.WriteTo.Debug()
+			.MinimumLevel.Debug()
+			.WriteTo.Debug()
 #endif
-				.Enrich.WithProcessId()
-				.Enrich.WithThreadId()
-				.WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: flleSizeLimit, retainedFileCountLimit: generations, shared: true,
-				outputTemplate: "{Timestamp:yyyy/MM/dd HH:mm:ss.fff}\t{ProcessId}/M{ThreadId}\t{Level:u3}\t{Message:lj}{NewLine}{Exception}")
-				.CreateLogger();
+			.Enrich.WithProcessId()
+			.Enrich.WithThreadId()
+			.WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: flleSizeLimit, retainedFileCountLimit: generations, shared: true,
+			outputTemplate: "{Timestamp:yyyy/MM/dd HH:mm:ss.fff}\t{ProcessId}/M{ThreadId}\t{Level:u3}\t{Message:lj}{NewLine}{Exception}")
+			.CreateLogger();
 	}
 
 	/// <summary>
@@ -59,7 +60,7 @@ internal class SerilogUtils
 	/// <param name="ex"></param>
 	public static void LogException(String caption, Exception ex)
 	{
-		Log.Error(caption + "：\n" + ex.Message);
+		Log.Error(Common.ExceptionMessage(caption, ex));
 		LogStackTrace(ex);
 	}
 
