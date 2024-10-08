@@ -15,6 +15,7 @@
 //  1.00  | 2024/09/26 (Thu) | ファーストバージョン。
 //  1.10  | 2024/09/27 (Fri) | IsVersionPropertySame() を作成した。
 //  1.20  | 2024/09/28 (Sat) | Vacuum() を作成した。
+// (1.21) | 2024/10/05 (Sat) |   SetJournalModeToDelete() を改善。
 // ============================================================================
 
 using Microsoft.Data.Sqlite;
@@ -64,10 +65,11 @@ internal class DatabaseCommon
 	/// <summary>
 	/// ジャーナルモードを DELETE に設定
 	/// </summary>
-	/// <param name="videoInfoContext"></param>
+	/// <param name="dbContext">本関数呼び出し後は使い回さないことを推奨</param>
 	public static void SetJournalModeToDelete(DbContext dbContext)
 	{
 		// この SqliteConnection は Dispose() してはいけない
+		// https://learn.microsoft.com/ja-jp/dotnet/api/microsoft.entityframeworkcore.relationaldatabasefacadeextensions.getdbconnection
 		if (dbContext.Database.GetDbConnection() is not SqliteConnection sqliteConnection)
 		{
 			throw new Exception("データベースの接続を取得できませんでした。");
@@ -77,6 +79,10 @@ internal class DatabaseCommon
 		using SqliteCommand command = sqliteConnection.CreateCommand();
 		command.CommandText = @"PRAGMA journal_mode = 'delete'";
 		command.ExecuteNonQuery();
+
+		// 接続を閉じるかどうかは明確な指針がない模様
+		// 閉じないと dbContext 破棄後でも他の dbContext でデータベースにアクセスできない事象が発生したので閉じておく
+		sqliteConnection.Close();
 		Log.Information("ジャーナルモードを DELETE に設定しました。");
 	}
 
@@ -126,6 +132,7 @@ internal class DatabaseCommon
 			using SqliteCommand command = sqliteConnection.CreateCommand();
 			command.CommandText = @"VACUUM";
 			command.ExecuteNonQuery();
+			sqliteConnection.Close();
 			Log.Information("データベースを VACUUM しました。");
 			return true;
 		}
