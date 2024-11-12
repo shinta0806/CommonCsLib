@@ -295,10 +295,10 @@ old
 !PropertyRecord.cs
 !RecentPathManager.cs
 !ResourceLoaderExtensions.cs
+!RubyReconverter.cs
 !SerilogUtils.cs
 !ShintaCommon.cs
 !ShintaCommonWindows.cs
 !StringUtils.cs
 !SystemEnvironment.cs
 !WindowsApi.cs
-
