@@ -129,6 +129,7 @@ internal class WinUi3Common
 		return dpi / Common.DEFAULT_DPI;
 	}
 
+#if !USE_AOT
 	/// <summary>
 	/// タイトルバーのコンテキストヘルプボタンを有効にする
 	/// </summary>
@@ -146,6 +147,7 @@ internal class WinUi3Common
 		_ = PInvoke.SetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, exStyle | (Int32)WINDOW_EX_STYLE.WS_EX_CONTEXTHELP);
 		return PInvoke.SetWindowSubclass(hWnd, subclassProc, UIntPtr.Zero, UIntPtr.Zero);
 	}
+#endif
 
 	/// <summary>
 	/// FileOpenPicker でファイルを 1 つ取得

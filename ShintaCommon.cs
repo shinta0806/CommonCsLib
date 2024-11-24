@@ -400,6 +400,7 @@ public partial class Common
 		return result;
 	}
 
+#if !USE_AOT
 	// --------------------------------------------------------------------
 	// オブジェクトをデシリアライズして読み出し
 	// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
@@ -422,6 +423,7 @@ public partial class Common
 		Object? des = xmlSerializer.Deserialize(xmlNodeReader) ?? throw new Exception("Deserialize result is null");
 		return (T)des;
 	}
+#endif
 
 #if USE_OBSOLETE
 	// --------------------------------------------------------------------
@@ -754,6 +756,7 @@ public partial class Common
 		return folders;
 	}
 
+#if !USE_AOT
 	// --------------------------------------------------------------------
 	// オブジェクトをシリアライズして保存
 	// ＜例外＞ Exception
@@ -764,7 +767,9 @@ public partial class Common
 		using StreamWriter streamWriter = new(path, false, new UTF8Encoding(false));
 		xmlSerializer.Serialize(streamWriter, obj);
 	}
+#endif
 
+#if !USE_AOT
 	// --------------------------------------------------------------------
 	// 全フィールドを浅くコピーする
 	// インスタンスの実クラスの基底クラスも含めてコピーするが、基底クラスの private フィールドはコピーできないことに注意
@@ -775,9 +780,11 @@ public partial class Common
 		FieldInfo[] fields = src.GetType().GetFields(BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 		ShallowCopyFieldsCore(src, dest, fields);
 	}
+#endif
 
+#if !USE_AOT
 	// --------------------------------------------------------------------
-	// 全フィールドを浅くコピーする
+	// 全フィールドを浅くコピーする（T 型の階層のレベルで宣言されたメンバーのみ）
 	// インスタンスの実クラスではなく T としてコピーする。private フィールドもコピーできる
 	// 新規インスタンスを作るのではなく、既存のインスタンスにコピーする
 	// --------------------------------------------------------------------
@@ -787,7 +794,9 @@ public partial class Common
 				BindingFlags.DeclaredOnly);
 		ShallowCopyFieldsCore(src, dest, fields);
 	}
+#endif
 
+#if !USE_AOT
 	// --------------------------------------------------------------------
 	// 全プロパティーを浅くコピーする
 	// インスタンスの実クラスの基底クラスも含めてコピーするが、基底クラスの private プロパティーはコピーできないことに注意
@@ -807,6 +816,7 @@ public partial class Common
 			}
 		}
 	}
+#endif
 
 	// --------------------------------------------------------------------
 	// 関連付けられたファイルを開く

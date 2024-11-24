@@ -423,10 +423,12 @@ public class WindowEx2 : WindowEx
 	/// </summary>
 	private Grid? _veilGrid;
 
+#if !USE_AOT
 	/// <summary>
 	/// ウィンドウプロシージャー
 	/// </summary>
 	private SUBCLASSPROC? _subclassProc;
+#endif
 
 	/// <summary>
 	/// 初期化済
@@ -645,8 +647,10 @@ public class WindowEx2 : WindowEx
 	{
 		if (IsHelpButtonEnabled)
 		{
+#if !USE_AOT
 			_subclassProc = new SUBCLASSPROC(SubclassProc);
 			WinUi3Common.EnableContextHelp(this, _subclassProc);
+#endif
 		}
 		else
 		{

@@ -18,7 +18,10 @@
 //  1.10  | 2024/11/13 (Wed) | IsReady() を作成。
 // ============================================================================
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Windows.Win32;
+using Windows.Win32.UI.Input.Ime;
 
 namespace Shinta;
 
@@ -82,12 +85,91 @@ internal class RubyReconverter : IDisposable
 			return null;
 		}
 
+		// GetPhonetic() の start の先頭文字は 1（0 ではないことに注意）
 		if (_ime.GetPhonetic(kanji, 1, -1, out String hiragana) != 0)
 		{
 			return null;
 		}
 
 		return hiragana;
+	}
+
+#if USE_UNSAFE
+	/// <summary>
+	/// 漢字をひらがなに変換（ブロックごとの対応付き）
+	/// </summary>
+	/// <param name="kanji">漢字</param>
+	/// <returns>ひらがな, ブロックごとの漢字, ブロックごとのひらがな</returns>
+	public (String?, String[], String[]) ReconvertDetail(String? kanji)
+	{
+		if (_ime == null || String.IsNullOrEmpty(kanji))
+		{
+			return (null, Array.Empty<String>(), Array.Empty<String>());
+		}
+
+		if (_ime.GetMorphResult(PInvoke.FELANG_REQ_REV, PInvoke.FELANG_CMODE_HIRAGANAOUT, kanji.Length, kanji, IntPtr.Zero, out IntPtr result) != 0)
+		{
+			return (null, Array.Empty<String>(), Array.Empty<String>());
+		}
+		MORRSLT morResult = Marshal.PtrToStructure<MORRSLT>(result);
+
+		// 返値準備
+		String hiragana;
+		String[] kanjiBlocks = new String[morResult.cWDD];
+		String[] hiraganaBlocks = new String[morResult.cWDD];
+
+		unsafe
+		{
+			hiragana = new(morResult.pwchOutput, 0, morResult.cchOutput);
+			for (Int32 i = 0; i < morResult.cWDD; i++)
+			{
+				WDD wdd = Marshal.PtrToStructure<WDD>((nint)(morResult.pWDD) + Marshal.SizeOf<WDD>() * i);
+				kanjiBlocks[i] = kanji[wdd.Anonymous1.wReadPos..(wdd.Anonymous1.wReadPos + wdd.Anonymous2.cchRead)];
+				hiraganaBlocks[i] = hiragana[wdd.wDispPos..(wdd.wDispPos + wdd.cchDisp)];
+			}
+
+		}
+		Marshal.FreeCoTaskMem(result);
+		return (hiragana, kanjiBlocks, hiraganaBlocks);
+	}
+#endif
+
+	public void test()
+	{
+		if (_ime == null)
+		{
+			return;
+		}
+
+		String kanji = "今夜は月が綺麗";
+		_ime.GetMorphResult(PInvoke.FELANG_REQ_REV, PInvoke.FELANG_CMODE_HIRAGANAOUT, kanji.Length, kanji, IntPtr.Zero, out IntPtr result);
+#if false
+		MORRSLT[] morResults = new MORRSLT[kanji.Length];
+		for (Int32 i = 0; i < kanji.Length; i++) {
+			morResults[i] = Marshal.PtrToStructure<MORRSLT>(result + Marshal.SizeOf<MORRSLT>() * i);
+		}
+#endif
+		// result は配列ではないっぽい
+		MORRSLT morResult = Marshal.PtrToStructure<MORRSLT>(result);
+
+		unsafe
+		{
+			String srcString = new(morResult.Anonymous1.pwchRead, 0, morResult.Anonymous2.cchRead);
+			Debug.WriteLine("test() 元文章：" + srcString);
+			String resultString = new(morResult.pwchOutput, 0, morResult.cchOutput);
+			Debug.WriteLine("test() 逆変換：" + resultString);
+		}
+
+		unsafe
+		{
+			for (Int32 i = 0; i < morResult.cWDD; i++)
+			{
+				WDD wdd = Marshal.PtrToStructure<WDD>((nint)(morResult.pWDD) + Marshal.SizeOf<WDD>() * i);
+				Debug.WriteLine("test() wdd " + i + " wDispPos: " + wdd.wDispPos + " wReadPos: " + wdd.Anonymous1.wReadPos);
+			}
+		}
+
+		Marshal.FreeCoTaskMem(result);
 	}
 
 	// ====================================================================
@@ -136,6 +218,7 @@ internal class RubyReconverter : IDisposable
 
 // ====================================================================
 // IFE Language 2 Interface
+// https://learn.microsoft.com/en-us/previous-versions/office/developer/office-2007/ee828899(v=office.12)
 // ====================================================================
 
 [ComImport]
@@ -173,7 +256,7 @@ public interface IFELanguage2
 	/// <param name="cinfo"></param>
 	/// <param name="result"></param>
 	/// <returns></returns>
-	Int32 GetMorphResult(UInt32 request, UInt32 cmode, Int32 cwchInput, [MarshalAs(UnmanagedType.LPWStr)] String pwchInput, IntPtr cinfo, out Object result);
+	Int32 GetMorphResult(UInt32 request, UInt32 cmode, Int32 cwchInput, [MarshalAs(UnmanagedType.LPWStr)] String pwchInput, IntPtr cinfo, out IntPtr result);
 
 	/// <summary>
 	/// 変換モード

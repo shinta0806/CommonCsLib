@@ -29,7 +29,7 @@ using Windows.Graphics;
 
 namespace Shinta.WinUi3.Views;
 
-public class PageEx2 : Page
+public partial class PageEx2 : Page
 {
 	// ====================================================================
 	// コンストラクター
