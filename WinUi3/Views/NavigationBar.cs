@@ -24,7 +24,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 
 namespace Shinta.WinUi3.Views;
 
-internal sealed class NavigationBar : WrapPanel, INavigationBar
+internal sealed partial class NavigationBar : WrapPanel, INavigationBar
 {
 	// ====================================================================
 	// コンストラクター

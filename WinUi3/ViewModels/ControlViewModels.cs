@@ -1,6 +1,6 @@
 // ============================================================================
 // 
-// ページ内の各ページ（NavigationBar で切り替えられるページ）の ViewModel を保持するクラス
+// ページ内の各パネル（NavigationBar で切り替えられるページ）の ViewModel を保持するクラス
 // 
 // ============================================================================
 
@@ -13,13 +13,14 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2024/01/21 (Sun) | 作成開始。
 //  1.00  | 2024/01/21 (Sun) | ファーストバージョン。
+// (1.01) | 2024/11/25 (Mon) |   AOT 対応のため Enum.GetValues(typeof) を代替。
 // ============================================================================
 
 namespace Shinta.WinUi3.ViewModels;
 
 internal class ControlViewModels<TViewModel, TEnum>
 	where TViewModel : ControlViewModel, new()
-	where TEnum : Enum
+	where TEnum : struct, Enum
 {
 	// ====================================================================
 	// コンストラクター
@@ -34,7 +35,7 @@ internal class ControlViewModels<TViewModel, TEnum>
 
 		// ダミー代入
 		TViewModel viewModel = new();
-		foreach (TEnum t in Enum.GetValues(typeof(TEnum)))
+		foreach (TEnum t in Enum.GetValues<TEnum>())
 		{
 			if (Convert.ToInt32(t) < Items.Length)
 			{

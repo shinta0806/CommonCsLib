@@ -21,7 +21,7 @@ using Shinta.WinUi3.Views;
 
 namespace Shinta.WinUi3.ViewModels;
 
-internal class ControlViewModel : ObservableRecipient
+internal partial class ControlViewModel : ObservableRecipient
 {
 	// ====================================================================
 	// コンストラクター
