@@ -27,14 +27,14 @@
 
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-#if USE_AOT
+#if USE_AOT || USE_UNSAFE
 using Windows.Win32;
+#endif
+#if USE_AOT
 using Windows.Win32.Foundation;
 using Windows.Win32.System.Com;
 #endif
-
 #if USE_UNSAFE
-using Windows.Win32;
 using Windows.Win32.UI.Input.Ime;
 #endif
 
