@@ -14,6 +14,7 @@
 // ----------------------------------------------------------------------------
 //  1.00  | 2024/04/22 (Mon) | C++ 版 Lib UTAU から移植。
 // (1.01) | 2024/12/05 (Thu) |   namespace を変更。
+// (1.02) | 2024/12/07 (Sat) |   FileName の不具合を修正。
 // ============================================================================
 
 using System.Text;
@@ -137,7 +138,7 @@ internal class OtoIni
 				GenonSettings genonSettings = new()
 				{
 					// ファイル名
-					FileName = Path.GetDirectoryName(otoIniPath) + nameStrings[0]
+					FileName = Path.GetDirectoryName(otoIniPath) + '\\' + nameStrings[0]
 				};
 
 				// オフセット

@@ -14,7 +14,10 @@
 // ----------------------------------------------------------------------------
 //  1.00  | 2024/04/22 (Mon) | C++ 版 Lib UTAU から移植。
 // (1.01) | 2024/12/05 (Thu) |   namespace を変更。
+//  1.10  | 2025/01/22 (Wed) | ToneNameToToneNumber() を作成。
 // ============================================================================
+
+using System;
 
 namespace Shinta.LibUtau;
 
@@ -85,6 +88,16 @@ internal class UtauUtils
 		}
 
 		return TONE_NUMBER_BASE + (octave - 1) * TONE_OCTAVE_STEPS + aToneNameIndex + Convert.ToInt32(toneName[1] == TONE_NAME_SHARP);
+	}
+
+	/// <summary>
+	/// UTAU 音番号→音名
+	/// </summary>
+	/// <param name="toneNumber"></param>
+	/// <returns></returns>
+	public static String ToneNumberToToneName(Int32 toneNumber)
+	{
+		return ToneNumberToToneName(toneNumber % TONE_OCTAVE_STEPS, toneNumber / TONE_OCTAVE_STEPS - 2);
 	}
 
 	/// <summary>
