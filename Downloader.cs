@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // ファイルをダウンロードするクラス（ログイン用に POST 機能あり）
-// Copyright (C) 2014-2023 by SHINTA
+// Copyright (C) 2014-2025 by SHINTA
 // 
 // ============================================================================
 
@@ -34,6 +34,7 @@
 // (2.02) | 2022/01/09 (Sun) |   DefaultUserAgent() を改善。
 // (2.03) | 2022/01/10 (Mon) |   軽微なリファクタリング。
 // (2.04) | 2023/08/22 (Tue) |   軽微なリファクタリング。
+// (2.05) | 2025/02/20 (Thu) |   進捗報告できるようにした。
 // ============================================================================
 
 using System.Net.Http.Headers;
@@ -44,12 +45,13 @@ namespace Shinta;
 public class Downloader
 {
 	// ====================================================================
-	// コンストラクター・デストラクター
+	// コンストラクター
 	// ====================================================================
 
-	// --------------------------------------------------------------------
-	// コンストラクター
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// メインコンストラクター
+	/// </summary>
+	/// <param name="httpClient">使い回す HttpClient インスタンス</param>
 	public Downloader(HttpClient? httpClient = null)
 	{
 		// http クライアントの設定
@@ -58,9 +60,12 @@ public class Downloader
 			// 外部から http クライアントが注入されない場合は、自前の http クライアントを使う
 			// 自前の http クライアントが未作成の場合は作成する
 			_defaultHttpClient ??= new HttpClient();
-			httpClient = _defaultHttpClient;
+			_httpClient = _defaultHttpClient;
 		}
-		_httpClient = httpClient;
+		else
+		{
+			_httpClient = httpClient;
+		}
 
 		// インスタンスが変わっても変わらないヘッダーの設定
 		_httpClient.DefaultRequestHeaders.Clear();
@@ -76,25 +81,32 @@ public class Downloader
 	// public プロパティー
 	// ====================================================================
 
-	// ダウンロード時のユーザーエージェント
+	/// <summary>
+	/// ダウンロード時のユーザーエージェント
+	/// </summary>
 	public String UserAgent { get; set; }
 
-	// 終了要求制御
+	/// <summary>
+	/// 終了要求制御
+	/// </summary>
 	public CancellationToken CancellationToken { get; set; }
 
 	// ====================================================================
-	// public メンバー関数
+	// public 関数
 	// ====================================================================
 
 #pragma warning disable CA1822
-	// --------------------------------------------------------------------
-	// 標準のユーザーエージェント
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// 標準のユーザーエージェント
+	/// </summary>
+	/// <returns></returns>
 	public String DefaultUserAgent()
 	{
 		// Firefox 30.0 の UA：Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0
 		// Firefox 91.0 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0
 		// Firefox 124.0.2 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0
+		// Firefox 135.0.1 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0
+		// Chrome 133.0.6943.98 の UA：Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36
 		Version osVersion = Environment.OSVersion.Version;
 		String ua = "Mozilla/5.0 (Windows NT " + osVersion.Major.ToString() + "." + osVersion.Minor.ToString() + "; ";
 
@@ -119,51 +131,64 @@ public class Downloader
 	}
 #pragma warning restore CA1822
 
-	// --------------------------------------------------------------------
-	// ダウンロード（ファイルとして保存）
-	// ＜例外＞ Exception
-	// --------------------------------------------------------------------
-	public async Task<HttpResponseMessage> DownloadAsFileAsync(String url, String path)
+	/// <summary>
+	/// ダウンロード（ファイルとして保存）
+	/// </summary>
+	/// <param name="url"></param>
+	/// <param name="path"></param>
+	/// <returns></returns>
+	public async Task<HttpResponseMessage> DownloadAsFileAsync(String url, String path, IProgress<Double>? progress = null)
 	{
 		using FileStream fileStream = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
-		HttpResponseMessage response = await DownloadAsStreamAsync(url, fileStream);
+		HttpResponseMessage response = await DownloadAsStreamAsync(url, fileStream, progress);
 		return response;
 	}
 
-	// --------------------------------------------------------------------
-	// ダウンロード（toStream 内にコピー：toStream.Position は末尾になる）
-	// ＜返値＞ 応答（破棄不要の模様）
-	// ＜例外＞ Exception（ドメインが間違っている等、サーバーに接続できない場合）
-	// --------------------------------------------------------------------
-	public async Task<HttpResponseMessage> DownloadAsStreamAsync(String url, Stream toStream)
+	/// <summary>
+	/// ダウンロード（toStream 内にコピー：toStream.Position は末尾になる）
+	/// </summary>
+	/// <param name="url"></param>
+	/// <param name="toStream"></param>
+	/// <param name="progress">進捗は 0～1 で報告される</param>
+	/// <returns>応答（破棄不要の模様）</returns>
+	/// <exception cref="Exception">ドメインが間違っている等、サーバーに接続できない場合</exception>
+	public async Task<HttpResponseMessage> DownloadAsStreamAsync(String url, Stream toStream, IProgress<Double>? progress = null)
 	{
+		// 総サイズ
+		Int64 totalSize = await TotalSizeAsync(url);
+
 		// リクエスト
 		HttpRequestMessage request = new(HttpMethod.Get, url);
 		AddHeaders(request, url);
 
 		// ダウンロード
-		return await DownloadAsStreamCoreAsync(request, toStream);
+		return await DownloadAsStreamCoreAsync(request, toStream, totalSize, progress);
 	}
 
-	// --------------------------------------------------------------------
-	// ダウンロード（文字列として取得）
-	// ＜例外＞ Exception
-	// --------------------------------------------------------------------
-	public async Task<(HttpResponseMessage, String)> DownloadAsStringAsync(String url, Encoding encoding)
+	/// <summary>
+	/// ダウンロード（文字列として取得）
+	/// </summary>
+	/// <param name="url"></param>
+	/// <param name="encoding"></param>
+	/// <returns></returns>
+	public async Task<(HttpResponseMessage, String)> DownloadAsStringAsync(String url, Encoding encoding, IProgress<Double>? progress = null)
 	{
 		// ダウンロード
 		using MemoryStream memStream = new();
-		HttpResponseMessage response = await DownloadAsStreamAsync(url, memStream);
+		HttpResponseMessage response = await DownloadAsStreamAsync(url, memStream, progress);
 
 		// 変換して返す
 		return (response, encoding.GetString(memStream.ToArray()));
 	}
 
-	// --------------------------------------------------------------------
-	// 送信して結果をダウンロード（Stream 内にコピー）
-	// ＜引数＞ post: Name=Value, files: Name=Path
-	// ＜例外＞ Exception
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// 送信して結果をダウンロード（Stream 内にコピー）
+	/// </summary>
+	/// <param name="url"></param>
+	/// <param name="toStream"></param>
+	/// <param name="post">Name=Value</param>
+	/// <param name="files">Name=Path</param>
+	/// <returns></returns>
 	public async Task<HttpResponseMessage> PostAndDownloadAsStreamAsync(String url, Stream toStream, Dictionary<String, String?> post, Dictionary<String, String>? files = null)
 	{
 		if (files == null || files.Count == 0)
@@ -215,11 +240,14 @@ public class Downloader
 		return await DownloadAsStreamCoreAsync(bothRequest, toStream);
 	}
 
-	// --------------------------------------------------------------------
-	// 送信して結果をダウンロード（文字列として取得）
-	// ＜引数＞ post: Name=Value, files: Name=Path
-	// ＜例外＞ Exception
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// 送信して結果をダウンロード（文字列として取得）
+	/// </summary>
+	/// <param name="url"></param>
+	/// <param name="encoding"></param>
+	/// <param name="post">Name=Value</param>
+	/// <param name="files">Name=Path</param>
+	/// <returns></returns>
 	public async Task<(HttpResponseMessage, String)> PostAndDownloadAsStringAsync(String url, Encoding encoding, Dictionary<String, String?> post, Dictionary<String, String>? files = null)
 	{
 		// ダウンロード
@@ -231,47 +259,124 @@ public class Downloader
 	}
 
 	// ====================================================================
-	// private メンバー変数
+	// private 定数
 	// ====================================================================
 
-	// 使用する http クライアント
+	/// <summary>
+	/// ダウンロードバッファーサイズ
+	/// </summary>
+	private const Int32 BUFFER_SIZE = 8 * 1024;
+
+	/// <summary>
+	/// 進捗報告間隔の最小値
+	/// </summary>
+	private const Int32 PROGRESS_INTERVAL_MIN = 1;
+
+	/// <summary>
+	/// 進捗報告間隔の最大値
+	/// </summary>
+	private const Int32 PROGRESS_INTERVAL_MAX = 100;
+
+	// ====================================================================
+	// private 変数
+	// ====================================================================
+
+	/// <summary>
+	/// 使用する http クライアント
+	/// </summary>
 	private readonly HttpClient _httpClient;
 
-	// 外部から指定されなかった場合に使用する http クライアント
-	// 複数インスタンスで使い回す
+	/// <summary>
+	/// 外部から指定されなかった場合に使用する http クライアント
+	/// 複数インスタンスで使い回す
+	/// </summary>
 	private static HttpClient? _defaultHttpClient;
 
 	// ====================================================================
-	// private メンバー関数
+	// private 関数
 	// ====================================================================
 
-	// --------------------------------------------------------------------
-	// リクエストにヘッダーを付加
-	// --------------------------------------------------------------------
+	/// <summary>
+	/// リクエストにヘッダーを付加
+	/// </summary>
+	/// <param name="request"></param>
+	/// <param name="url"></param>
 	private void AddHeaders(HttpRequestMessage request, String url)
 	{
 		request.Headers.Add("User-Agent", UserAgent);
 		request.Headers.Add("Referer", url);
 	}
 
-	// --------------------------------------------------------------------
-	// ダウンロード（toStream 内にコピー：toStream.Position は末尾になる）
-	// ＜返値＞ 応答（破棄不要の模様）
-	// ＜例外＞ Exception
-	// --------------------------------------------------------------------
-	private async Task<HttpResponseMessage> DownloadAsStreamCoreAsync(HttpRequestMessage request, Stream toStream)
+	/// <summary>
+	/// ダウンロード（toStream 内にコピー：toStream.Position は末尾になる）
+	/// </summary>
+	/// <param name="request"></param>
+	/// <param name="toStream"></param>
+	/// <param name="totalSize">ダウンロード URL のファイル総サイズ</param>
+	/// <param name="progress"></param>
+	/// <returns>応答（破棄不要の模様）</returns>
+	private async Task<HttpResponseMessage> DownloadAsStreamCoreAsync(HttpRequestMessage request, Stream toStream, Int64 totalSize = 0, IProgress<Double>? progress = null)
 	{
-#if DEBUGz
-		String headers = String.Empty;
-		foreach (KeyValuePair<String, IEnumerable<String>> header in _httpClient.DefaultRequestHeaders)
+		return await Task.Run(() =>
 		{
-			headers += header.Key + " => " + String.Join(", ", header.Value) + "\n";
-		}
-		Debug.WriteLine("Headers\n" + headers);
+			// ヘッダーの確認
+			HttpResponseMessage response = _httpClient.Send(request, HttpCompletionOption.ResponseHeadersRead);
+			if (!response.IsSuccessStatusCode)
+			{
+				return response;
+			}
+
+			// ダウンロード
+			using Stream contentStream = response.Content.ReadAsStream();
+			Byte[] buffer = new Byte[BUFFER_SIZE];
+			Int32 bytesRead;
+			Int32 progressCount = 0;
+
+			// 進捗報告は基本 1% ごとだが、totalSize が大きい場合はもっと細かくする
+			Int32 progressInterval = Math.Clamp((Int32)(totalSize / (BUFFER_SIZE * 100)), PROGRESS_INTERVAL_MIN, PROGRESS_INTERVAL_MAX);
+			Log.Debug("DownloadAsStreamCoreAsync() totalSize: " + totalSize.ToString("#,0") + ", progressInterval: " + progressInterval.ToString("#,0"));
+#if DEBUG
+			Int32 reportCount = 0;
 #endif
-		HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-		using Stream responseStream = await response.Content.ReadAsStreamAsync();
-		responseStream.CopyTo(toStream);
-		return response;
+
+			while ((bytesRead = contentStream.Read(buffer, 0, buffer.Length)) > 0)
+			{
+				// 応答内容を書き込む（bytesRead はサーバーのその時の状態によって変動する）
+				toStream.Write(buffer, 0, bytesRead);
+
+				// 進捗報告
+				if (totalSize > 0 && progress != null)
+				{
+					progressCount++;
+					if (progressCount % progressInterval == 0)
+					{
+#if DEBUG
+						reportCount++;
+						Log.Debug("DownloadAsStreamCoreAsync() reportCount: " + reportCount + ", progress: " + toStream.Position.ToString("#,0"));
+#endif
+						progress.Report((Double)toStream.Position / totalSize);
+					}
+				}
+			}
+			progress?.Report(1.0d);
+			return response;
+		});
+	}
+
+	/// <summary>
+	/// ダウンロードするファイルの総サイズ
+	/// </summary>
+	/// <param name="url"></param>
+	/// <returns>取得できない場合は 0</returns>
+	private async Task<Int64> TotalSizeAsync(String url)
+	{
+		using HttpRequestMessage request = new(HttpMethod.Head, url);
+		AddHeaders(request, url);
+		using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+		if (!response.IsSuccessStatusCode || !response.Content.Headers.ContentLength.HasValue)
+		{
+			return 0;
+		}
+		return response.Content.Headers.ContentLength.Value;
 	}
 }
