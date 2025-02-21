@@ -35,8 +35,10 @@
 // (2.03) | 2022/01/10 (Mon) |   軽微なリファクタリング。
 // (2.04) | 2023/08/22 (Tue) |   軽微なリファクタリング。
 // (2.05) | 2025/02/20 (Thu) |   進捗報告できるようにした。
+// (2.06) | 2025/02/21 (Fri) |   レジュームできるようにした。
 // ============================================================================
 
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -137,10 +139,25 @@ public class Downloader
 	/// <param name="url"></param>
 	/// <param name="path"></param>
 	/// <returns></returns>
-	public async Task<HttpResponseMessage> DownloadAsFileAsync(String url, String path, IProgress<Double>? progress = null)
+	public async Task<HttpResponseMessage> DownloadAsFileAsync(String url, String path, IProgress<Double>? progress = null, Boolean resume = false)
 	{
-		using FileStream fileStream = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
-		HttpResponseMessage response = await DownloadAsStreamAsync(url, fileStream, progress);
+		FileMode fileMode = resume ? FileMode.Append : FileMode.Create;
+		using FileStream fileStream = new(path, fileMode, FileAccess.Write, FileShare.None);
+		HttpResponseMessage response = await DownloadAsStreamAsync(url, fileStream, progress, resume);
+
+		// 失敗の場合はファイルを削除
+		if (!response.IsSuccessStatusCode && fileStream.Length == 0)
+		{
+			fileStream.Close();
+			try
+			{
+				File.Delete(path);
+			}
+			catch (Exception)
+			{
+			}
+		}
+
 		return response;
 	}
 
@@ -148,21 +165,25 @@ public class Downloader
 	/// ダウンロード（toStream 内にコピー：toStream.Position は末尾になる）
 	/// </summary>
 	/// <param name="url"></param>
-	/// <param name="toStream"></param>
+	/// <param name="toStream">resume の場合は予め resume 位置（通常は末尾）にシークしておく必要がある</param>
 	/// <param name="progress">進捗は 0～1 で報告される</param>
 	/// <returns>応答（破棄不要の模様）</returns>
 	/// <exception cref="Exception">ドメインが間違っている等、サーバーに接続できない場合</exception>
-	public async Task<HttpResponseMessage> DownloadAsStreamAsync(String url, Stream toStream, IProgress<Double>? progress = null)
+	public async Task<HttpResponseMessage> DownloadAsStreamAsync(String url, Stream toStream, IProgress<Double>? progress = null, Boolean resume = false)
 	{
 		// 総サイズ
 		Int64 totalSize = await TotalSizeAsync(url);
+		if (resume && toStream.Position >= totalSize)
+		{
+			// レジューム位置がファイルサイズ以上の場合は何もしない
+			return new HttpResponseMessage(HttpStatusCode.OK);
+		}
 
 		// リクエスト
 		HttpRequestMessage request = new(HttpMethod.Get, url);
-		AddHeaders(request, url);
 
 		// ダウンロード
-		return await DownloadAsStreamCoreAsync(request, toStream, totalSize, progress);
+		return await DownloadAsStreamCoreAsync(url, request, toStream, totalSize, progress, resume);
 	}
 
 	/// <summary>
@@ -198,10 +219,9 @@ public class Downloader
 			{
 				Content = new FormUrlEncodedContent(post.Select(x => new KeyValuePair<String?, String?>(x.Key, x.Value)))
 			};
-			AddHeaders(postRequest, url);
 
 			// ダウンロード
-			return await DownloadAsStreamCoreAsync(postRequest, toStream);
+			return await DownloadAsStreamCoreAsync(url, postRequest, toStream);
 		}
 
 		using MultipartFormDataContent multipart = new();
@@ -234,10 +254,9 @@ public class Downloader
 		{
 			Content = multipart
 		};
-		AddHeaders(bothRequest, url);
 
 		// ダウンロード
-		return await DownloadAsStreamCoreAsync(bothRequest, toStream);
+		return await DownloadAsStreamCoreAsync(url, bothRequest, toStream);
 	}
 
 	/// <summary>
@@ -315,10 +334,22 @@ public class Downloader
 	/// <param name="totalSize">ダウンロード URL のファイル総サイズ</param>
 	/// <param name="progress"></param>
 	/// <returns>応答（破棄不要の模様）</returns>
-	private async Task<HttpResponseMessage> DownloadAsStreamCoreAsync(HttpRequestMessage request, Stream toStream, Int64 totalSize = 0, IProgress<Double>? progress = null)
+	private async Task<HttpResponseMessage> DownloadAsStreamCoreAsync(String url, HttpRequestMessage request, Stream toStream, Int64 totalSize = 0,
+		IProgress<Double>? progress = null, Boolean resume = false)
 	{
 		return await Task.Run(() =>
 		{
+			// ヘッダーの調整
+			AddHeaders(request, url);
+			if (resume)
+			{
+				if (toStream.Position > 0)
+				{
+					Log.Debug("DownloadAsStreamCoreAsync() レジューム位置: " + toStream.Position);
+					request.Headers.Range = new(toStream.Position, null);
+				}
+			}
+
 			// ヘッダーの確認
 			HttpResponseMessage response = _httpClient.Send(request, HttpCompletionOption.ResponseHeadersRead);
 			if (!response.IsSuccessStatusCode)
@@ -335,7 +366,7 @@ public class Downloader
 			// 進捗報告は基本 1% ごとだが、totalSize が大きい場合はもっと細かくする
 			Int32 progressInterval = Math.Clamp((Int32)(totalSize / (BUFFER_SIZE * 100)), PROGRESS_INTERVAL_MIN, PROGRESS_INTERVAL_MAX);
 			Log.Debug("DownloadAsStreamCoreAsync() totalSize: " + totalSize.ToString("#,0") + ", progressInterval: " + progressInterval.ToString("#,0"));
-#if DEBUG
+#if DEBUGz
 			Int32 reportCount = 0;
 #endif
 
@@ -350,7 +381,7 @@ public class Downloader
 					progressCount++;
 					if (progressCount % progressInterval == 0)
 					{
-#if DEBUG
+#if DEBUGz
 						reportCount++;
 						Log.Debug("DownloadAsStreamCoreAsync() reportCount: " + reportCount + ", progress: " + toStream.Position.ToString("#,0"));
 #endif
