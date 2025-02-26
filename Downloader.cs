@@ -36,6 +36,7 @@
 // (2.04) | 2023/08/22 (Tue) |   軽微なリファクタリング。
 // (2.05) | 2025/02/20 (Thu) |   進捗報告できるようにした。
 // (2.06) | 2025/02/21 (Fri) |   レジュームできるようにした。
+// (2.07) | 2025/02/26 (Wed) |   DownloadAsStreamAsync() のスキップ処理を改善。
 // ============================================================================
 
 using System.Net;
@@ -127,7 +128,7 @@ public class Downloader
 			}
 		}
 
-		ua += "rv:124.0) Gecko/20100101 Firefox/124.0";
+		ua += "rv:135.0) Gecko/20100101 Firefox/135.0";
 
 		return ua;
 	}
@@ -173,7 +174,7 @@ public class Downloader
 	{
 		// 総サイズ
 		Int64 totalSize = await TotalSizeAsync(url);
-		if (resume && toStream.Position >= totalSize)
+		if (resume && totalSize >= 0 && toStream.Position >= totalSize)
 		{
 			// レジューム位置がファイルサイズ以上の場合は何もしない
 			return new HttpResponseMessage(HttpStatusCode.OK);
@@ -334,7 +335,7 @@ public class Downloader
 	/// <param name="totalSize">ダウンロード URL のファイル総サイズ</param>
 	/// <param name="progress"></param>
 	/// <returns>応答（破棄不要の模様）</returns>
-	private async Task<HttpResponseMessage> DownloadAsStreamCoreAsync(String url, HttpRequestMessage request, Stream toStream, Int64 totalSize = 0,
+	private async Task<HttpResponseMessage> DownloadAsStreamCoreAsync(String url, HttpRequestMessage request, Stream toStream, Int64 totalSize = -1,
 		IProgress<Double>? progress = null, Boolean resume = false)
 	{
 		return await Task.Run(() =>
@@ -366,9 +367,6 @@ public class Downloader
 			// 進捗報告は基本 1% ごとだが、totalSize が大きい場合はもっと細かくする
 			Int32 progressInterval = Math.Clamp((Int32)(totalSize / (BUFFER_SIZE * 100)), PROGRESS_INTERVAL_MIN, PROGRESS_INTERVAL_MAX);
 			Log.Debug("DownloadAsStreamCoreAsync() totalSize: " + totalSize.ToString("#,0") + ", progressInterval: " + progressInterval.ToString("#,0"));
-#if DEBUGz
-			Int32 reportCount = 0;
-#endif
 
 			while ((bytesRead = contentStream.Read(buffer, 0, buffer.Length)) > 0)
 			{
@@ -381,13 +379,11 @@ public class Downloader
 					progressCount++;
 					if (progressCount % progressInterval == 0)
 					{
-#if DEBUGz
-						reportCount++;
-						Log.Debug("DownloadAsStreamCoreAsync() reportCount: " + reportCount + ", progress: " + toStream.Position.ToString("#,0"));
-#endif
 						progress.Report((Double)toStream.Position / totalSize);
 					}
 				}
+
+				CancellationToken.ThrowIfCancellationRequested();
 			}
 			progress?.Report(1.0d);
 			return response;
@@ -398,7 +394,7 @@ public class Downloader
 	/// ダウンロードするファイルの総サイズ
 	/// </summary>
 	/// <param name="url"></param>
-	/// <returns>取得できない場合は 0</returns>
+	/// <returns>取得できない場合は -1</returns>
 	private async Task<Int64> TotalSizeAsync(String url)
 	{
 		using HttpRequestMessage request = new(HttpMethod.Head, url);
@@ -406,7 +402,7 @@ public class Downloader
 		using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 		if (!response.IsSuccessStatusCode || !response.Content.Headers.ContentLength.HasValue)
 		{
-			return 0;
+			return -1;
 		}
 		return response.Content.Headers.ContentLength.Value;
 	}
