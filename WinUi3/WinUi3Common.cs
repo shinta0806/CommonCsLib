@@ -112,7 +112,8 @@ internal class WinUi3Common
 		namesEnumerator.MoveNext();
 		foreach (String ext in exts)
 		{
-			fileSavePicker.FileTypeChoices.Add(namesEnumerator.Current, [ext]);
+			// Windows App SDK 1.6.5 現在、Add() の第二引数をコレクション式 [] で初期化すると実行時例外が発生するため、コレクション式は使わない
+			fileSavePicker.FileTypeChoices.Add(namesEnumerator.Current, new List<String>([ext]));
 			namesEnumerator.MoveNext();
 		}
 	}

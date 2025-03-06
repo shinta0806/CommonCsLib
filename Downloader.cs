@@ -140,11 +140,11 @@ public class Downloader
 	/// <param name="url"></param>
 	/// <param name="path"></param>
 	/// <returns></returns>
-	public async Task<HttpResponseMessage> DownloadAsFileAsync(String url, String path, IProgress<Double>? progress = null, Boolean resume = false)
+	public async Task<HttpResponseMessage> DownloadAsFileAsync(String url, String path, Int64 totalSize = -1, IProgress<Double>? progress = null, Boolean resume = false)
 	{
 		FileMode fileMode = resume ? FileMode.Append : FileMode.Create;
 		using FileStream fileStream = new(path, fileMode, FileAccess.Write, FileShare.None);
-		HttpResponseMessage response = await DownloadAsStreamAsync(url, fileStream, progress, resume);
+		HttpResponseMessage response = await DownloadAsStreamAsync(url, fileStream, totalSize, progress, resume);
 
 		// 失敗の場合はファイルを削除
 		if (!response.IsSuccessStatusCode && fileStream.Length == 0)
@@ -170,10 +170,13 @@ public class Downloader
 	/// <param name="progress">進捗は 0～1 で報告される</param>
 	/// <returns>応答（破棄不要の模様）</returns>
 	/// <exception cref="Exception">ドメインが間違っている等、サーバーに接続できない場合</exception>
-	public async Task<HttpResponseMessage> DownloadAsStreamAsync(String url, Stream toStream, IProgress<Double>? progress = null, Boolean resume = false)
+	public async Task<HttpResponseMessage> DownloadAsStreamAsync(String url, Stream toStream, Int64 totalSize = -1, IProgress<Double>? progress = null, Boolean resume = false)
 	{
 		// 総サイズ
-		Int64 totalSize = await TotalSizeAsync(url);
+		if (totalSize < 0)
+		{
+			totalSize = await TotalSizeAsync(url);
+		}
 		if (resume && totalSize >= 0 && toStream.Position >= totalSize)
 		{
 			// レジューム位置がファイルサイズ以上の場合は何もしない
@@ -193,11 +196,11 @@ public class Downloader
 	/// <param name="url"></param>
 	/// <param name="encoding"></param>
 	/// <returns></returns>
-	public async Task<(HttpResponseMessage, String)> DownloadAsStringAsync(String url, Encoding encoding, IProgress<Double>? progress = null)
+	public async Task<(HttpResponseMessage, String)> DownloadAsStringAsync(String url, Encoding encoding, Int64 totalSize = -1, IProgress<Double>? progress = null)
 	{
 		// ダウンロード
 		using MemoryStream memStream = new();
-		HttpResponseMessage response = await DownloadAsStreamAsync(url, memStream, progress);
+		HttpResponseMessage response = await DownloadAsStreamAsync(url, memStream, totalSize, progress);
 
 		// 変換して返す
 		return (response, encoding.GetString(memStream.ToArray()));
@@ -276,6 +279,23 @@ public class Downloader
 
 		// 変換して返す
 		return (response, encoding.GetString(memStream.ToArray()));
+	}
+
+	/// <summary>
+	/// ダウンロードするファイルの総サイズ
+	/// </summary>
+	/// <param name="url"></param>
+	/// <returns>取得できない場合は -1</returns>
+	public async Task<Int64> TotalSizeAsync(String url)
+	{
+		using HttpRequestMessage request = new(HttpMethod.Head, url);
+		AddHeaders(request, url);
+		using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+		if (!response.IsSuccessStatusCode || !response.Content.Headers.ContentLength.HasValue)
+		{
+			return -1;
+		}
+		return response.Content.Headers.ContentLength.Value;
 	}
 
 	// ====================================================================
@@ -388,22 +408,5 @@ public class Downloader
 			progress?.Report(1.0d);
 			return response;
 		});
-	}
-
-	/// <summary>
-	/// ダウンロードするファイルの総サイズ
-	/// </summary>
-	/// <param name="url"></param>
-	/// <returns>取得できない場合は -1</returns>
-	private async Task<Int64> TotalSizeAsync(String url)
-	{
-		using HttpRequestMessage request = new(HttpMethod.Head, url);
-		AddHeaders(request, url);
-		using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-		if (!response.IsSuccessStatusCode || !response.Content.Headers.ContentLength.HasValue)
-		{
-			return -1;
-		}
-		return response.Content.Headers.ContentLength.Value;
 	}
 }
