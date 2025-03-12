@@ -288,9 +288,11 @@ old
 !Wpf/Behaviors/*.cs
 !Wpf/ViewModels/*.cs
 
+!CloneableObservableObject.cs
 !CsvManager.cs
 !DatabaseCommon.cs
 !Downloader.cs
+!EnumToInt32Converter.cs
 !JsonManager.cs
 !JulianDay.cs
 !PropertyRecord.cs
