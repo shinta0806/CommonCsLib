@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // RSS を解析・管理するクラス
-// Copyright (C) 2022-2023 by SHINTA
+// Copyright (C) 2022-2025 by SHINTA
 // 
 // ============================================================================
 
@@ -23,9 +23,11 @@
 //  1.00  | 2022/11/19 (Sat) | ファーストバージョン。
 // (1.01) | 2023/08/16 (Wed) |   既読アイテム保持の最大数のデフォルト値を 20 に変更。
 //  1.10  | 2023/08/19 (Sat) | 保存を JSON 形式に変更。
+//  1.20  | 2025/03/19 (Wed) | AOT 対応。
 // ============================================================================
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Xml;
 
 namespace Shinta.WinUi3;
@@ -194,7 +196,13 @@ internal class RssManager
 	/// </summary>
 	public void Load()
 	{
+#if !USE_AOT
+		// AOT 非対応版
 		RssSettings rssSettings = _jsonManager.Load<RssSettings>(_settingsPath, false, _jsonSerializerOptions);
+#else
+		// AOT 対応版
+		RssSettings rssSettings = _jsonManager.LoadAot(_settingsPath, false, RmJsonSerializerContext.Default.RssSettings);
+#endif
 		PastDownloadDate = rssSettings.PastDownloadDate;
 		PastRssGuids = rssSettings.PastRssGuids;
 	}
@@ -263,7 +271,13 @@ internal class RssManager
 			PastDownloadDate = PastDownloadDate,
 			PastRssGuids = PastRssGuids
 		};
+#if !USE_AOT
+		// AOT 非対応版
 		_jsonManager.Save(rssSettings, _settingsPath, false, _jsonSerializerOptions);
+#else
+		// AOT 対応版
+		_jsonManager.SaveAot(rssSettings, _settingsPath, false, RmJsonSerializerContext.Default.RssSettings);
+#endif
 	}
 
 	/// <summary>
@@ -512,6 +526,18 @@ internal class RssManager
 			PastRssGuids.RemoveRange(PastRssGuidsCapacity, PastRssGuids.Count - PastRssGuidsCapacity);
 		}
 	}
+}
+
+// ========================================================================
+// 
+// RssSettings を AOT 下で JSON 化するためのクラス
+// 
+// ========================================================================
+
+[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(RssSettings))]
+internal partial class RmJsonSerializerContext : JsonSerializerContext
+{
 }
 
 // ========================================================================
