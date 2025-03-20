@@ -123,8 +123,8 @@ internal partial class UtauUtils
 		}
 
 		// プレフィックス・サフィックスを取得
-		List<String> prefixes = new();
-		List<String> suffixes = new();
+		List<String> prefixes = [];
+		List<String> suffixes = [];
 		PrefixMap prefixMap = new();
 		prefixMap.SetTo(Path.GetDirectoryName(otoIniPath) + "\\" + FILE_NAME_PREFIX_MAP);
 		foreach (String value in prefixMap.Prefixes.Values)
@@ -145,7 +145,7 @@ internal partial class UtauUtils
 		suffixes.Sort();
 
 		// プレフィックス・サフィックス抜きの原音設定
-		List<String> stripAliases = new();
+		List<String> stripAliases = [];
 		foreach (KeyValuePair<String, GenonSettings> kvp in otoIni.GenonSettings)
 		{
 			// プレフィックス除外

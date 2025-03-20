@@ -144,7 +144,7 @@ internal class RssManager
 	/// <returns></returns>
 	public List<RssItem> GetAllItems()
 	{
-		List<RssItem> allItems = new(_latestRssItems);
+		List<RssItem> allItems = [.. _latestRssItems];
 		return allItems;
 	}
 
