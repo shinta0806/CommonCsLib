@@ -501,7 +501,7 @@ public partial class Common
 	// --------------------------------------------------------------------
 	public static SortedDictionary<String, String> LoadKeyAndValue(String iniPath)
 	{
-		SortedDictionary<String, String> keyValuePairs = new();
+		SortedDictionary<String, String> keyValuePairs = [];
 		String[] lines = File.ReadAllLines(iniPath, Encoding.GetEncoding(Common.CODE_PAGE_SHIFT_JIS));
 		foreach (String line in lines)
 		{
@@ -663,7 +663,7 @@ public partial class Common
 		specifyProcess ??= Process.GetCurrentProcess();
 
 		Process[] allProcesses = Process.GetProcessesByName(specifyProcess.ProcessName);
-		List<Process> sameNameProcesses = new();
+		List<Process> sameNameProcesses = [];
 
 		foreach (Process process in allProcesses)
 		{
@@ -681,7 +681,7 @@ public partial class Common
 	// --------------------------------------------------------------------
 	public static List<String> SelectFiles(String[] pathes)
 	{
-		List<String> files = new();
+		List<String> files = [];
 		foreach (String path in pathes)
 		{
 			if (File.Exists(path))
@@ -698,7 +698,7 @@ public partial class Common
 	// --------------------------------------------------------------------
 	public static List<String> SelectFiles(String[] pathes, IEnumerable<String> exts)
 	{
-		List<String> files = new();
+		List<String> files = [];
 		foreach (String path in pathes)
 		{
 			if (!File.Exists(path))
@@ -745,7 +745,7 @@ public partial class Common
 	// --------------------------------------------------------------------
 	public static List<String> SelectFolders(String[] pathes)
 	{
-		List<String> folders = new();
+		List<String> folders = [];
 		foreach (String path in pathes)
 		{
 			if (Directory.Exists(path))

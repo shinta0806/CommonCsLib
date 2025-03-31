@@ -114,8 +114,8 @@ internal class MonitorManager
 	// --------------------------------------------------------------------
 	private void GetMonitorRectsCore()
 	{
-		_monitorRawRects = new();
-		_monitorHandles = new();
+		_monitorRawRects = [];
+		_monitorHandles = [];
 		WindowsApi.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, GetMonitorRectsCallback, IntPtr.Zero);
 		Debug.Assert(_monitorRawRects.Count == _monitorHandles.Count, "GetMonitorRectsCore() bad list counts");
 	}

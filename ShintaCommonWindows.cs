@@ -99,16 +99,6 @@ public class CommonWindows
 		}
 	}
 
-#if false
-	/// <summary>
-	/// ウィンドウがスクリーンから完全にはみ出している場合はスクリーン内に移動する
-	/// WpfCommon に移管済
-	/// </summary>
-	/// <param name="windowRect"></param>
-	/// <returns></returns>
-	public static Rect AdjustWindowRect(Rect windowRect);
-#endif
-
 	/// <summary>
 	/// ZoneID を削除
 	/// </summary>

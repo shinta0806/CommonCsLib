@@ -7,6 +7,7 @@
 // ----------------------------------------------------------------------------
 // 以下のパッケージがインストールされている前提
 //   CsWin32
+//     Comdlg32.*
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -21,6 +22,8 @@
 // (1.41) | 2023/11/14 (Tue) |   AddVeil() を改善。
 //  1.50  | 2024/06/25 (Tue) | IsHelpButtonEnabled を作成。
 //  1.60  | 2024/06/25 (Tue) | HelpClickedCommand を作成。
+//  1.70  | 2025/03/31 (Mon) | ShowOpenFileDialogMulti() を作成。
+//  1.80  | 2025/03/31 (Mon) | ShowOpenFileDialog() を作成。
 // ============================================================================
 
 using CommunityToolkit.Mvvm.Input;
@@ -32,13 +35,21 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
 
+using System.Runtime.InteropServices;
+
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI.Popups;
 using Windows.Win32;
 using Windows.Win32.Foundation;
-using Windows.Win32.UI.Shell;
 using Windows.Win32.UI.WindowsAndMessaging;
+using WinRT.Interop;
+
+using System.Text;
+
+#if USE_UNSAFE
+using Windows.Win32.UI.Controls.Dialogs;
+#endif
 
 namespace Shinta.WinUi3.Views;
 
@@ -160,7 +171,7 @@ public class WindowEx2 : WindowEx
 	{
 		MonitorManager monitorManager = new();
 		List<RECT> monitorRectsOrig = monitorManager.GetRawMonitorRects();
-		List<Rect> monitorRects = new();
+		List<Rect> monitorRects = [];
 		foreach (RECT rect in monitorRectsOrig)
 		{
 			monitorRects.Add(new Rect(rect.X, rect.Y, rect.Width, rect.Height));
@@ -391,6 +402,42 @@ public class WindowEx2 : WindowEx
 		Debug.Assert(command != null, "ShowLogMessageDialogAsync() command is null");
 		return command;
 	}
+
+#if USE_UNSAFE
+	/// <summary>
+	/// Win32 API ファイル選択ダイアログを開く（WinUI 3 のは管理者権限で開けないので）
+	/// </summary>
+	/// <param name="filter">"|" で説明と拡張子パターンを区切ったペアを連結、パターンにスペース不可 
+	/// "すべてのファイル (*.*)|*.*|動画ファイル (*.mp4;*.wmv)|*.mp4;*.wmv|テキストファイル (*.txt)|*.txt"</param>
+	/// <param name="filterIndex">初期選択、および、ユーザーが選択したフィルターのインデックス（0 オリジン）</param>
+	/// <param name="initialPath">初期選択されるファイルのパス</param>
+	/// <param name="flags">OPEN_FILENAME_FLAGS</param>
+	/// <returns>キャンセルされた場合は null</returns>
+	public unsafe String? ShowOpenFileDialog(String filter, ref Int32 filterIndex, String? initialPath = null, OPEN_FILENAME_FLAGS flags = 0)
+	{
+		String[]? result = ShowOpenFileDialogCore(filter, ref filterIndex, initialPath, flags);
+		if (result == null)
+		{
+			return null;
+		}
+		return result[0];
+	}
+
+	/// <summary>
+	/// Win32 API ファイル選択ダイアログを開く（WinUI 3 のは管理者権限で開けないので）
+	/// </summary>
+	/// <param name="filter">"|" で説明と拡張子パターンを区切ったペアを連結、パターンにスペース不可 
+	/// "すべてのファイル (*.*)|*.*|動画ファイル (*.mp4;*.wmv)|*.mp4;*.wmv|テキストファイル (*.txt)|*.txt"</param>
+	/// <param name="filterIndex">初期選択、および、ユーザーが選択したフィルターのインデックス（0 オリジン）</param>
+	/// <param name="initialPath">初期選択されるファイルのパス</param>
+	/// <param name="flags">OPEN_FILENAME_FLAGS</param>
+	/// <returns>キャンセルされた場合は null</returns>
+	public unsafe String[]? ShowOpenFileDialogMulti(String filter, ref Int32 filterIndex, String? initialPath = null, OPEN_FILENAME_FLAGS flags = 0)
+	{
+		flags |= OPEN_FILENAME_FLAGS.OFN_ALLOWMULTISELECT;
+		return ShowOpenFileDialogCore(filter, ref filterIndex, initialPath, flags);
+	}
+#endif
 
 	// ====================================================================
 	// public 関数
@@ -657,6 +704,121 @@ public class WindowEx2 : WindowEx
 			// 未実装
 		}
 	}
+
+#if USE_UNSAFE
+	/// <summary>
+	/// Win32 API ファイル選択ダイアログを開くコア
+	/// </summary>
+	/// <param name="filter"></param>
+	/// <param name="filterIndex"></param>
+	/// <param name="initialPath"></param>
+	/// <param name="flags"></param>
+	/// <returns></returns>
+	private unsafe String[]? ShowOpenFileDialogCore(String filter, ref Int32 filterIndex, String? initialPath, OPEN_FILENAME_FLAGS flags)
+	{
+		char* filterPtr = null;
+		char* pathPtr = null;
+
+		// finally 用の try
+		try
+		{
+			// OPENFILENAMEW の準備
+			// https://learn.microsoft.com/ja-jp/windows/win32/api/commdlg/ns-commdlg-openfilenamew
+
+			// lStructSize: アンマネージドの構造体サイズ
+			UInt32 structSize = (UInt32)Marshal.SizeOf<OPENFILENAMEW>();
+
+			// hwndOwner: 指定しないとモードレスになるので指定する
+			nint hWnd = WindowNative.GetWindowHandle(this);
+
+			// hInstance: テンプレートを使用しない
+
+			// lpstrFilter: ペアの区切りは null Char 1 文字、フィルターの末尾は null Char 2 文字
+			filter = (filter + "||").Replace('|', (Char)0);
+			Byte[] filterBytes = Encoding.Unicode.GetBytes(filter);
+			filterPtr = (char*)NativeMemory.Alloc((UInt32)filterBytes.Length);
+			Marshal.Copy(filterBytes, 0, (nint)filterPtr, filterBytes.Length);
+
+			// lpstrCustomFilter: ユーザー定義フィルターを使用しない
+
+			// nMaxCustFilter: ユーザー定義フィルターを使用しない
+
+			// nFilterIndex: 本関数は 0 オリジンだが、Win32 API は 1 オリジン
+			filterIndex++;
+
+			// lpstrFile: 初期パス兼ユーザー選択結果
+			// バッファーは最小なら MAX_PATH * 2（Unicode）
+			// しかし拡張パスは 32,767 * 2 だし、複数ファイル選択の場合もあるため、多めに取っておく
+			UInt32 pathBufSize = 80 * 1024;
+			pathPtr = (char*)NativeMemory.AllocZeroed(pathBufSize);
+			if (!String.IsNullOrEmpty(initialPath))
+			{
+				Byte[] initialPathBytes = Encoding.Unicode.GetBytes(initialPath);
+				Marshal.Copy(initialPathBytes, 0, (nint)pathPtr, initialPathBytes.Length);
+			}
+
+			// nMaxFile: pathBufSize
+
+			// lpstrFileTitle: lpstrFile で用は足りる
+
+			// nMaxFileTitle: lpstrFile で用は足りる
+
+			// lpstrInitialDir: lpstrFile で用は足りる
+
+			// lpstrTitle: ダイアログタイトルは使用しない
+
+			// Flags: OFN_EXPLORER 強制付与
+			// OFN_ALLOWMULTISELECT の時は OFN_EXPLORER がないと見た目が古いだけではなく lpstrFile の扱い方も変わってしまう
+			// OFN_ALLOWMULTISELECT が指定されていない場合は OFN_ALLOWMULTISELECT があってもなくても影響ない
+			flags |= OPEN_FILENAME_FLAGS.OFN_EXPLORER;
+
+			OPENFILENAMEW openFileNameW = new()
+			{
+				lStructSize = structSize,
+				hwndOwner = new(hWnd),
+				lpstrFilter = new(filterPtr),
+				nFilterIndex = (UInt32)filterIndex,
+				lpstrFile = new(pathPtr),
+				nMaxFile = pathBufSize,
+				Flags = flags,
+			};
+
+			// https://learn.microsoft.com/ja-jp/windows/win32/api/commdlg/nf-commdlg-getopenfilenamew
+			BOOL result = PInvoke.GetOpenFileName(ref openFileNameW);
+			if (!result)
+			{
+				return null;
+			}
+
+			// 選択されたフィルター（1 オリジン → 0 オリジン）
+			filterIndex = (Int32)openFileNameW.nFilterIndex - 1;
+
+			// 選択ファイルが 1 つの場合、firstPath にフルパスが入る
+			// 選択ファイルが 2 つ以上の場合、firstPath にフォルダーが入り、null Char 0 以降にパスの無いファイル名が入る（末尾はダブル null Char 0）
+			String firstPath = new(pathPtr);
+			if (!Directory.Exists(firstPath))
+			{
+				// フォルダーではない場合はすべて単独ファイル扱い
+				return [firstPath];
+			}
+
+			ReadOnlySpan<Char> spanChar = new ReadOnlySpan<Char>(pathPtr, (Int32)pathBufSize / sizeof(Char)).Slice(openFileNameW.nFileOffset);
+			Int32 endPos = spanChar.IndexOf("\0\0".AsSpan());
+			String[] fileNames = new String(spanChar.Slice(0, endPos)).Split('\0');
+			String[] pathes = new String[fileNames.Length];
+			for (Int32 i = 0; i < fileNames.Length; i++)
+			{
+				pathes[i] = firstPath + "\\" + fileNames[i];
+			}
+			return pathes;
+		}
+		finally
+		{
+			NativeMemory.Free(pathPtr);
+			NativeMemory.Free(filterPtr);
+		}
+	}
+#endif
 
 	/// <summary>
 	/// ウィンドウメッセージ処理

@@ -366,7 +366,7 @@ public class Downloader
 			{
 				if (toStream.Position > 0)
 				{
-					Log.Debug("DownloadAsStreamCoreAsync() レジューム位置: " + toStream.Position);
+					//Log.Debug("DownloadAsStreamCoreAsync() レジューム位置: " + toStream.Position);
 					request.Headers.Range = new(toStream.Position, null);
 				}
 			}
@@ -386,7 +386,7 @@ public class Downloader
 
 			// 進捗報告は基本 1% ごとだが、totalSize が大きい場合はもっと細かくする
 			Int32 progressInterval = Math.Clamp((Int32)(totalSize / (BUFFER_SIZE * 100)), PROGRESS_INTERVAL_MIN, PROGRESS_INTERVAL_MAX);
-			Log.Debug("DownloadAsStreamCoreAsync() totalSize: " + totalSize.ToString("#,0") + ", progressInterval: " + progressInterval.ToString("#,0"));
+			//Log.Debug("DownloadAsStreamCoreAsync() totalSize: " + totalSize.ToString("#,0") + ", progressInterval: " + progressInterval.ToString("#,0"));
 
 			while ((bytesRead = contentStream.Read(buffer, 0, buffer.Length)) > 0)
 			{
