@@ -6,8 +6,15 @@
 
 // ----------------------------------------------------------------------------
 // 以下のパッケージがインストールされている前提
+//   Serilog
 //   CsWin32
-//     Comdlg32.*
+//     comInterop: preserveSigMethods
+//     Ole32
+//     Shell32
+//     FileOpenDialog
+//     FileSaveDialog
+//     IFileDialog
+//     IFileOpenDialog
 // ----------------------------------------------------------------------------
 
 // ============================================================================
@@ -26,6 +33,9 @@
 //  1.80  | 2025/03/31 (Mon) | ShowOpenFileDialog() を作成。
 //  1.90  | 2025/03/31 (Mon) | ShowSaveFileDialogMulti() を作成。
 //  2.00  | 2025/03/31 (Mon) | ShowSaveFileDialog() を作成。
+//  2.10  | 2025/04/02 (Wed) | ShowFileOpenDialogMulti() を作成し、ShowOpenFileDialogMulti() を廃止。
+//  2.20  | 2025/04/02 (Wed) | ShowFileOpenDialog() を作成し、ShowOpenFileDialog() を廃止。
+//  2.30  | 2025/04/02 (Wed) | ShowFileSaveDialog() を作成し、ShowSaveFileDialog() および ShowSaveFileDialogMulti() を廃止。
 // ============================================================================
 
 using CommunityToolkit.Mvvm.Input;
@@ -45,12 +55,13 @@ using Windows.UI.Popups;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
+
 using WinRT.Interop;
 
-using System.Text;
-
 #if USE_UNSAFE
-using Windows.Win32.UI.Controls.Dialogs;
+using Windows.Win32.System.Com;
+using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.Shell.Common;
 #endif
 
 namespace Shinta.WinUi3.Views;
@@ -349,6 +360,59 @@ public class WindowEx2 : WindowEx
 		return command;
 	}
 
+#if USE_UNSAFE
+	public String? ShowFileOpenDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
+	{
+		String[]? result = ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath);
+		if (result == null)
+		{
+			return null;
+		}
+		return result[0];
+	}
+
+	public String[]? ShowFileOpenDialogMulti(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
+	{
+		options |= FILEOPENDIALOGOPTIONS.FOS_ALLOWMULTISELECT;
+		return ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath);
+	}
+
+	public unsafe String? ShowFileSaveDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
+	{
+		IFileDialog* dialog = null;
+
+		// finally 用の try
+		try
+		{
+			// ダイアログ生成
+			HRESULT result = PInvoke.CoCreateInstance(typeof(FileSaveDialog).GUID, null, CLSCTX.CLSCTX_INPROC_SERVER, out dialog);
+			result.ThrowOnFailure();
+
+			// 表示
+			if (!ShowFileDialogCore(dialog, filter, ref filterIndex, options, initialPath))
+			{
+				return null;
+			}
+
+			// 結果取得
+			IShellItem* iShellResult;
+			result = dialog->GetResult(&iShellResult);
+			if (result.Failed)
+			{
+				return null;
+			}
+			return ShellItemToPath(iShellResult, filter, filterIndex);
+		}
+		finally
+		{
+			if (dialog != null)
+			{
+				dialog->Release();
+			}
+		}
+	}
+#endif
+
 	/// <summary>
 	/// ログの記録と表示（ContentDialog 版）
 	/// UI スレッドのみから実行可能
@@ -405,7 +469,7 @@ public class WindowEx2 : WindowEx
 		return command;
 	}
 
-#if USE_UNSAFE
+#if USE_UNSAFEz
 	/// <summary>
 	/// Win32 API ファイル選択ダイアログを開く（WinUI 3 のは管理者権限で開けないので）
 	/// </summary>
@@ -596,6 +660,20 @@ public class WindowEx2 : WindowEx
 	}
 
 #if USE_UNSAFE
+	/// <summary>
+	/// 背後バッファが持続する PCWSTR を作成
+	/// </summary>
+	/// <param name="str"></param>
+	/// <returns></returns>
+	private unsafe (PCWSTR, nint) CreateCoMemPcwstr(String str)
+	{
+		nint bufPtr = Marshal.StringToCoTaskMemUni(str);
+		PCWSTR pcwstr = new((Char*)bufPtr);
+		return (pcwstr, bufPtr);
+	}
+#endif
+
+#if USE_UNSAFEz
 	private unsafe OPENFILENAMEW CreateOpenFileNameW(String filter, Int32 filterIndex, OPEN_FILENAME_FLAGS flags, String? initialPath,
 		ref char* filterPtr, ref char* pathPtr)
 	{
@@ -759,7 +837,7 @@ public class WindowEx2 : WindowEx
 		_dialogEvent.Set();
 	}
 
-#if USE_UNSAFE
+#if USE_UNSAFEz
 	private unsafe String[] FileDialogPathes(ref Int32 filterIndex, char* pathPtr, OPENFILENAMEW openFileNameW)
 	{
 		// 選択されたフィルター（1 オリジン → 0 オリジン）
@@ -844,6 +922,213 @@ public class WindowEx2 : WindowEx
 	}
 
 #if USE_UNSAFE
+	/// <summary>
+	/// IShellItem からパスを取得
+	/// </summary>
+	/// <param name="iShellResult"></param>
+	/// <returns></returns>
+	private unsafe String? ShellItemToPath(IShellItem* iShellResult, String filter, Int32 filterIndex)
+	{
+		PWSTR pathPwstr;
+		HRESULT result = iShellResult->GetDisplayName(SIGDN.SIGDN_FILESYSPATH, &pathPwstr);
+		if (result.Failed)
+		{
+			return null;
+		}
+		String path = pathPwstr.ToString();
+		Marshal.FreeCoTaskMem((nint)pathPwstr.Value);
+
+		// 拡張子が入力されておらず、指定ファイルが存在しない場合は、拡張子を付与
+		// FOS_STRICTFILETYPES は動作していないように見える
+		// フォルダーの場合は存在しないがフィルターもないはずなので該当しない
+		(String[] filters, Boolean checkFilter) = ShowFileDialogCheckFilter(filter);
+		if (String.IsNullOrEmpty(Path.GetExtension(path)) && !File.Exists(path) && checkFilter)
+		{
+			if (filterIndex < filters.Length / 2)
+			{
+				String ext = Path.GetExtension(filters[filterIndex * 2 + 1].Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)[0]);
+				path = Path.ChangeExtension(path, ext);
+			}
+		}
+
+		return path;
+	}
+
+	private (String[], Boolean) ShowFileDialogCheckFilter(String filter)
+	{
+		String[] filters = filter.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+		Boolean check = filters.Length > 0 && filters.Length % 2 == 0;
+		return (filters, check);
+	}
+
+	private unsafe Boolean ShowFileDialogCore(IFileDialog* fileDialog, String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath)
+	{
+		// IShellItem.GetDisplayName() が CoTaskMem なのでみんなそれに合わせる
+		List<nint> coTaskMemories = new();
+
+		// finally 用の try
+		try
+		{
+			// オプション
+			HRESULT result;
+			if ((options & ~(FILEOPENDIALOGOPTIONS.FOS_ALLOWMULTISELECT | FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS)) == 0)
+			{
+				// FOS_ALLOWMULTISELECT, FOS_PICKFOLDERS のみ指定の場合は、既定のオプションを生かす
+				result = fileDialog->GetOptions(out FILEOPENDIALOGOPTIONS defaultOptions);
+				if (result.Succeeded)
+				{
+					options |= defaultOptions;
+				}
+			}
+			result = fileDialog->SetOptions(options);
+			if (result.Failed)
+			{
+				Log.Error("ShowFileDialogCore() SetOptions: " + options.ToString());
+			}
+
+			// フィルター
+			(String[] filters, Boolean checkFilter) = ShowFileDialogCheckFilter(filter);
+			if (checkFilter)
+			{
+				Int32 numFilters = filters.Length / 2;
+				// 安全のためより大きい可能性のある Marshal.SizeOf() にしておくが、実際は恐らく sizeof() で大丈夫
+				nint specs = Marshal.AllocCoTaskMem(Marshal.SizeOf<COMDLG_FILTERSPEC>() * numFilters);
+				ReadOnlySpan<COMDLG_FILTERSPEC> specsSpan = new((void*)specs, numFilters);
+				coTaskMemories.Add(specs);
+				for (Int32 i = 0; i < numFilters; i++)
+				{
+					(PCWSTR namePcwstr, nint namePtr) = CreateCoMemPcwstr(filters[i * 2]);
+					coTaskMemories.Add(namePtr);
+					(PCWSTR specPcwstr, nint specPtr) = CreateCoMemPcwstr(filters[i * 2 + 1]);
+					coTaskMemories.Add(specPtr);
+					COMDLG_FILTERSPEC spec = new() { pszName = namePcwstr, pszSpec = specPcwstr };
+					fixed (void* specsSpanPtr = specsSpan.Slice(i))
+					{
+						Marshal.StructureToPtr(spec, (nint)specsSpanPtr, false);
+					}
+				}
+				result = fileDialog->SetFileTypes(specsSpan);
+				if (result.Failed)
+				{
+					Log.Error("ShowFileDialogCore() SetFileTypes: " + filter);
+				}
+
+				// 本関数は 0 オリジンだが openDialog は 1 オリジン
+				fileDialog->SetFileTypeIndex((UInt32)filterIndex + 1);
+			}
+
+			// 初期ファイル・フォルダー
+			if (!String.IsNullOrEmpty(initialPath))
+			{
+				void* iShellInitial;
+				if (Directory.Exists(initialPath))
+				{
+					// フォルダーのみ指定
+					result = PInvoke.SHCreateItemFromParsingName(initialPath, null, typeof(IShellItem).GUID, out iShellInitial);
+					if (result.Succeeded)
+					{
+						fileDialog->SetFolder((IShellItem*)iShellInitial);
+					}
+				}
+				else
+				{
+					// フォルダーとファイルを指定
+					String? folderPath = Path.GetDirectoryName(initialPath);
+					if (Directory.Exists(folderPath))
+					{
+						result = PInvoke.SHCreateItemFromParsingName(folderPath, null, typeof(IShellItem).GUID, out iShellInitial);
+						if (result.Succeeded)
+						{
+							fileDialog->SetFolder((IShellItem*)iShellInitial);
+						}
+					}
+					fileDialog->SetFileName(Path.GetFileName(initialPath));
+				}
+			}
+
+			// ダイアログを表示
+			nint hWnd = WindowNative.GetWindowHandle(this);
+			result = fileDialog->Show(new HWND(hWnd));
+			if (result.Failed)
+			{
+				return false;
+			}
+
+			// フィルターインデックス書き戻し
+			result = fileDialog->GetFileTypeIndex(out UInt32 filterType);
+			if (result.Succeeded)
+			{
+				filterIndex = (Int32)filterType - 1;
+			}
+			return true;
+		}
+		finally
+		{
+			foreach (nint ptr in coTaskMemories)
+			{
+				Marshal.FreeCoTaskMem(ptr);
+			}
+		}
+	}
+
+	private unsafe String[]? ShowFileOpenDialogCore(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath)
+	{
+		IFileOpenDialog* openDialog = null;
+
+		// finally 用の try
+		try
+		{
+			// ダイアログ生成
+			HRESULT result = PInvoke.CoCreateInstance(typeof(FileOpenDialog).GUID, null, CLSCTX.CLSCTX_INPROC_SERVER, out openDialog);
+			result.ThrowOnFailure();
+
+			// 表示
+			if (!ShowFileDialogCore((IFileDialog*)openDialog, filter, ref filterIndex, options, initialPath))
+			{
+				return null;
+			}
+
+			// 結果取得
+			IShellItemArray* iShellArray;
+			result = openDialog->GetResults(&iShellArray);
+			if (result.Failed)
+			{
+				return null;
+			}
+			result = iShellArray->GetCount(out UInt32 numPathes);
+			if (result.Failed)
+			{
+				return null;
+			}
+			String[] pathes = new String[numPathes];
+			for (UInt32 i = 0; i < numPathes; i++)
+			{
+				IShellItem* iShellResult;
+				result = iShellArray->GetItemAt(i, &iShellResult);
+				if (result.Failed)
+				{
+					continue;
+				}
+				String? path = ShellItemToPath(iShellResult, filter, filterIndex);
+				if (String.IsNullOrEmpty(path))
+				{
+					continue;
+				}
+				pathes[i] = path;
+			}
+			return pathes;
+		}
+		finally
+		{
+			if (openDialog != null)
+			{
+				openDialog->Release();
+			}
+		}
+	}
+#endif
+
+#if USE_UNSAFEz
 	/// <summary>
 	/// Win32 API ファイル選択ダイアログを開くコア
 	/// </summary>
