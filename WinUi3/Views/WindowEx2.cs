@@ -57,6 +57,7 @@ using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 using WinRT.Interop;
+using System.Runtime.CompilerServices;
 
 #if USE_UNSAFE
 using Windows.Win32.System.Com;
@@ -79,6 +80,11 @@ public class WindowEx2 : WindowEx
 	{
 		// コマンド
 		HelpClickedCommand = new RelayCommand<String>(HelpClicked);
+
+#if USE_AOT && USE_UNSAFE
+		HWND hWnd = (HWND)WindowNative.GetWindowHandle(this);
+		_hWndMap[hWnd] = this;
+#endif
 
 		// イベントハンドラー
 		Activated += WindowActivated;
@@ -581,6 +587,13 @@ public class WindowEx2 : WindowEx
 	/// </summary>
 	private Grid? _veilGrid;
 
+#if USE_AOT && USE_UNSAFE
+	/// <summary>
+	/// static なウィンドウプロシージャーがウィンドウを識別するための変数
+	/// </summary>
+	private static Dictionary<HWND, WindowEx2> _hWndMap = new();
+#endif
+
 #if !USE_AOT
 	/// <summary>
 	/// ウィンドウプロシージャー
@@ -665,7 +678,7 @@ public class WindowEx2 : WindowEx
 	/// </summary>
 	/// <param name="str"></param>
 	/// <returns></returns>
-	private unsafe (PCWSTR, nint) CreateCoMemPcwstr(String str)
+	private static unsafe (PCWSTR, nint) CreateCoMemPcwstr(String str)
 	{
 		nint bufPtr = Marshal.StringToCoTaskMemUni(str);
 		PCWSTR pcwstr = new((Char*)bufPtr);
@@ -910,6 +923,12 @@ public class WindowEx2 : WindowEx
 	{
 		if (IsHelpButtonEnabled)
 		{
+#if USE_AOT && USE_UNSAFE
+			unsafe
+			{
+				WinUi3Common.EnableContextHelp(this, &SubclassProcAot);
+			}
+#endif
 #if !USE_AOT
 			_subclassProc = new SUBCLASSPROC(SubclassProc);
 			WinUi3Common.EnableContextHelp(this, _subclassProc);
@@ -954,17 +973,31 @@ public class WindowEx2 : WindowEx
 		return path;
 	}
 
-	private (String[], Boolean) ShowFileDialogCheckFilter(String filter)
+	/// <summary>
+	/// '|' で区切られたフィルター文字列（2 つでペア）を分解
+	/// </summary>
+	/// <param name="filter"></param>
+	/// <returns>filters: フィルター（[n] が説明、[n+1] が拡張子）, check: ペアになっていたか</returns>
+	private static (String[], Boolean) ShowFileDialogCheckFilter(String filter)
 	{
 		String[] filters = filter.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 		Boolean check = filters.Length > 0 && filters.Length % 2 == 0;
 		return (filters, check);
 	}
 
+	/// <summary>
+	/// Win32 API ファイル選択ダイアログを開く（WinUI 3 のは管理者権限で開けないので）
+	/// </summary>
+	/// <param name="fileDialog"></param>
+	/// <param name="filter"></param>
+	/// <param name="filterIndex"></param>
+	/// <param name="options"></param>
+	/// <param name="initialPath"></param>
+	/// <returns></returns>
 	private unsafe Boolean ShowFileDialogCore(IFileDialog* fileDialog, String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath)
 	{
 		// IShellItem.GetDisplayName() が CoTaskMem なのでみんなそれに合わせる
-		List<nint> coTaskMemories = new();
+		List<nint> coTaskMemories = [];
 
 		// finally 用の try
 		try
@@ -1002,7 +1035,7 @@ public class WindowEx2 : WindowEx
 					(PCWSTR specPcwstr, nint specPtr) = CreateCoMemPcwstr(filters[i * 2 + 1]);
 					coTaskMemories.Add(specPtr);
 					COMDLG_FILTERSPEC spec = new() { pszName = namePcwstr, pszSpec = specPcwstr };
-					fixed (void* specsSpanPtr = specsSpan.Slice(i))
+					fixed (void* specsSpanPtr = specsSpan[i..])
 					{
 						Marshal.StructureToPtr(spec, (nint)specsSpanPtr, false);
 					}
@@ -1196,6 +1229,32 @@ public class WindowEx2 : WindowEx
 	}
 #endif
 
+#if USE_AOT && USE_UNSAFE
+	[UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+	private static LRESULT SubclassProcAot(HWND hWnd, UInt32 msg, WPARAM wPalam, LPARAM lParam, nuint _1, nuint _2)
+	{
+		switch (msg)
+		{
+			case PInvoke.WM_SYSCOMMAND:
+				if ((UInt32)wPalam == PInvoke.SC_CONTEXTHELP)
+				{
+					if (_hWndMap.TryGetValue(hWnd, out WindowEx2? window))
+					{
+						window.ShowHelp(window.HelpButtonParameter);
+					}
+					return (LRESULT)IntPtr.Zero;
+				}
+
+				// ヘルプボタン以外は次のハンドラーにお任せ
+				return PInvoke.DefSubclassProc(hWnd, msg, wPalam, lParam);
+			default:
+				// WM_SYSCOMMAND 以外は次のハンドラーにお任せ
+				return PInvoke.DefSubclassProc(hWnd, msg, wPalam, lParam);
+		}
+	}
+#endif
+
+#if !USE_AOT
 	/// <summary>
 	/// ウィンドウメッセージ処理
 	/// </summary>
@@ -1224,6 +1283,7 @@ public class WindowEx2 : WindowEx
 				return PInvoke.DefSubclassProc(hWnd, msg, wPalam, lParam);
 		}
 	}
+#endif
 
 	/// <summary>
 	/// イベントハンドラー：ウィンドウ Activated / Deactivated

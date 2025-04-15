@@ -92,7 +92,7 @@ internal interface INavigationBar
 	/// <returns></returns>
 	public List<ToggleButton> ToggleButtons()
 	{
-		List<ToggleButton> toggleButtons = new();
+		List<ToggleButton> toggleButtons = [];
 
 		Panel panel = (Panel)this;
 		foreach (UIElement element in panel.Children)

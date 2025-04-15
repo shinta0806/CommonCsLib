@@ -130,6 +130,26 @@ internal class WinUi3Common
 		return dpi / Common.DEFAULT_DPI;
 	}
 
+#if USE_AOT && USE_UNSAFE
+	/// <summary>
+	/// タイトルバーのコンテキストヘルプボタンを有効にする
+	/// </summary>
+	/// <param name="window"></param>
+	/// <param name="subclassProc">非 AOT 版とは異なり static なので、関数を直接渡す</param>
+	/// <returns>有効に出来た、または、既に有効な場合は true</returns>
+	public static unsafe Boolean EnableContextHelp(Window window, delegate* unmanaged[Stdcall]<HWND, UInt32, WPARAM, LPARAM, nuint, nuint, LRESULT> subclassProc)
+	{
+		HWND hWnd = (HWND)WindowNative.GetWindowHandle(window);
+		Int32 exStyle = PInvoke.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+		if (((WINDOW_EX_STYLE)exStyle).HasFlag(WINDOW_EX_STYLE.WS_EX_CONTEXTHELP))
+		{
+			return true;
+		}
+		_ = PInvoke.SetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, exStyle | (Int32)WINDOW_EX_STYLE.WS_EX_CONTEXTHELP);
+		return PInvoke.SetWindowSubclass(hWnd, subclassProc, 0, 0);
+	}
+#endif
+
 #if !USE_AOT
 	/// <summary>
 	/// タイトルバーのコンテキストヘルプボタンを有効にする

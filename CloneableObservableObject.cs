@@ -14,6 +14,7 @@
 // ----------------------------------------------------------------------------
 //  -.--  | 2025/02/07 (Fri) | 作成開始。
 //  1.00  | 2025/02/07 (Fri) | ファーストバージョン。
+// (1.01) | 2025/04/04 (Fri) |   partial 化。
 // ============================================================================
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -25,7 +26,7 @@ using System.Runtime.CompilerServices;
 
 namespace Shinta;
 
-internal class CloneableObservableObject : INotifyPropertyChanged, INotifyPropertyChanging
+internal partial class CloneableObservableObject : INotifyPropertyChanged, INotifyPropertyChanging
 {
 	// ====================================================================
 	// public 関数
