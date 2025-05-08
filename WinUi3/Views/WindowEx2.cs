@@ -1080,8 +1080,8 @@ public class WindowEx2 : WindowEx
 			}
 
 			// ダイアログを表示
-			nint hWnd = WindowNative.GetWindowHandle(this);
-			result = fileDialog->Show(new HWND(hWnd));
+			HWND hWnd = (HWND)WindowNative.GetWindowHandle(this);
+			result = fileDialog->Show(hWnd);
 			if (result.Failed)
 			{
 				return false;

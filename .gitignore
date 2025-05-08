@@ -280,6 +280,8 @@ old
 # Add needed C# files
 
 !LibUtau/*.cs
+!Niconico/Database/*.cs
+!Niconico/Json/*.cs
 !WinUi3/*.cs
 !WinUi3/Behaviors/*.cs
 !WinUi3/ViewModels/*.cs
