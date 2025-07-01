@@ -367,6 +367,14 @@ public class WindowEx2 : WindowEx
 	}
 
 #if USE_UNSAFE
+	/// <summary>
+	/// ファイルを開くダイアログを表示
+	/// </summary>
+	/// <param name="filter">説明|拡張子（例：テキストファイル|*.txt）</param>
+	/// <param name="filterIndex"></param>
+	/// <param name="options">FOS_PICKFOLDERS でフォルダーを開く</param>
+	/// <param name="initialPath"></param>
+	/// <returns></returns>
 	public String? ShowFileOpenDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
 	{
 		String[]? result = ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath);
@@ -377,12 +385,28 @@ public class WindowEx2 : WindowEx
 		return result[0];
 	}
 
+	/// <summary>
+	/// ファイルを開くダイアログを表示（複数選択可能）
+	/// </summary>
+	/// <param name="filter"></param>
+	/// <param name="filterIndex"></param>
+	/// <param name="options"></param>
+	/// <param name="initialPath"></param>
+	/// <returns></returns>
 	public String[]? ShowFileOpenDialogMulti(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
 	{
 		options |= FILEOPENDIALOGOPTIONS.FOS_ALLOWMULTISELECT;
 		return ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath);
 	}
 
+	/// <summary>
+	/// 名前を付けて保存ダイアログを表示
+	/// </summary>
+	/// <param name="filter"></param>
+	/// <param name="filterIndex"></param>
+	/// <param name="options"></param>
+	/// <param name="initialPath"></param>
+	/// <returns></returns>
 	public unsafe String? ShowFileSaveDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
 	{
 		IFileDialog* dialog = null;

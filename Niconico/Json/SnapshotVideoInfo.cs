@@ -65,6 +65,15 @@ internal class SnapshotVideoInfo
 	}
 
 	/// <summary>
+	/// 再生時間 [s]
+	/// </summary>
+	public Int32 LengthSeconds
+	{
+		get;
+		set;
+	}
+
+	/// <summary>
 	/// 動画サムネイル URL
 	/// </summary>
 	public String? ThumbnailUrl
