@@ -47,8 +47,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
 
-using System.Runtime.InteropServices;
-
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI.Popups;
@@ -56,13 +54,17 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 
-using WinRT.Interop;
-using System.Runtime.CompilerServices;
+#if !USE_AOT
+using Windows.Win32.UI.Shell;
+#endif
 
-#if USE_UNSAFE
+#if USE_AOT && USE_UNSAFE
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Windows.Win32.System.Com;
 using Windows.Win32.UI.Shell;
 using Windows.Win32.UI.Shell.Common;
+using WinRT.Interop;
 #endif
 
 namespace Shinta.WinUi3.Views;
