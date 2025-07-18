@@ -23,7 +23,7 @@ using Windows.Foundation;
 
 namespace Shinta.WinUi3.Views;
 
-internal class Win2dContainer : Grid
+internal partial class Win2dContainer : Grid
 {
 	// ====================================================================
 	// コンストラクター

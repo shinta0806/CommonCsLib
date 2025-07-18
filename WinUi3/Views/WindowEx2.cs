@@ -617,7 +617,7 @@ public class WindowEx2 : WindowEx
 	/// <summary>
 	/// static なウィンドウプロシージャーがウィンドウを識別するための変数
 	/// </summary>
-	private static Dictionary<HWND, WindowEx2> _hWndMap = new();
+	private static readonly Dictionary<HWND, WindowEx2> _hWndMap = new();
 #endif
 
 #if !USE_AOT

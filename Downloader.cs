@@ -228,7 +228,7 @@ public class Downloader
 			return await DownloadAsStreamCoreAsync(url, postRequest, toStream);
 		}
 
-		using MultipartFormDataContent multipart = new();
+		using MultipartFormDataContent multipart = [];
 
 		// post パラメーター文字列
 		foreach (KeyValuePair<String, String?> kvp in post)

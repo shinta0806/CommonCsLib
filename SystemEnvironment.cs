@@ -107,7 +107,7 @@ public class SystemEnvironment
 			// ファミリー（設定が保存されている SHINTA のアプリ）
 			try
 			{
-				List<String> families = new();
+				List<String> families = [];
 				String[] folders;
 				if (CommonWindows.IsMsix())
 				{

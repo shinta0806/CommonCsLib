@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // 最近使用したファイル・フォルダーを管理
-// Copyright (C) 2022-2023 by SHINTA
+// Copyright (C) 2022-2025 by SHINTA
 // 
 // ============================================================================
 
@@ -15,6 +15,7 @@
 //  -.--  | 2022/12/31 (Sat) | 作成開始。
 //  1.00  | 2022/12/31 (Sat) | ファーストバージョン。
 // (1.01) | 2023/06/25 (Sun) |   軽微なリファクタリング。
+// (1.02) | 2025/07/18 (Fri) |   軽微なリファクタリング。
 // ============================================================================
 
 using System.Collections.ObjectModel;
@@ -103,7 +104,7 @@ internal class RecentPathManager
 	/// <param name="pathes"></param>
 	public void SetPathes(IEnumerable<String> pathes)
 	{
-		_recentPathes = new(pathes);
+		_recentPathes = [.. pathes];
 		ConfirmRecentExist();
 		Truncate();
 	}
@@ -126,7 +127,7 @@ internal class RecentPathManager
 	/// 履歴
 	/// 先頭が最新
 	/// </summary>
-	private List<String> _recentPathes = new();
+	private List<String> _recentPathes = [];
 
 	// ====================================================================
 	// private 関数
