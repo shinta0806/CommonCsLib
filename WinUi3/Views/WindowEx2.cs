@@ -372,9 +372,9 @@ public class WindowEx2 : WindowEx
 	/// <summary>
 	/// ファイルを開くダイアログを表示
 	/// </summary>
-	/// <param name="filter">説明|拡張子（例：テキストファイル|*.txt）</param>
+	/// <param name="filter">説明|拡張子（例："画像ファイル|*.jpg;*.jpeg"）</param>
 	/// <param name="filterIndex"></param>
-	/// <param name="options">FOS_PICKFOLDERS でフォルダーを開く</param>
+	/// <param name="options">FOS_PICKFOLDERS でフォルダーを開く（その際、通常は filter = String.Empty を指定）</param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
 	public String? ShowFileOpenDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)

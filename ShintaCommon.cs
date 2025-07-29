@@ -210,8 +210,11 @@ public partial class Common
 	// その他
 	// --------------------------------------------------------------------
 
-	// 開くダイアログ・保存ダイアログ用の追加フィルター
+	// 開くダイアログ・保存ダイアログ用の追加フィルター（旧式）
 	public const String OPEN_SAVE_DIALOG_ADDITIONAL_FILTER = "|すべてのファイル|*.*";
+
+	// 開くダイアログ・保存ダイアログ用の先頭フィルター（新式）
+	public const String OPEN_SAVE_DIALOG_ALL_TYPE_FILTER = "すべてのファイル|*.*|";
 
 	// 一般的なスレッドスリープ時間 [ms]
 	public const Int32 GENERAL_SLEEP_TIME = 20;
@@ -400,7 +403,7 @@ public partial class Common
 		return result;
 	}
 
-#if !USE_AOT
+#if !USE_AOT || USE_XML_SERIALIZER
 	// --------------------------------------------------------------------
 	// オブジェクトをデシリアライズして読み出し
 	// オブジェクトのクラスコンストラクターが実行されるため、例えばコンストラクター内で List に要素を追加している場合、読み出した要素が置換ではなくさらに追加になることに注意
@@ -756,7 +759,7 @@ public partial class Common
 		return folders;
 	}
 
-#if !USE_AOT
+#if !USE_AOT || USE_XML_SERIALIZER
 	// --------------------------------------------------------------------
 	// オブジェクトをシリアライズして保存
 	// ＜例外＞ Exception
