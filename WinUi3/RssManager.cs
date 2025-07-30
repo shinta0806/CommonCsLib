@@ -24,6 +24,7 @@
 // (1.01) | 2023/08/16 (Wed) |   既読アイテム保持の最大数のデフォルト値を 20 に変更。
 //  1.10  | 2023/08/19 (Sat) | 保存を JSON 形式に変更。
 //  1.20  | 2025/03/19 (Wed) | AOT 対応。
+//  1.30  | 2025/07/30 (Wed) | Load2() を作成。
 // ============================================================================
 
 using System.Text.Json;
@@ -47,10 +48,16 @@ internal class RssManager
 	/// <summary>
 	/// メインコンストラクター
 	/// </summary>
-	/// <param name="settingsPath"></param>
+	/// <param name="settingsPath">絶対パスでも相対パスでも可</param>
 	public RssManager(String settingsPath)
 	{
 		_settingsPath = settingsPath;
+		String? folder = Path.GetDirectoryName(settingsPath);
+		if (!String.IsNullOrEmpty(folder))
+		{
+			_settingsPath2 = folder + "\\";
+		}
+		_settingsPath2 += Path.GetFileNameWithoutExtension(settingsPath) + "2" + Path.GetExtension(settingsPath);
 	}
 
 	// ====================================================================
@@ -208,6 +215,22 @@ internal class RssManager
 	}
 
 	/// <summary>
+	/// ローカルに保存済の RSS の内容を読み込む（ファイルが無い場合などは例外）
+	/// </summary>
+	/// <returns></returns>
+	public List<RssItem> Load2()
+	{
+#if !USE_AOT
+		// AOT 非対応版では保存していない
+		throw new NotImplementedException("AOT 非対応版では Load2() は実装されていません。");
+#else
+		// AOT 対応版
+		List<RssItem> rssItems = _jsonManager.LoadAot(_settingsPath2, false, RmJsonSerializerContext.Default.ListRssItem);
+		return rssItems;
+#endif
+	}
+
+	/// <summary>
 	/// 最新 RSS のダウンロード
 	/// </summary>
 	/// <param name="source"></param>
@@ -277,6 +300,7 @@ internal class RssManager
 #else
 		// AOT 対応版
 		_jsonManager.SaveAot(rssSettings, _settingsPath, false, RmJsonSerializerContext.Default.RssSettings);
+		_jsonManager.SaveAot(_latestRssItems, _settingsPath2, false, RmJsonSerializerContext.Default.ListRssItem);
 #endif
 	}
 
@@ -337,9 +361,14 @@ internal class RssManager
 	private DateTime _latestDownloadDate;
 
 	/// <summary>
-	/// 保存パス（絶対パスでも相対パスでも可）
+	/// 保存パス（絶対パスでも相対パスでも可）：RssSettings（ほぼ Guid のみ）を保存するためのパス
 	/// </summary>
 	private readonly String _settingsPath;
+
+	/// <summary>
+	/// 保存パス（絶対パスでも相対パスでも可）：内容も保存するためのパス（歴史的経緯により _settingsPath と併存）
+	/// </summary>
+	private readonly String _settingsPath2;
 
 	/// <summary>
 	/// 設定保存管理
@@ -535,6 +564,7 @@ internal class RssManager
 // ========================================================================
 
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(List<RssItem>))]
 [JsonSerializable(typeof(RssSettings))]
 internal partial class RmJsonSerializerContext : JsonSerializerContext
 {
@@ -560,6 +590,72 @@ public class RssItem
 		get;
 		set;
 	} = new();
+
+	/// <summary>
+	/// 記事のタイトル
+	/// </summary>
+	[JsonIgnore]
+	public String Title
+	{
+		get
+		{
+			if (Elements.TryGetValue(RssManager.NODE_NAME_TITLE, out String? title))
+			{
+				return title;
+			}
+			return String.Empty;
+		}
+	}
+
+	/// <summary>
+	/// 記事のタイトル（Guid が日付であることを前提とした日付を付加）
+	/// </summary>
+	[JsonIgnore]
+	public String TitleAndDate
+	{
+		get
+		{
+			String date = String.Empty;
+			String guid = Guid;
+			if (!String.IsNullOrEmpty(guid))
+			{
+				date = "（" + guid[0..10] + "）";
+			}
+			return Title + date;
+		}
+	}
+
+	/// <summary>
+	/// 記事へのリンク
+	/// </summary>
+	[JsonIgnore]
+	public String Link
+	{
+		get
+		{
+			if (Elements.TryGetValue(RssManager.NODE_NAME_LINK, out String? link))
+			{
+				return link;
+			}
+			return String.Empty;
+		}
+	}
+
+	/// <summary>
+	/// 記事の Guid（実際には日付＋αのことが多い）
+	/// </summary>
+	[JsonIgnore]
+	public String Guid
+	{
+		get
+		{
+			if (Elements.TryGetValue(RssManager.NODE_NAME_GUID, out String? guid))
+			{
+				return guid;
+			}
+			return String.Empty;
+		}
+	}
 
 	// ====================================================================
 	// public 定数
