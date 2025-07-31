@@ -38,7 +38,6 @@ using Windows.Storage.Pickers;
 using Windows.UI.Popups;
 using Windows.Win32;
 using Windows.Win32.Foundation;
-using Windows.Win32.UI.Shell;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 using WinRT.Interop;
@@ -237,14 +236,22 @@ internal class WinUi3Common
 	public static async Task<ContentDialogResult> ShowLogContentDialogAsync(WindowEx window, LogEventLevel logEventLevel, String message)
 	{
 		Log.Write(logEventLevel, message);
-		ContentDialog contentDialog = new()
+		try
 		{
-			XamlRoot = window.Content.XamlRoot,
-			Title = logEventLevel.ToString().ToLocalized(),
-			Content = message,
-			CloseButtonText = Common.LK_GENERAL_LABEL_OK.ToLocalized(),
-		};
-		return await contentDialog.ShowAsync();
+			ContentDialog contentDialog = new()
+			{
+				XamlRoot = window.Content.XamlRoot,
+				Title = logEventLevel.ToString().ToLocalized(),
+				Content = message,
+				CloseButtonText = Common.LK_GENERAL_LABEL_OK.ToLocalized(),
+			};
+			return await contentDialog.ShowAsync();
+		}
+		catch (Exception)
+		{
+			// window が無効の場合（バックグラウンドタスク実行中にウィンドウが閉じた場合など）
+			return ContentDialogResult.None;
+		}
 	}
 
 	/// <summary>
