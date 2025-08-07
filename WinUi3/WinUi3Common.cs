@@ -149,7 +149,7 @@ internal class WinUi3Common
 	}
 #endif
 
-#if !USE_AOT
+#if !USE_AOT && !NO_SUBCLASSPROC
 	/// <summary>
 	/// タイトルバーのコンテキストヘルプボタンを有効にする
 	/// </summary>

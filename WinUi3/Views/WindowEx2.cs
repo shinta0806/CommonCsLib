@@ -55,7 +55,11 @@ using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 #if !USE_AOT
+using System.Runtime.InteropServices;
+using Windows.Win32.System.Com;
 using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.Shell.Common;
+using WinRT.Interop;
 #endif
 
 #if USE_AOT && USE_UNSAFE
@@ -620,7 +624,7 @@ public class WindowEx2 : WindowEx
 	private static readonly Dictionary<HWND, WindowEx2> _hWndMap = new();
 #endif
 
-#if !USE_AOT
+#if !USE_AOT && !NO_SUBCLASSPROC
 	/// <summary>
 	/// ウィンドウプロシージャー
 	/// </summary>
@@ -955,7 +959,7 @@ public class WindowEx2 : WindowEx
 				WinUi3Common.EnableContextHelp(this, &SubclassProcAot);
 			}
 #endif
-#if !USE_AOT
+#if !USE_AOT && !NO_SUBCLASSPROC
 			_subclassProc = new SUBCLASSPROC(SubclassProc);
 			WinUi3Common.EnableContextHelp(this, _subclassProc);
 #endif
