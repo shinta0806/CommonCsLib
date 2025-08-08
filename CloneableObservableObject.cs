@@ -15,6 +15,7 @@
 //  -.--  | 2025/02/07 (Fri) | 作成開始。
 //  1.00  | 2025/02/07 (Fri) | ファーストバージョン。
 // (1.01) | 2025/04/04 (Fri) |   partial 化。
+//  1.10  | 2025/08/08 (Fri) | バージョンプロパティーを作成。
 // ============================================================================
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -28,6 +29,32 @@ namespace Shinta;
 
 internal partial class CloneableObservableObject : INotifyPropertyChanged, INotifyPropertyChanging
 {
+	// ====================================================================
+	// public プロパティー
+	// ====================================================================
+
+	// --------------------------------------------------------------------
+	// 一般のプロパティー
+	// --------------------------------------------------------------------
+
+	/// <summary>
+	/// 初回作成時のアプリケーションのバージョン
+	/// </summary>
+	public String CreateAppVer
+	{
+		get;
+		set;
+	} = String.Empty;
+
+	/// <summary>
+	/// 更新時のアプリケーションのバージョン
+	/// </summary>
+	public String ModifyAppVer
+	{
+		get;
+		set;
+	} = String.Empty;
+
 	// ====================================================================
 	// public 関数
 	// ====================================================================
@@ -55,6 +82,13 @@ internal partial class CloneableObservableObject : INotifyPropertyChanged, INoti
 		}
 
 		return clone;
+	}
+
+	/// <summary>
+	/// オブジェクトが保存される前に行うべき処理
+	/// </summary>
+	public virtual void PrepareSave()
+	{
 	}
 
 	// ====================================================================
