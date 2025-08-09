@@ -408,7 +408,7 @@ public class WindowEx2 : WindowEx
 	/// <summary>
 	/// 名前を付けて保存ダイアログを表示
 	/// </summary>
-	/// <param name="filter"></param>
+	/// <param name="filter">「すべてのファイル」は含めないほうが良い（拡張子が * になる）</param>
 	/// <param name="filterIndex"></param>
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>

@@ -33,14 +33,17 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-using Windows.Storage;
-using Windows.Storage.Pickers;
 using Windows.UI.Popups;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 using WinRT.Interop;
+
+#if USE_OBSOLETE
+using Windows.Storage;
+using Windows.Storage.Pickers;
+#endif
 
 namespace Shinta.WinUi3;
 
@@ -88,6 +91,7 @@ internal class WinUi3Common
 	// public 関数
 	// ====================================================================
 
+#if USE_OBSOLETE
 	/// <summary>
 	/// FileOpenPicker に拡張子を追加
 	/// </summary>
@@ -116,6 +120,7 @@ internal class WinUi3Common
 			namesEnumerator.MoveNext();
 		}
 	}
+#endif
 
 	/// <summary>
 	/// ウィンドウが存在するディスプレイの表示スケール
@@ -169,6 +174,7 @@ internal class WinUi3Common
 	}
 #endif
 
+#if USE_OBSOLETE
 	/// <summary>
 	/// FileOpenPicker でファイルを 1 つ取得
 	/// </summary>
@@ -210,6 +216,7 @@ internal class WinUi3Common
 
 		return await fileSavePicker.PickSaveFileAsync();
 	}
+#endif
 
 #if false
 	/// <summary>
