@@ -381,9 +381,9 @@ public class WindowEx2 : WindowEx
 	/// <param name="options">FOS_PICKFOLDERS でフォルダーを開く（その際、通常は filter = String.Empty を指定）</param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	public String? ShowFileOpenDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
+	public String? ShowFileOpenDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null, Guid? guid = null)
 	{
-		String[]? result = ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath);
+		String[]? result = ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath, guid);
 		if (result == null)
 		{
 			return null;
@@ -399,10 +399,10 @@ public class WindowEx2 : WindowEx
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	public String[]? ShowFileOpenDialogMulti(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
+	public String[]? ShowFileOpenDialogMulti(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null, Guid? guid = null)
 	{
 		options |= FILEOPENDIALOGOPTIONS.FOS_ALLOWMULTISELECT;
-		return ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath);
+		return ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath, guid);
 	}
 
 	/// <summary>
@@ -413,7 +413,7 @@ public class WindowEx2 : WindowEx
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	public unsafe String? ShowFileSaveDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null)
+	public unsafe String? ShowFileSaveDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null, Guid? guid = null)
 	{
 		IFileDialog* dialog = null;
 
@@ -425,7 +425,7 @@ public class WindowEx2 : WindowEx
 			result.ThrowOnFailure();
 
 			// 表示
-			if (!ShowFileDialogCore(dialog, filter, ref filterIndex, options, initialPath))
+			if (!ShowFileDialogCore(dialog, filter, ref filterIndex, options, initialPath, guid))
 			{
 				return null;
 			}
@@ -1024,7 +1024,7 @@ public class WindowEx2 : WindowEx
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	private unsafe Boolean ShowFileDialogCore(IFileDialog* fileDialog, String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath)
+	private unsafe Boolean ShowFileDialogCore(IFileDialog* fileDialog, String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath, Guid? guid)
 	{
 		// IShellItem.GetDisplayName() が CoTaskMem なのでみんなそれに合わせる
 		List<nint> coTaskMemories = [];
@@ -1032,8 +1032,18 @@ public class WindowEx2 : WindowEx
 		// finally 用の try
 		try
 		{
-			// オプション
+			// GUID
 			HRESULT result;
+			if (guid.HasValue)
+			{
+				result = fileDialog->SetClientGuid(guid.Value);
+				if (result.Failed)
+				{
+					Log.Error("ShowFileDialogCore() SetClientGuid: " + guid.Value.ToString());
+				}
+			}
+
+			// オプション
 			if ((options & ~(FILEOPENDIALOGOPTIONS.FOS_ALLOWMULTISELECT | FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS)) == 0)
 			{
 				// FOS_ALLOWMULTISELECT, FOS_PICKFOLDERS のみ指定の場合は、既定のオプションを生かす
@@ -1134,7 +1144,7 @@ public class WindowEx2 : WindowEx
 		}
 	}
 
-	private unsafe String[]? ShowFileOpenDialogCore(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath)
+	private unsafe String[]? ShowFileOpenDialogCore(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath, Guid? guid)
 	{
 		IFileOpenDialog* openDialog = null;
 
@@ -1146,7 +1156,7 @@ public class WindowEx2 : WindowEx
 			result.ThrowOnFailure();
 
 			// 表示
-			if (!ShowFileDialogCore((IFileDialog*)openDialog, filter, ref filterIndex, options, initialPath))
+			if (!ShowFileDialogCore((IFileDialog*)openDialog, filter, ref filterIndex, options, initialPath, guid))
 			{
 				return null;
 			}
