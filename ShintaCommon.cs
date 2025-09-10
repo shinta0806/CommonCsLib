@@ -335,7 +335,7 @@ public partial class Common
 	}
 #pragma warning restore SYSLIB1045
 
-#if USE_OBSOLETE
+#if USE_OBSOLETE2
 	// --------------------------------------------------------------------
 	// Base64 エンコード済みの暗号化データを復号し、元の文字列を返す
 	// ＜例外＞ Exception
@@ -428,7 +428,7 @@ public partial class Common
 	}
 #endif
 
-#if USE_OBSOLETE
+#if USE_OBSOLETE2
 	// --------------------------------------------------------------------
 	// 文字列を暗号化し、文字列（Base64）で返す
 	// ＜例外＞ Exception
@@ -922,7 +922,7 @@ public partial class Common
 	// private メンバー関数
 	// ====================================================================
 
-#if USE_OBSOLETE
+#if USE_OBSOLETE2
 	// --------------------------------------------------------------------
 	// 初期化済みラインダールオブジェクトを返す
 	// EncryptString / DecryptString で使用
