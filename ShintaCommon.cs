@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // よく使う一般的な定数や関数（OS に依存しないもの）
-// Copyright (C) 2014-2024 by SHINTA
+// Copyright (C) 2014-2025 by SHINTA
 // 
 // ============================================================================
 
@@ -70,6 +70,7 @@
 // (4.61) | 2024/01/13 (Sat) |   StringToInt32() を改善。
 // (4.62) | 2024/05/09 (Thu) |   拡張子を追加。
 //  4.70  | 2024/09/28 (Sat) | ExceptionMessage() を作成。
+// (4.71) | 2025/10/10 (Fri) |   メモリ系を obsolete にした。
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -560,11 +561,13 @@ public partial class Common
 		return relativePath;
 	}
 
+#if OBSOLETE
 #if USE_UNSAFE
 	// --------------------------------------------------------------------
 	// 2 つのバイト列が等しいかどうか
 	// Int32 ではなく Boolean を返すので、MemCmp() とはしない
 	// ＜返値＞ 等しければ true、双方 null なら無条件で true
+	// ＜obsolete> oBuf1.SequenceEqual(oBuf2) を使用すれば良い
 	// --------------------------------------------------------------------
 	public static Boolean MemEquals(Byte[] oBuf1, Byte[] oBuf2)
 	{
@@ -592,12 +595,15 @@ public partial class Common
 	}
 
 #endif
+#endif
 
+#if OBSOLETE
 #if USE_UNSAFE
 	// --------------------------------------------------------------------
 	// バイト列 oHayStack の中から、目的のバイト列 oNeedle を探す
 	// 検索は指定した位置から開始され、指定した数の位置が検査される（oStartIndex + oCount - 1 まで）
 	// ＜返値＞ oNeedle の位置（oHayStack の先頭から数えて）。見つからない場合は -1
+	// ＜obsolete> oHayStack.AsSpan(oStartIndex, oCount).IndexOf(oNeedle) を使用すれば良い
 	// --------------------------------------------------------------------
 	public static Int32 MemIndexOf(Byte[] oHayStack, Byte[] oNeedle, Int32 oStartIndex = 0)
 	{
@@ -645,6 +651,7 @@ public partial class Common
 		}
 		return -1;
 	}
+#endif
 #endif
 
 	// --------------------------------------------------------------------
@@ -946,6 +953,7 @@ public partial class Common
 	}
 #endif
 
+#if OBSOLETE
 #if USE_UNSAFE
 	// --------------------------------------------------------------------
 	// メモリ比較
@@ -983,6 +991,7 @@ public partial class Common
 
 		return true;
 	}
+#endif
 #endif
 
 	// --------------------------------------------------------------------
