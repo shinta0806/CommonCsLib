@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // 漢字からフリガナを得る
-// Copyright (C) 2021-2024 by SHINTA
+// Copyright (C) 2021-2025 by SHINTA
 // 
 // ============================================================================
 
@@ -22,11 +22,11 @@
 // (1.01) | 2024/11/12 (Tue) |   SHINTA 共通 C# ライブラリー化。
 //  1.10  | 2024/11/13 (Wed) | IsReady() を作成。
 // (1.11) | 2024/12/01 (Sun) |   COM 解放漏れを修正。
-// (1.12) | 2024/12/04 (Wed) |   AOT に対応（ただし解放は不明）。
+// (1.12) | 2024/12/04 (Wed) |   AOT に対応。
+// (1.13) | 2025/10/11 (Sat) |   AOT の IFELanguage は CsWin32 生成版を使用するようにした。
 // ============================================================================
 
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 #if USE_AOT || USE_UNSAFE
 using Windows.Win32;
 #endif
@@ -40,7 +40,11 @@ using Windows.Win32.UI.Input.Ime;
 
 namespace Shinta;
 
+#if USE_AOT
+internal unsafe class RubyReconverter : IDisposable
+#else
 internal class RubyReconverter : IDisposable
+#endif
 {
 	// ====================================================================
 	// コンストラクター
@@ -52,16 +56,17 @@ internal class RubyReconverter : IDisposable
 	public RubyReconverter()
 	{
 #if USE_AOT
-		unsafe
+		// "MSIME.Japan"
+		Guid clsId = new("6a91029e-aa49-471b-aee7-7d332785660d");
+		HRESULT result = PInvoke.CoCreateInstance(clsId, null, CLSCTX.CLSCTX_INPROC_SERVER | CLSCTX.CLSCTX_INPROC_HANDLER | CLSCTX.CLSCTX_LOCAL_SERVER, out _ime);
+
+		if (result.Succeeded && _ime != null)
 		{
-			// "MSIME.Japan"
-			Guid clsId = new("6a91029e-aa49-471b-aee7-7d332785660d");
-			HRESULT result = PInvoke.CoCreateInstance(clsId, null, CLSCTX.CLSCTX_INPROC_SERVER | CLSCTX.CLSCTX_INPROC_HANDLER | CLSCTX.CLSCTX_LOCAL_SERVER,
-				typeof(IFELanguage2).GUID, out void* ppv);
-			if (result.Succeeded)
+			if (_ime->Open().Failed)
 			{
-				ComWrappers comWrappers = new StrategyBasedComWrappers();
-				_ime = comWrappers.GetOrCreateObjectForComInstance((nint)ppv, CreateObjectFlags.None) as IFELanguage2;
+				_ime->Close();
+				_ime->Release();
+				_ime = null;
 			}
 		}
 #else
@@ -70,16 +75,17 @@ internal class RubyReconverter : IDisposable
 		{
 			_ime = Activator.CreateInstance(type) as IFELanguage2;
 		}
-#endif
 
 		if (_ime != null)
 		{
 			if (_ime.Open() != 0)
 			{
 				_ime.Close();
+				Marshal.ReleaseComObject(_ime);
 				_ime = null;
 			}
 		}
+#endif
 	}
 
 	// ====================================================================
@@ -117,12 +123,22 @@ internal class RubyReconverter : IDisposable
 		}
 
 		// GetPhonetic() の start の先頭文字は 1（0 ではないことに注意）
+#if USE_AOT
+		using SysFreeStringSafeHandle kanjiBStrHandle = new(Marshal.StringToBSTR(kanji));
+		BSTR hiraganaBStr = new();
+		if (_ime->GetPhonetic(kanjiBStrHandle, 1, -1, ref hiraganaBStr).Failed)
+		{
+			return null;
+		}
+		using SysFreeStringSafeHandle hiraganaBStrHandle = new(hiraganaBStr);
+		return hiraganaBStr.ToString();
+#else
 		if (_ime.GetPhonetic(kanji, 1, -1, out String hiragana) != 0)
 		{
 			return null;
 		}
-
 		return hiragana;
+#endif
 	}
 
 #if USE_UNSAFE
@@ -138,17 +154,28 @@ internal class RubyReconverter : IDisposable
 			return (null, Array.Empty<String>(), Array.Empty<String>());
 		}
 
+#if USE_AOT
+		MORRSLT* result = null;
+		HRESULT hResult;
+		fixed (Char* kanjiStrPtr = kanji)
+		{
+			hResult = _ime->GetJMorphResult(PInvoke.FELANG_REQ_REV, PInvoke.FELANG_CMODE_HIRAGANAOUT, kanji.Length, kanjiStrPtr, null, &result);
+		}
+		if (hResult.Failed)
+#else
 		if (_ime.GetMorphResult(PInvoke.FELANG_REQ_REV, PInvoke.FELANG_CMODE_HIRAGANAOUT, kanji.Length, kanji, IntPtr.Zero, out IntPtr result) != 0)
+#endif
 		{
 			return (null, Array.Empty<String>(), Array.Empty<String>());
 		}
-		MORRSLT morResult = Marshal.PtrToStructure<MORRSLT>(result);
+		MORRSLT morResult = Marshal.PtrToStructure<MORRSLT>((nint)result);
 
 		// 返値準備
 		String hiragana;
 		String[] kanjiBlocks = new String[morResult.cWDD];
 		String[] hiraganaBlocks = new String[morResult.cWDD];
 
+		// 非 USE_AOT 用に unsafe を明示
 		unsafe
 		{
 			hiragana = new(morResult.pwchOutput, 0, morResult.cchOutput);
@@ -158,9 +185,9 @@ internal class RubyReconverter : IDisposable
 				kanjiBlocks[i] = kanji[wdd.Anonymous1.wReadPos..(wdd.Anonymous1.wReadPos + wdd.Anonymous2.cchRead)];
 				hiraganaBlocks[i] = hiragana[wdd.wDispPos..(wdd.wDispPos + wdd.cchDisp)];
 			}
-
 		}
-		Marshal.FreeCoTaskMem(result);
+
+		Marshal.FreeCoTaskMem((nint)result);
 		return (hiragana, kanjiBlocks, hiraganaBlocks);
 	}
 #endif
@@ -183,12 +210,14 @@ internal class RubyReconverter : IDisposable
 		// マネージドリソース解放
 		if (isDisposing && _ime != null)
 		{
-			_ime.Close();
 #if USE_AOT
-			// ToDo: AOT での解放が不明
+			_ime->Close();
+			_ime->Release();
 #else
+			_ime.Close();
 			Marshal.ReleaseComObject(_ime);
 #endif
+			_ime = null;
 		}
 
 		// アンマネージドリソース解放
@@ -206,7 +235,11 @@ internal class RubyReconverter : IDisposable
 	/// <summary>
 	/// IME
 	/// </summary>
-	private readonly IFELanguage2? _ime;
+#if USE_AOT
+	private IFELanguage* _ime;
+#else
+	private IFELanguage2? _ime;
+#endif
 
 	/// <summary>
 	/// Dispose フラグ
@@ -214,17 +247,14 @@ internal class RubyReconverter : IDisposable
 	private Boolean _isDisposed;
 }
 
+#if !USE_AOT
 // ====================================================================
 // IFE Language 2 Interface
 // https://learn.microsoft.com/en-us/previous-versions/office/developer/office-2007/ee828899(v=office.12)
 // ====================================================================
 
-#if USE_AOT
-[GeneratedComInterface]
-#else
 [ComImport]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-#endif
 [Guid("21164102-C24A-11d1-851A-00C04FCC6B14")]
 public partial interface IFELanguage2
 {
@@ -293,3 +323,4 @@ public partial interface IFELanguage2
 	[PreserveSig]
 	Int32 GetConversion([MarshalAs(UnmanagedType.BStr)] String str, Int32 start, Int32 length, [MarshalAs(UnmanagedType.BStr)] out String result);
 }
+#endif
