@@ -24,6 +24,7 @@
 // (1.11) | 2024/12/01 (Sun) |   COM 解放漏れを修正。
 // (1.12) | 2024/12/04 (Wed) |   AOT に対応。
 // (1.13) | 2025/10/11 (Sat) |   AOT の IFELanguage は CsWin32 生成版を使用するようにした。
+// (1.14) | 2025/10/12 (Sun) |   AOT の IFELanguage で SafeHandle を使用するようにした。
 // ============================================================================
 
 using System.Runtime.InteropServices;
@@ -40,11 +41,7 @@ using Windows.Win32.UI.Input.Ime;
 
 namespace Shinta;
 
-#if USE_AOT
-internal unsafe class RubyReconverter : IDisposable
-#else
 internal class RubyReconverter : IDisposable
-#endif
 {
 	// ====================================================================
 	// コンストラクター
@@ -56,17 +53,20 @@ internal class RubyReconverter : IDisposable
 	public RubyReconverter()
 	{
 #if USE_AOT
-		// "MSIME.Japan"
-		Guid clsId = new("6a91029e-aa49-471b-aee7-7d332785660d");
-		HRESULT result = PInvoke.CoCreateInstance(clsId, null, CLSCTX.CLSCTX_INPROC_SERVER | CLSCTX.CLSCTX_INPROC_HANDLER | CLSCTX.CLSCTX_LOCAL_SERVER, out _ime);
-
-		if (result.Succeeded && _ime != null)
+		unsafe
 		{
-			if (_ime->Open().Failed)
+			// "MSIME.Japan"
+			Guid clsId = new("6a91029e-aa49-471b-aee7-7d332785660d");
+			HRESULT result = PInvoke.CoCreateInstance(clsId, null, CLSCTX.CLSCTX_INPROC_SERVER | CLSCTX.CLSCTX_INPROC_HANDLER | CLSCTX.CLSCTX_LOCAL_SERVER, out IFELanguage* imePtr);
+
+			if (result.Succeeded)
 			{
-				_ime->Close();
-				_ime->Release();
-				_ime = null;
+				_ime = new IFELanguageSafeHandle(imePtr);
+				if (_ime.Ime->Open().Failed)
+				{
+					_ime.Dispose();
+					_ime = null;
+				}
 			}
 		}
 #else
@@ -126,9 +126,12 @@ internal class RubyReconverter : IDisposable
 #if USE_AOT
 		using SysFreeStringSafeHandle kanjiBStrHandle = new(Marshal.StringToBSTR(kanji));
 		BSTR hiraganaBStr = new();
-		if (_ime->GetPhonetic(kanjiBStrHandle, 1, -1, ref hiraganaBStr).Failed)
+		unsafe
 		{
-			return null;
+			if (_ime.Ime->GetPhonetic(kanjiBStrHandle, 1, -1, ref hiraganaBStr).Failed)
+			{
+				return null;
+			}
 		}
 		using SysFreeStringSafeHandle hiraganaBStrHandle = new(hiraganaBStr);
 		return hiraganaBStr.ToString();
@@ -147,7 +150,7 @@ internal class RubyReconverter : IDisposable
 	/// </summary>
 	/// <param name="kanji">漢字</param>
 	/// <returns>ひらがな, ブロックごとの漢字, ブロックごとのひらがな</returns>
-	public (String?, String[], String[]) ReconvertDetail(String? kanji)
+	public unsafe (String?, String[], String[]) ReconvertDetail(String? kanji)
 	{
 		if (_ime == null || String.IsNullOrEmpty(kanji))
 		{
@@ -159,7 +162,7 @@ internal class RubyReconverter : IDisposable
 		HRESULT hResult;
 		fixed (Char* kanjiStrPtr = kanji)
 		{
-			hResult = _ime->GetJMorphResult(PInvoke.FELANG_REQ_REV, PInvoke.FELANG_CMODE_HIRAGANAOUT, kanji.Length, kanjiStrPtr, null, &result);
+			hResult = _ime.Ime->GetJMorphResult(PInvoke.FELANG_REQ_REV, PInvoke.FELANG_CMODE_HIRAGANAOUT, kanji.Length, kanjiStrPtr, null, &result);
 		}
 		if (hResult.Failed)
 #else
@@ -175,16 +178,12 @@ internal class RubyReconverter : IDisposable
 		String[] kanjiBlocks = new String[morResult.cWDD];
 		String[] hiraganaBlocks = new String[morResult.cWDD];
 
-		// 非 USE_AOT 用に unsafe を明示
-		unsafe
+		hiragana = new(morResult.pwchOutput, 0, morResult.cchOutput);
+		for (Int32 i = 0; i < morResult.cWDD; i++)
 		{
-			hiragana = new(morResult.pwchOutput, 0, morResult.cchOutput);
-			for (Int32 i = 0; i < morResult.cWDD; i++)
-			{
-				WDD wdd = Marshal.PtrToStructure<WDD>((nint)(morResult.pWDD) + Marshal.SizeOf<WDD>() * i);
-				kanjiBlocks[i] = kanji[wdd.Anonymous1.wReadPos..(wdd.Anonymous1.wReadPos + wdd.Anonymous2.cchRead)];
-				hiraganaBlocks[i] = hiragana[wdd.wDispPos..(wdd.wDispPos + wdd.cchDisp)];
-			}
+			WDD wdd = Marshal.PtrToStructure<WDD>((nint)(morResult.pWDD) + Marshal.SizeOf<WDD>() * i);
+			kanjiBlocks[i] = kanji[wdd.Anonymous1.wReadPos..(wdd.Anonymous1.wReadPos + wdd.Anonymous2.cchRead)];
+			hiraganaBlocks[i] = hiragana[wdd.wDispPos..(wdd.wDispPos + wdd.cchDisp)];
 		}
 
 		Marshal.FreeCoTaskMem((nint)result);
@@ -211,8 +210,7 @@ internal class RubyReconverter : IDisposable
 		if (isDisposing && _ime != null)
 		{
 #if USE_AOT
-			_ime->Close();
-			_ime->Release();
+			_ime.Dispose();
 #else
 			_ime.Close();
 			Marshal.ReleaseComObject(_ime);
@@ -236,7 +234,7 @@ internal class RubyReconverter : IDisposable
 	/// IME
 	/// </summary>
 #if USE_AOT
-	private IFELanguage* _ime;
+	private IFELanguageSafeHandle? _ime;
 #else
 	private IFELanguage2? _ime;
 #endif
@@ -247,7 +245,60 @@ internal class RubyReconverter : IDisposable
 	private Boolean _isDisposed;
 }
 
-#if !USE_AOT
+#if USE_AOT
+// ============================================================================
+// CsWin32 の IFELanguage COM ポインタを SafeHandle 化
+// ============================================================================
+internal unsafe class IFELanguageSafeHandle : SafeHandle
+{
+	// ====================================================================
+	// コンストラクター
+	// ====================================================================
+
+	/// <summary>
+	/// メインコンストラクター
+	/// </summary>
+	/// <param name="preexistingHandle"></param>
+	/// <param name="ownsHandle"></param>
+	public IFELanguageSafeHandle(IFELanguage* preexistingHandle, Boolean ownsHandle = true)
+		: base((nint)preexistingHandle, ownsHandle)
+	{
+	}
+
+	// ====================================================================
+	// public プロパティー
+	// ====================================================================
+
+	/// <summary>
+	/// ハンドルが無効かどうか
+	/// </summary>
+	public override Boolean IsInvalid => handle == nint.Zero;
+
+	/// <summary>
+	/// 生ポインタ
+	/// </summary>
+	public IFELanguage* Ime => (IFELanguage*)handle;
+
+	// ====================================================================
+	// protected 関数
+	// ====================================================================
+
+	/// <summary>
+	/// COM 解放
+	/// </summary>
+	/// <returns></returns>
+	protected override bool ReleaseHandle()
+	{
+		if (!IsInvalid)
+		{
+			Ime->Close();
+			Ime->Release();
+			handle = nint.Zero;
+		}
+		return true;
+	}
+}
+#else
 // ====================================================================
 // IFE Language 2 Interface
 // https://learn.microsoft.com/en-us/previous-versions/office/developer/office-2007/ee828899(v=office.12)
