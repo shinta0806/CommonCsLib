@@ -839,7 +839,7 @@ public partial class Common
 			FileName = path,
 			UseShellExecute = true,
 		};
-		Process.Start(psi);
+		using Process? process = Process.Start(psi);
 	}
 
 	// --------------------------------------------------------------------

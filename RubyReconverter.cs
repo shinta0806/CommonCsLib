@@ -107,7 +107,11 @@ internal class RubyReconverter : IDisposable
 	/// <returns></returns>
 	public Boolean IsReady()
 	{
+#if USE_AOT
+		return _ime != null && !_ime.IsInvalid;
+#else
 		return _ime != null;
+#endif
 	}
 
 	/// <summary>
