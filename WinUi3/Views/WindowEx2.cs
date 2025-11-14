@@ -36,6 +36,7 @@
 //  2.10  | 2025/04/02 (Wed) | ShowFileOpenDialogMulti() を作成し、ShowOpenFileDialogMulti() を廃止。
 //  2.20  | 2025/04/02 (Wed) | ShowFileOpenDialog() を作成し、ShowOpenFileDialog() を廃止。
 //  2.30  | 2025/04/02 (Wed) | ShowFileSaveDialog() を作成し、ShowSaveFileDialog() および ShowSaveFileDialogMulti() を廃止。
+// (2.31) | 2025/11/14 (Fri) |   ShowFileOpenDialogCore() を改善。
 // ============================================================================
 
 using CommunityToolkit.Mvvm.Input;
@@ -376,7 +377,7 @@ public class WindowEx2 : WindowEx
 	/// <summary>
 	/// ファイルを開くダイアログを表示
 	/// </summary>
-	/// <param name="filter">説明|拡張子（例："画像ファイル|*.jpg;*.jpeg"）</param>
+	/// <param name="filter">説明|拡張子（例："画像ファイル|*.jpg;*.jpeg"）、説明に拡張子を含めなくても自動的に OS 側で付与される</param>
 	/// <param name="filterIndex"></param>
 	/// <param name="options">FOS_PICKFOLDERS でフォルダーを開く（その際、通常は filter = String.Empty を指定）</param>
 	/// <param name="initialPath"></param>
@@ -1147,6 +1148,7 @@ public class WindowEx2 : WindowEx
 	private unsafe String[]? ShowFileOpenDialogCore(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath, Guid? guid)
 	{
 		IFileOpenDialog* openDialog = null;
+		IShellItemArray* iShellArray = null;
 
 		// finally 用の try
 		try
@@ -1162,7 +1164,6 @@ public class WindowEx2 : WindowEx
 			}
 
 			// 結果取得
-			IShellItemArray* iShellArray;
 			result = openDialog->GetResults(&iShellArray);
 			if (result.Failed)
 			{
@@ -1183,6 +1184,7 @@ public class WindowEx2 : WindowEx
 					continue;
 				}
 				String? path = ShellItemToPath(iShellResult, filter, filterIndex);
+				iShellResult->Release();
 				if (String.IsNullOrEmpty(path))
 				{
 					continue;
@@ -1193,6 +1195,10 @@ public class WindowEx2 : WindowEx
 		}
 		finally
 		{
+			if (iShellArray != null)
+			{
+				iShellArray->Release();
+			}
 			if (openDialog != null)
 			{
 				openDialog->Release();
