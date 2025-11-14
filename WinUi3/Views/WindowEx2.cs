@@ -37,6 +37,7 @@
 //  2.20  | 2025/04/02 (Wed) | ShowFileOpenDialog() を作成し、ShowOpenFileDialog() を廃止。
 //  2.30  | 2025/04/02 (Wed) | ShowFileSaveDialog() を作成し、ShowSaveFileDialog() および ShowSaveFileDialogMulti() を廃止。
 // (2.31) | 2025/11/14 (Fri) |   ShowFileOpenDialogCore() を改善。
+// (2.32) | 2025/11/14 (Fri) |   ShowFileXxxxDialog() の引数順番を変更。
 // ============================================================================
 
 using CommunityToolkit.Mvvm.Input;
@@ -382,9 +383,9 @@ public class WindowEx2 : WindowEx
 	/// <param name="options">FOS_PICKFOLDERS でフォルダーを開く（その際、通常は filter = String.Empty を指定）</param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	public String? ShowFileOpenDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null, Guid? guid = null)
+	public String? ShowFileOpenDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, Guid? guid = null, String? initialPath = null)
 	{
-		String[]? result = ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath, guid);
+		String[]? result = ShowFileOpenDialogCore(filter, ref filterIndex, options, guid, initialPath);
 		if (result == null)
 		{
 			return null;
@@ -400,10 +401,10 @@ public class WindowEx2 : WindowEx
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	public String[]? ShowFileOpenDialogMulti(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null, Guid? guid = null)
+	public String[]? ShowFileOpenDialogMulti(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, Guid? guid = null, String? initialPath = null)
 	{
 		options |= FILEOPENDIALOGOPTIONS.FOS_ALLOWMULTISELECT;
-		return ShowFileOpenDialogCore(filter, ref filterIndex, options, initialPath, guid);
+		return ShowFileOpenDialogCore(filter, ref filterIndex, options, guid, initialPath);
 	}
 
 	/// <summary>
@@ -414,7 +415,7 @@ public class WindowEx2 : WindowEx
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	public unsafe String? ShowFileSaveDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, String? initialPath = null, Guid? guid = null)
+	public unsafe String? ShowFileSaveDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, Guid? guid = null, String? initialPath = null)
 	{
 		IFileDialog* dialog = null;
 
@@ -426,7 +427,7 @@ public class WindowEx2 : WindowEx
 			result.ThrowOnFailure();
 
 			// 表示
-			if (!ShowFileDialogCore(dialog, filter, ref filterIndex, options, initialPath, guid))
+			if (!ShowFileDialogCore(dialog, filter, ref filterIndex, options, guid, initialPath))
 			{
 				return null;
 			}
@@ -1025,7 +1026,7 @@ public class WindowEx2 : WindowEx
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
-	private unsafe Boolean ShowFileDialogCore(IFileDialog* fileDialog, String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath, Guid? guid)
+	private unsafe Boolean ShowFileDialogCore(IFileDialog* fileDialog, String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, Guid? guid, String? initialPath)
 	{
 		// IShellItem.GetDisplayName() が CoTaskMem なのでみんなそれに合わせる
 		List<nint> coTaskMemories = [];
@@ -1145,7 +1146,16 @@ public class WindowEx2 : WindowEx
 		}
 	}
 
-	private unsafe String[]? ShowFileOpenDialogCore(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, String? initialPath, Guid? guid)
+	/// <summary>
+	/// ShowFileOpenDialog() の共通処理
+	/// </summary>
+	/// <param name="filter"></param>
+	/// <param name="filterIndex"></param>
+	/// <param name="options"></param>
+	/// <param name="guid"></param>
+	/// <param name="initialPath"></param>
+	/// <returns></returns>
+	private unsafe String[]? ShowFileOpenDialogCore(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, Guid? guid, String? initialPath)
 	{
 		IFileOpenDialog* openDialog = null;
 		IShellItemArray* iShellArray = null;
@@ -1158,7 +1168,7 @@ public class WindowEx2 : WindowEx
 			result.ThrowOnFailure();
 
 			// 表示
-			if (!ShowFileDialogCore((IFileDialog*)openDialog, filter, ref filterIndex, options, initialPath, guid))
+			if (!ShowFileDialogCore((IFileDialog*)openDialog, filter, ref filterIndex, options, guid, initialPath))
 			{
 				return null;
 			}
