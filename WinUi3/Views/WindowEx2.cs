@@ -417,35 +417,39 @@ public class WindowEx2 : WindowEx
 	/// <returns></returns>
 	public unsafe String? ShowFileSaveDialog(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options = 0, Guid? guid = null, String? initialPath = null)
 	{
-		IFileDialog* dialog = null;
+		IFileDialog* saveDialog = null;
+		IShellItem* shellResult = null;
 
 		// finally 用の try
 		try
 		{
 			// ダイアログ生成
-			HRESULT result = PInvoke.CoCreateInstance(typeof(FileSaveDialog).GUID, null, CLSCTX.CLSCTX_INPROC_SERVER, out dialog);
+			HRESULT result = PInvoke.CoCreateInstance(typeof(FileSaveDialog).GUID, null, CLSCTX.CLSCTX_INPROC_SERVER, out saveDialog);
 			result.ThrowOnFailure();
 
 			// 表示
-			if (!ShowFileDialogCore(dialog, filter, ref filterIndex, options, guid, initialPath))
+			if (!ShowFileDialogCore(saveDialog, filter, ref filterIndex, options, guid, initialPath))
 			{
 				return null;
 			}
 
 			// 結果取得
-			IShellItem* iShellResult;
-			result = dialog->GetResult(&iShellResult);
+			result = saveDialog->GetResult(&shellResult);
 			if (result.Failed)
 			{
 				return null;
 			}
-			return ShellItemToPath(iShellResult, filter, filterIndex);
+			return ShellItemToPath(shellResult, filter, filterIndex);
 		}
 		finally
 		{
-			if (dialog != null)
+			if (shellResult != null)
 			{
-				dialog->Release();
+				shellResult->Release();
+			}
+			if (saveDialog != null)
+			{
+				saveDialog->Release();
 			}
 		}
 	}
@@ -1018,7 +1022,7 @@ public class WindowEx2 : WindowEx
 	}
 
 	/// <summary>
-	/// Win32 API ファイル選択ダイアログを開く（WinUI 3 のは管理者権限で開けないので）
+	/// Win32 API ファイル選択ダイアログを開く
 	/// </summary>
 	/// <param name="fileDialog"></param>
 	/// <param name="filter"></param>
@@ -1030,6 +1034,7 @@ public class WindowEx2 : WindowEx
 	{
 		// IShellItem.GetDisplayName() が CoTaskMem なのでみんなそれに合わせる
 		List<nint> coTaskMemories = [];
+		void* shellInitial = null;
 
 		// finally 用の try
 		try
@@ -1095,14 +1100,13 @@ public class WindowEx2 : WindowEx
 			// 初期ファイル・フォルダー
 			if (!String.IsNullOrEmpty(initialPath))
 			{
-				void* iShellInitial;
 				if (Directory.Exists(initialPath))
 				{
 					// フォルダーのみ指定
-					result = PInvoke.SHCreateItemFromParsingName(initialPath, null, typeof(IShellItem).GUID, out iShellInitial);
+					result = PInvoke.SHCreateItemFromParsingName(initialPath, null, typeof(IShellItem).GUID, out shellInitial);
 					if (result.Succeeded)
 					{
-						fileDialog->SetFolder((IShellItem*)iShellInitial);
+						fileDialog->SetFolder((IShellItem*)shellInitial);
 					}
 				}
 				else
@@ -1111,10 +1115,10 @@ public class WindowEx2 : WindowEx
 					String? folderPath = Path.GetDirectoryName(initialPath);
 					if (Directory.Exists(folderPath))
 					{
-						result = PInvoke.SHCreateItemFromParsingName(folderPath, null, typeof(IShellItem).GUID, out iShellInitial);
+						result = PInvoke.SHCreateItemFromParsingName(folderPath, null, typeof(IShellItem).GUID, out shellInitial);
 						if (result.Succeeded)
 						{
-							fileDialog->SetFolder((IShellItem*)iShellInitial);
+							fileDialog->SetFolder((IShellItem*)shellInitial);
 						}
 					}
 					fileDialog->SetFileName(Path.GetFileName(initialPath));
@@ -1139,6 +1143,10 @@ public class WindowEx2 : WindowEx
 		}
 		finally
 		{
+			if (shellInitial != null)
+			{
+				((IShellItem*)shellInitial)->Release();
+			}
 			foreach (nint ptr in coTaskMemories)
 			{
 				Marshal.FreeCoTaskMem(ptr);
@@ -1158,7 +1166,7 @@ public class WindowEx2 : WindowEx
 	private unsafe String[]? ShowFileOpenDialogCore(String filter, ref Int32 filterIndex, FILEOPENDIALOGOPTIONS options, Guid? guid, String? initialPath)
 	{
 		IFileOpenDialog* openDialog = null;
-		IShellItemArray* iShellArray = null;
+		IShellItemArray* shellItemArray = null;
 
 		// finally 用の try
 		try
@@ -1174,12 +1182,12 @@ public class WindowEx2 : WindowEx
 			}
 
 			// 結果取得
-			result = openDialog->GetResults(&iShellArray);
+			result = openDialog->GetResults(&shellItemArray);
 			if (result.Failed)
 			{
 				return null;
 			}
-			result = iShellArray->GetCount(out UInt32 numPathes);
+			result = shellItemArray->GetCount(out UInt32 numPathes);
 			if (result.Failed)
 			{
 				return null;
@@ -1188,7 +1196,7 @@ public class WindowEx2 : WindowEx
 			for (UInt32 i = 0; i < numPathes; i++)
 			{
 				IShellItem* iShellResult;
-				result = iShellArray->GetItemAt(i, &iShellResult);
+				result = shellItemArray->GetItemAt(i, &iShellResult);
 				if (result.Failed)
 				{
 					continue;
@@ -1205,9 +1213,9 @@ public class WindowEx2 : WindowEx
 		}
 		finally
 		{
-			if (iShellArray != null)
+			if (shellItemArray != null)
 			{
-				iShellArray->Release();
+				shellItemArray->Release();
 			}
 			if (openDialog != null)
 			{
