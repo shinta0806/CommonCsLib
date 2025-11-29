@@ -1071,9 +1071,7 @@ public class WindowEx2 : WindowEx
 			if (checkFilter)
 			{
 				Int32 numFilters = filters.Length / 2;
-				// 安全のためより大きい可能性のある Marshal.SizeOf() にしておくが、実際は恐らく sizeof() で大丈夫
 				nint specs = Marshal.AllocCoTaskMem(Marshal.SizeOf<COMDLG_FILTERSPEC>() * numFilters);
-				ReadOnlySpan<COMDLG_FILTERSPEC> specsSpan = new((void*)specs, numFilters);
 				coTaskMemories.Add(specs);
 				for (Int32 i = 0; i < numFilters; i++)
 				{
@@ -1082,12 +1080,9 @@ public class WindowEx2 : WindowEx
 					(PCWSTR specPcwstr, nint specPtr) = CreateCoMemPcwstr(filters[i * 2 + 1]);
 					coTaskMemories.Add(specPtr);
 					COMDLG_FILTERSPEC spec = new() { pszName = namePcwstr, pszSpec = specPcwstr };
-					fixed (void* specsSpanPtr = specsSpan[i..])
-					{
-						Marshal.StructureToPtr(spec, (nint)specsSpanPtr, false);
-					}
+					Marshal.StructureToPtr(spec, specs + Marshal.SizeOf<COMDLG_FILTERSPEC>() * i, false);
 				}
-				result = fileDialog->SetFileTypes(specsSpan);
+				result = fileDialog->SetFileTypes((UInt32)numFilters, (COMDLG_FILTERSPEC*)specs);
 				if (result.Failed)
 				{
 					Log.Error("ShowFileDialogCore() SetFileTypes: " + filter);

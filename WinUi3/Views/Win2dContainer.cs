@@ -68,6 +68,18 @@ internal partial class Win2dContainer : Grid
 	}
 
 	// ====================================================================
+	// public 関数
+	// ====================================================================
+
+	/// <summary>
+	/// 再描画を引き起こす
+	/// </summary>
+	public virtual void Invalidate()
+	{
+		_canvasControl?.Invalidate();
+	}
+
+	// ====================================================================
 	// protected 変数
 	// ====================================================================
 
@@ -87,14 +99,6 @@ internal partial class Win2dContainer : Grid
 	/// <param name="drawingSession"></param>
 	protected virtual void Draw(CanvasControl canvasControl, CanvasDrawingSession drawingSession)
 	{
-	}
-
-	/// <summary>
-	/// 再描画を引き起こす
-	/// </summary>
-	protected virtual void Invalidate()
-	{
-		_canvasControl?.Invalidate();
 	}
 
 	/// <summary>
