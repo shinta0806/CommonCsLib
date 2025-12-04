@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // oto.ini を管理するクラス
-// Copyright (C) 2024 by SHINTA
+// Copyright (C) 2024-2025 by SHINTA
 // 
 // ============================================================================
 
@@ -15,6 +15,8 @@
 //  1.00  | 2024/04/22 (Mon) | C++ 版 Lib UTAU から移植。
 // (1.01) | 2024/12/05 (Thu) |   namespace を変更。
 // (1.02) | 2024/12/07 (Sat) |   FileName の不具合を修正。
+// (1.03) | 2025/12/04 (Thu) |   原音設定の保持を SortedDictionary から Dictoinary に変更。
+// (1.04) | 2025/12/04 (Thu) |   原音設定の保持を後優先から先優先に変更。
 // ============================================================================
 
 using System.Text;
@@ -41,7 +43,7 @@ internal class OtoIni
 	/// <summary>
 	/// 原音設定の解析結果（エイリアス文字と原音設定の対応）
 	/// </summary>
-	public SortedDictionary<String, GenonSettings> GenonSettings => _genonSettings;
+	public Dictionary<String, GenonSettings> GenonSettings => _genonSettings;
 
 	// ====================================================================
 	// public 関数
@@ -89,7 +91,7 @@ internal class OtoIni
 	/// <summary>
 	/// 原音設定の解析結果（エイリアス文字と原音設定の対応）
 	/// </summary>
-	private readonly SortedDictionary<String, GenonSettings> _genonSettings = new();
+	private readonly Dictionary<String, GenonSettings> _genonSettings = new();
 
 	// ====================================================================
 	// private 関数
@@ -105,6 +107,10 @@ internal class OtoIni
 		try
 		{
 			String[] lines = File.ReadAllLines(otoIniPath, Encoding.GetEncoding(Common.CODE_PAGE_SHIFT_JIS));
+
+			// ファイル名＋エイリアスで容量確保
+			_genonSettings.EnsureCapacity(_genonSettings.Count + lines.Length * 2);
+
 			foreach (String line in lines)
 			{
 				if (String.IsNullOrEmpty(line))
@@ -112,7 +118,8 @@ internal class OtoIni
 					continue;
 				}
 
-				// oto.ini の一行：_ああいあう.wav=- あ,473,450,-660,300,100
+				// oto.ini の一行：_ああいあう.wav=- あE4,473,450,-660,300,100
+				// プレフィックス（という名のサフィックス）はエイリアス部分に付いている前提（多音階でも付いていない音源もある？）
 				String[] settingsStrings = line.Split(',');
 				String[] nameStrings = settingsStrings[0].Split('=');
 				String? alias;
@@ -164,15 +171,20 @@ internal class OtoIni
 				// 連続音 wav でなければファイル名で原音登録
 				if (!String.IsNullOrEmpty(fileBody) && fileBody[0] != '_')
 				{
-					_genonSettings[fileBody] = genonSettings;
+					if (!_genonSettings.TryAdd(fileBody, genonSettings))
+					{
+						//Debug.WriteLine("SetToCore() 原音設定が既に存在：" + fileBody);
+					}
 				}
 				// エイリアスが指定されていれば登録
 				if (!String.IsNullOrEmpty(alias))
 				{
-					_genonSettings[alias] = genonSettings;
+					if (!_genonSettings.TryAdd(alias, genonSettings))
+					{
+						//Debug.WriteLine("SetToCore() 原音設定が既に存在：" + alias);
+					}
 				}
 			}
-
 		}
 		catch
 		{
