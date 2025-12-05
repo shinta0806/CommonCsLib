@@ -19,6 +19,7 @@
 //  1.30  | 2025/02/11 (Tue) | LoadCharacterText() を作成。
 //  1.40  | 2025/02/11 (Tue) | VoiceName() を作成。
 //  1.50  | 2025/02/11 (Tue) | VoiceIconPath() を作成。
+// (1.51) | 2025/12/05 (Fri) |   LoadCharacterText() が親フォルダーも検索するようにした。
 // ============================================================================
 
 using System.Text;
@@ -92,6 +93,11 @@ internal partial class UtauUtils
 	/// 音源キャラ情報ファイル（スペルミス救済用）
 	/// </summary>
 	public const String FILE_NAME_CHARACTER_SPELL_MISS_2 = "charactor" + Common.FILE_EXT_TXT;
+
+	/// <summary>
+	/// 音源キャラ情報ファイル群（スペルミス救済用も含む）
+	/// </summary>
+	public static readonly String[] FILE_NAME_CHARACTERS = [FILE_NAME_CHARACTER, FILE_NAME_CHARACTER_SPELL_MISS_1, FILE_NAME_CHARACTER_SPELL_MISS_2];
 
 	/// <summary>
 	/// prefix.map
@@ -221,42 +227,32 @@ internal partial class UtauUtils
 	}
 
 	/// <summary>
-	/// oto.ini と同じフォルダーにある character.txt を読み込む
+	/// oto.ini と同じフォルダーを中心に、character.txt を読み込む
 	/// 予め Encoding.RegisterProvider(CodePagesEncodingProvider.Instance) されている前提
 	/// </summary>
-	/// <returns>character.txt の内容</returns>
-	public static String LoadCharacterText(String otoIniPath)
+	/// <returns>character.txt のパス, character.txt の内容（ファイルが見つからない場合は String.Empty, String.Empty）</returns>
+	public static (String, String) LoadCharacterText(String otoIniPath)
 	{
 		Encoding encoding = Encoding.GetEncoding(Common.CODE_PAGE_SHIFT_JIS);
-		String folder = Path.GetDirectoryName(otoIniPath) + "\\";
 
-		// まずは正しいファイル名で読み込む
-		try
+		// まずは oto.ini と同じフォルダー
+		String? folder = Path.GetDirectoryName(otoIniPath);
+		(String characterPath, String content) = LoadCharacterTextCore(folder + "\\", encoding);
+		if (!String.IsNullOrEmpty(characterPath))
 		{
-			return File.ReadAllText(folder + FILE_NAME_CHARACTER, encoding);
-		}
-		catch (Exception)
-		{
+			return (characterPath, content);
 		}
 
-		// 間違ったファイル名を救済
-		try
+		// 親フォルダー
+		folder = Path.GetDirectoryName(folder);
+		(characterPath, content) = LoadCharacterTextCore(folder + "\\", encoding);
+		if (!String.IsNullOrEmpty(characterPath))
 		{
-			return File.ReadAllText(folder + FILE_NAME_CHARACTER_SPELL_MISS_1, encoding);
-		}
-		catch (Exception)
-		{
-		}
-		try
-		{
-			return File.ReadAllText(folder + FILE_NAME_CHARACTER_SPELL_MISS_2, encoding);
-		}
-		catch (Exception)
-		{
+			return (characterPath, content);
 		}
 
-		Log.Error("音源キャラ情報ファイルを読み込めませんでした：" + folder + FILE_NAME_CHARACTER);
-		return String.Empty;
+		Log.Error("音源キャラ情報ファイルを読み込めませんでした：" + Path.GetDirectoryName(otoIniPath) + "\\" + FILE_NAME_CHARACTER);
+		return (String.Empty, String.Empty);
 	}
 
 	/// <summary>
@@ -324,7 +320,7 @@ internal partial class UtauUtils
 	}
 
 	/// <summary>
-	/// oto.ini と同じフォルダーにある character.txt から音源アイコンファイルのフルパスを取得する
+	/// oto.ini と同じフォルダーを中心に、character.txt から音源アイコンファイルのフルパスを取得する
 	/// </summary>
 	/// <param name="otoIniPath"></param>
 	/// <returns></returns>
@@ -334,14 +330,26 @@ internal partial class UtauUtils
 		{
 			return String.Empty;
 		}
-		String otoIniFolderPath = Path.GetDirectoryName(otoIniPath) + "\\";
 
-		String characterText = LoadCharacterText(otoIniPath);
+		(String characterPath, String characterText) = LoadCharacterText(otoIniPath);
+		String characterFolderPath;
+		if (String.IsNullOrEmpty(characterPath))
+		{
+			// character.txt が見つからない場合は oto.ini のフォルダーを検索する
+			characterFolderPath = Path.GetDirectoryName(otoIniPath) + "\\";
+		}
+		else
+		{
+			// 見つかった character.txt のフォルダーを検索する
+			characterFolderPath = Path.GetDirectoryName(characterPath) + "\\";
+		}
+
+		// image エントリ
 		foreach (Match match in RegexVoiceIconFileName().Matches(characterText).Cast<Match>())
 		{
 			if (match.Groups.Count >= 2)
 			{
-				String charPath = otoIniFolderPath + match.Groups[1].Value.Trim();
+				String charPath = characterFolderPath + match.Groups[1].Value.Trim();
 				if (File.Exists(charPath))
 				{
 					return charPath;
@@ -350,14 +358,14 @@ internal partial class UtauUtils
 		}
 
 		// 指示がない場合は、よく使われていそうなファイル名で救済
-		String defaultPath = otoIniFolderPath + "image" + Common.FILE_EXT_BMP;
+		String defaultPath = characterFolderPath + "image" + Common.FILE_EXT_BMP;
 		if (File.Exists(defaultPath))
 		{
 			return defaultPath;
 		}
 
 		// それもない場合や、指示が間違っている場合は、とにかく存在している bmp で救済
-		String? anyBmpPath = Directory.EnumerateFiles(otoIniFolderPath, "*" + Common.FILE_EXT_BMP).FirstOrDefault();
+		String? anyBmpPath = Directory.EnumerateFiles(characterFolderPath, "*" + Common.FILE_EXT_BMP).FirstOrDefault();
 		if (File.Exists(anyBmpPath))
 		{
 			return anyBmpPath;
@@ -367,14 +375,14 @@ internal partial class UtauUtils
 	}
 
 	/// <summary>
-	/// oto.ini から音源名を取得する
+	/// oto.ini と同じフォルダーにある character.txt から音源名を取得する
 	/// </summary>
 	/// <param name="otoIniPath"></param>
 	/// <returns></returns>
 	public static String VoiceName(String otoIniPath)
 	{
-		// oto.ini の name エントリー
-		String characterText = LoadCharacterText(otoIniPath);
+		// character.txt の name エントリー
+		(_, String characterText) = LoadCharacterText(otoIniPath);
 		foreach (Match match in RegexVoiceName().Matches(characterText).Cast<Match>())
 		{
 			if (match.Groups.Count >= 2)
@@ -399,6 +407,26 @@ internal partial class UtauUtils
 	// ====================================================================
 	// private 関数
 	// ====================================================================
+
+	/// <summary>
+	/// character.txt の内容を読み込む
+	/// </summary>
+	/// <param name="folderPath">末尾 '\\'</param>
+	/// <returns>パス, 内容（ファイルが見つからない場合は String.Empty）</returns>
+	private static (String, String) LoadCharacterTextCore(String folderPath, Encoding encoding)
+	{
+		foreach (String fileName in FILE_NAME_CHARACTERS)
+		{
+			try
+			{
+				return (folderPath + fileName, File.ReadAllText(folderPath + fileName, encoding));
+			}
+			catch (Exception)
+			{
+			}
+		}
+		return (String.Empty, String.Empty);
+	}
 
 	/// <summary>
 	/// key 以上の値を持つ最初の要素を指すインデックスを返す
