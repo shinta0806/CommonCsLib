@@ -76,6 +76,9 @@ internal partial class Win2dContainer : Grid
 	/// </summary>
 	public virtual void Invalidate()
 	{
+#if TESTz
+		Log.Information("Win2dContainer.Invalidate()");
+#endif
 		_canvasControl?.Invalidate();
 	}
 

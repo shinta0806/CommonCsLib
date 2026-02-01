@@ -803,7 +803,11 @@ public class WindowEx2 : WindowEx
 
 		if (parent is Grid)
 		{
-
+			// 何もしない
+		}
+		else if (parent is Canvas)
+		{
+			// 何もしない
 		}
 		else if (parent is RelativePanel relativePanel)
 		{
