@@ -411,7 +411,7 @@ public class WindowEx2 : WindowEx
 	/// 名前を付けて保存ダイアログを表示
 	/// </summary>
 	/// <param name="filter">「すべてのファイル」は含めないほうが良い（拡張子が * になる）</param>
-	/// <param name="filterIndex"></param>
+	/// <param name="filterIndex">0 オリジン</param>
 	/// <param name="options"></param>
 	/// <param name="initialPath"></param>
 	/// <returns></returns>
@@ -983,6 +983,7 @@ public class WindowEx2 : WindowEx
 #if USE_UNSAFE
 	/// <summary>
 	/// IShellItem からパスを取得
+	/// 拡張子はダイアログ側で自動補完されている前提で、ここでは補完しない
 	/// </summary>
 	/// <param name="iShellResult"></param>
 	/// <returns></returns>
@@ -996,20 +997,6 @@ public class WindowEx2 : WindowEx
 		}
 		String path = pathPwstr.ToString();
 		Marshal.FreeCoTaskMem((nint)pathPwstr.Value);
-
-		// 拡張子が入力されておらず、指定ファイルが存在しない場合は、拡張子を付与
-		// FOS_STRICTFILETYPES は動作していないように見える
-		// フォルダーの場合は存在しないがフィルターもないはずなので該当しない
-		(String[] filters, Boolean checkFilter) = ShowFileDialogCheckFilter(filter);
-		if (String.IsNullOrEmpty(Path.GetExtension(path)) && !File.Exists(path) && checkFilter)
-		{
-			if (filterIndex < filters.Length / 2)
-			{
-				String ext = Path.GetExtension(filters[filterIndex * 2 + 1].Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)[0]);
-				path = Path.ChangeExtension(path, ext);
-			}
-		}
-
 		return path;
 	}
 
@@ -1092,8 +1079,13 @@ public class WindowEx2 : WindowEx
 					Log.Error("ShowFileDialogCore() SetFileTypes: " + filter);
 				}
 
-				// 本関数は 0 オリジンだが openDialog は 1 オリジン
+				// 本関数は 0 オリジンだが fileDialog は 1 オリジン
 				fileDialog->SetFileTypeIndex((UInt32)filterIndex + 1);
+
+				// デフォルト拡張子
+				String ext = filters[Math.Clamp(filterIndex, 0, numFilters - 1) * 2 + 1];
+				Int32 period = ext.LastIndexOf('.');
+				fileDialog->SetDefaultExtension(ext[(period + 1)..]);
 			}
 
 			// 初期ファイル・フォルダー
