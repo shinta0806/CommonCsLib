@@ -218,7 +218,7 @@ internal class RssManager
 	/// ローカルに保存済の RSS の内容を読み込む（ファイルが無い場合などは例外）
 	/// </summary>
 	/// <returns></returns>
-	public List<RssItem> Load2()
+	public List<RssItem> LoadRssItems()
 	{
 #if !USE_AOT
 		// AOT 非対応版では保存していない
