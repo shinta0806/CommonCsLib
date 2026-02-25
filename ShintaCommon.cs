@@ -136,6 +136,7 @@ public partial class Common
 	public const String FILE_EXT_BMP = ".bmp";
 	public const String FILE_EXT_CONFIG = ".config";
 	public const String FILE_EXT_CS = ".cs";
+	public const String FILE_EXT_CSPROJ = ".csproj";
 	public const String FILE_EXT_CSS = ".css";
 	public const String FILE_EXT_CSV = ".csv";
 	public const String FILE_EXT_DDS = ".dds";
@@ -169,6 +170,8 @@ public partial class Common
 	public const String FILE_EXT_PNG = ".png";
 	public const String FILE_EXT_REG = ".reg";
 	public const String FILE_EXT_RESW = ".resw";
+	public const String FILE_EXT_SLN = ".sln";
+	public const String FILE_EXT_SLNX = ".slnx";
 	public const String FILE_EXT_SQLITE3 = ".sqlite3";
 	public const String FILE_EXT_SQLITE3_SHM = ".sqlite3-shm";
 	public const String FILE_EXT_SQLITE3_WAL = ".sqlite3-wal";
