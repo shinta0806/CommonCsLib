@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // WinUI 3 環境で使用する共通関数群
-// Copyright (C) 2022-2024 by SHINTA
+// Copyright (C) 2022-2026 by SHINTA
 // 
 // ============================================================================
 
@@ -28,8 +28,10 @@
 // (1.31) | 2024/04/08 (Mon) |   IsMsix() を移管。
 // (1.32) | 2024/04/08 (Mon) |   SettingsFolder() を移管。
 //  1.40  | 2024/09/25 (Wed) | PickSingleOpenFolderAsync() を作成。
+//  1.50  | 2026/03/27 (Fri) | IsUiThread() を作成。
 // ============================================================================
 
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -173,6 +175,15 @@ internal class WinUi3Common
 		return PInvoke.SetWindowSubclass(hWnd, subclassProc, UIntPtr.Zero, UIntPtr.Zero);
 	}
 #endif
+
+	/// <summary>
+	/// 現在実行中のスレッドは UI スレッドか
+	/// </summary>
+	/// <returns></returns>
+	public static Boolean IsUiThread()
+	{
+		return DispatcherQueue.GetForCurrentThread()?.HasThreadAccess ?? false;
+	}
 
 #if USE_OBSOLETE
 	/// <summary>

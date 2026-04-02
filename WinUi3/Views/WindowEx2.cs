@@ -492,7 +492,7 @@ public class WindowEx2 : WindowEx
 	public async Task<IUICommand> ShowLogMessageDialogAsync(LogEventLevel logEventLevel, String message)
 	{
 		IUICommand? command = null;
-		AutoResetEvent autoResetEvent = new(false);
+		using AutoResetEvent autoResetEvent = new(false);
 		DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, async () =>
 		{
 			Boolean added = AddVeil();
