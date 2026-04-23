@@ -353,7 +353,7 @@ public class WindowEx2 : WindowEx
 	/// <param name="caption"></param>
 	/// <param name="ex"></param>
 	/// <returns></returns>
-	public async Task<ContentDialogResult> ShowExceptionLogContentDialogAsync(String caption, Exception ex)
+	public async Task<ContentDialogResult> ShowExceptionLogContentDialogAsync(String? caption, Exception ex)
 	{
 		ContentDialogResult result = await ShowLogContentDialogAsync(LogEventLevel.Error, Common.ExceptionMessage(caption, ex));
 		SerilogUtils.LogStackTrace(ex);

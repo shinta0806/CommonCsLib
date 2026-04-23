@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // よく使う一般的な定数や関数（OS に依存しないもの）
-// Copyright (C) 2014-2025 by SHINTA
+// Copyright (C) 2014-2026 by SHINTA
 // 
 // ============================================================================
 
@@ -71,6 +71,8 @@
 // (4.62) | 2024/05/09 (Thu) |   拡張子を追加。
 //  4.70  | 2024/09/28 (Sat) | ExceptionMessage() を作成。
 // (4.71) | 2025/10/10 (Fri) |   メモリ系を obsolete にした。
+// (4.72) | 2026/04/04 (Sat) |   ExceptionMessage() を多言語対応。
+// (4.73) | 2026/04/05 (Sun) |   ExceptionMessage() の引数に null を許可。
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -193,6 +195,12 @@ public partial class Common
 	public const Int32 CODE_PAGE_JIS = 50220;
 	public const Int32 CODE_PAGE_SHIFT_JIS = 932;
 	public const Int32 CODE_PAGE_UTF_16_BE = 1201;
+
+	// --------------------------------------------------------------------
+	// BCP 47 言語タグ
+	// --------------------------------------------------------------------
+	public const String BCP47_EN_US = "en-US";
+	public const String BCP47_JA_JP = "ja-JP";
 
 	// --------------------------------------------------------------------
 	// MessageKey
@@ -465,13 +473,20 @@ public partial class Common
 	/// <param name="caption"></param>
 	/// <param name="ex"></param>
 	/// <returns></returns>
-	public static String ExceptionMessage(String caption, Exception ex)
+	public static String ExceptionMessage(String? caption, Exception ex)
 	{
-		String message = caption + "：\n" + ex.Message;
+		String? message = null;
+		if (!String.IsNullOrEmpty(caption))
+		{
+			message = caption + ":\n";
+		}
+		message += ex.Message;
+#if !DISABLE_WINRT
 		if (ex.InnerException != null)
 		{
-			message += "\n詳細：\n" + ex.InnerException.Message;
+			message += "\n" + "Detail".ToLocalized() + ":\n" + ex.InnerException.Message;
 		}
+#endif
 		return message;
 	}
 
