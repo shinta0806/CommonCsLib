@@ -1,7 +1,7 @@
 // ============================================================================
 // 
 // 動作環境を取得する
-// Copyright (C) 2022-2024 by SHINTA
+// Copyright (C) 2022-2026 by SHINTA
 // 
 // ============================================================================
 
@@ -9,6 +9,7 @@
 // 以下のパッケージがインストールされている前提
 //   Microsoft.Windows.Compatibility
 //   Serilog.Sinks.File
+//   WmiLight (AOT)
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
@@ -23,11 +24,16 @@
 // (1.01) | 2023/08/19 (Sat) |   ManagementValue() を改善。
 // (1.02) | 2024/04/18 (Thu) |   LogEnvironment() を改善。
 // (1.03) | 2024/04/18 (Thu) |   LogEnvironment() を改善。
+// (1.04) | 2026/05/28 (Thu) |   GetCpuBrandName() を改善。
 // ============================================================================
 
 using System.Management;
 
 using Windows.Storage;
+
+#if USE_AOT
+using WmiLight;
+#endif
 
 namespace Shinta;
 
@@ -69,7 +75,11 @@ public class SystemEnvironment
 	/// <returns>ベンダー文字列, CPU 名文字列</returns>
 	public (String? vendorIdString, String? brandName) GetCpuBrandName()
 	{
+#if USE_AOT
+		return (ManagementValueAot(WMI_CLASS_PROCESSOR, "Manufacturer"), ManagementValueAot(WMI_CLASS_PROCESSOR, "Name"));
+#else
 		return (ManagementValue(WMI_CLASS_PROCESSOR, "Manufacturer"), ManagementValue(WMI_CLASS_PROCESSOR, "Name"));
+#endif
 	}
 #pragma warning restore CA1822
 
@@ -165,6 +175,7 @@ public class SystemEnvironment
 	// private 関数
 	// ====================================================================
 
+#if !USE_AOT
 	/// <summary>
 	/// 指定された情報を取得
 	/// </summary>
@@ -192,4 +203,29 @@ public class SystemEnvironment
 		}
 		return null;
 	}
+#endif
+
+#if USE_AOT
+	/// <summary>
+	/// 指定された情報を取得
+	/// </summary>
+	/// <param name="className"></param>
+	/// <param name="propertyName"></param>
+	/// <returns>取得できなかった場合は null</returns>
+	private static String? ManagementValueAot(String className, String propertyName)
+	{
+		try
+		{
+			using WmiConnection wmiConnection = new();
+			foreach (WmiObject wmiObject in wmiConnection.CreateQuery("SELECT " + propertyName + " FROM " + className))
+			{
+				return (String)wmiObject[propertyName];
+			}
+		}
+		catch (Exception)
+		{
+		}
+		return null;
+	}
+#endif
 }

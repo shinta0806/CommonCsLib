@@ -21,34 +21,34 @@ namespace Shinta;
 
 internal partial class EnumToInt32Converter : IValueConverter
 {
-    // ====================================================================
-    // public 関数
-    // ====================================================================
+	// ====================================================================
+	// public 関数
+	// ====================================================================
 
-    /// <summary>
-    /// 変換
-    /// </summary>
-    /// <param name="value"></param>
-    /// <param name="targetType"></param>
-    /// <param name="parameter"></param>
-    /// <param name="language"></param>
-    /// <returns></returns>
-    public Object Convert(Object value, Type targetType, Object parameter, String language)
-    {
-        return (Int32)value;
-    }
+	/// <summary>
+	/// 変換
+	/// </summary>
+	/// <param name="value"></param>
+	/// <param name="targetType"></param>
+	/// <param name="parameter"></param>
+	/// <param name="language"></param>
+	/// <returns></returns>
+	public Object Convert(Object value, Type targetType, Object parameter, String language)
+	{
+		return (Int32)value;
+	}
 
-    /// <summary>
-    /// 逆変換
-    /// </summary>
-    /// <param name="value"></param>
-    /// <param name="targetType"></param>
-    /// <param name="parameter"></param>
-    /// <param name="language"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public Object ConvertBack(Object value, Type targetType, Object parameter, String language)
-    {
-        return value;
-    }
+	/// <summary>
+	/// 逆変換
+	/// </summary>
+	/// <param name="value"></param>
+	/// <param name="targetType"></param>
+	/// <param name="parameter"></param>
+	/// <param name="language"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentOutOfRangeException"></exception>
+	public Object ConvertBack(Object value, Type targetType, Object parameter, String language)
+	{
+		return value;
+	}
 }
