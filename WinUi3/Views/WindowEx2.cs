@@ -1091,10 +1091,14 @@ public class WindowEx2 : WindowEx
 			// 初期ファイル・フォルダー
 			if (!String.IsNullOrEmpty(initialPath))
 			{
+				Guid shellItemGuid = typeof(IShellItem).GUID;
 				if (Directory.Exists(initialPath))
 				{
 					// フォルダーのみ指定
-					result = PInvoke.SHCreateItemFromParsingName(initialPath, null, typeof(IShellItem).GUID, out shellInitial);
+					fixed (Char* initialPathPtr = initialPath)
+					{
+						result = PInvoke.SHCreateItemFromParsingName(initialPathPtr, null, &shellItemGuid, &shellInitial);
+					}
 					if (result.Succeeded)
 					{
 						fileDialog->SetFolder((IShellItem*)shellInitial);
@@ -1106,7 +1110,10 @@ public class WindowEx2 : WindowEx
 					String? folderPath = Path.GetDirectoryName(initialPath);
 					if (Directory.Exists(folderPath))
 					{
-						result = PInvoke.SHCreateItemFromParsingName(folderPath, null, typeof(IShellItem).GUID, out shellInitial);
+						fixed (Char* folderPathPtr = folderPath)
+						{
+							result = PInvoke.SHCreateItemFromParsingName(folderPathPtr, null, &shellItemGuid, &shellInitial);
+						}
 						if (result.Succeeded)
 						{
 							fileDialog->SetFolder((IShellItem*)shellInitial);
